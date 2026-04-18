@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 use xmp_writer::{RenditionClass, XmpWriter};
 
-use crate::configure::{PdfVersion, ValidationError};
+use crate::configure::{PdfVersion, ValidationError, Validator};
 use crate::error::KrillaResult;
 use crate::interchange::metadata::Metadata;
 use crate::metadata::PageLayout;
@@ -128,7 +128,11 @@ impl ChunkContainer {
         sc.serialize_settings().pdf_version().set_version(&mut pdf);
 
         if sc.serialize_settings().ascii_compatible
-            && !sc.serialize_settings().validator().requires_binary_header()
+            && !sc
+                .serialize_settings()
+                .validators()
+                .iter()
+                .any(Validator::requires_binary_header)
         {
             pdf.set_binary_marker(b"AAAA")
         }
@@ -149,7 +153,7 @@ impl ChunkContainer {
             metadata.serialize_document_info(
                 &mut remapped_ref,
                 &mut pdf,
-                sc.serialize_settings().configuration,
+                &sc.serialize_settings().configuration,
             );
         }
 
@@ -176,7 +180,11 @@ impl ChunkContainer {
             metadata.serialize_xmp_metadata(&mut xmp, sc, &instance_id);
         }
 
-        sc.serialize_settings().validator().write_xmp(&mut xmp);
+        let settings = sc.serialize_settings();
+        let validators = settings.validators();
+        for validator in validators {
+            validator.write_xmp(&mut xmp, validators);
+        }
 
         xmp.num_pages(sc.page_infos().len() as u32);
         xmp.format("application/pdf");
@@ -254,8 +262,9 @@ impl ChunkContainer {
 
             let write_doc_title = sc
                 .serialize_settings()
-                .validator()
-                .requires_display_doc_title();
+                .validators()
+                .iter()
+                .any(Validator::requires_display_doc_title);
             let text_direction = self.metadata.as_ref().and_then(|m| m.text_direction);
 
             if write_doc_title || text_direction.is_some() {
@@ -284,10 +293,15 @@ impl ChunkContainer {
                 catalog.outlines(remapper[&ol.0]);
             }
 
-            let write_embedded_files = sc
-                .serialize_settings()
-                .validator()
-                .write_embedded_files(self.non_stream.embedded_files.len() == 0);
+            let settings = sc.serialize_settings();
+            let validators = settings.validators();
+            let write_embedded_files = if validators.is_empty() {
+                self.non_stream.embedded_files.len() != 0
+            } else {
+                validators
+                    .iter()
+                    .any(|v| v.write_embedded_files(self.non_stream.embedded_files.len() == 0))
+            };
 
             if !named_destinations.is_empty() || write_embedded_files {
                 // Cannot use pdf-writer API here because it requires Ref's, while
@@ -330,10 +344,8 @@ impl ChunkContainer {
             }
 
             if !embedded_files.is_empty()
-                && sc
-                    .serialize_settings()
-                    .validator()
-                    .allows_associated_files()
+                && !validators.is_empty()
+                && validators.iter().all(Validator::allows_associated_files)
             {
                 let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
                 for _ref in embedded_files.values() {

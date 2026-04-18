@@ -1028,7 +1028,8 @@ pub fn settings_20() -> SerializeSettings {
 
 pub fn settings_22() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with(Validator::A2_B, PdfVersion::Pdf14).unwrap(),
+        configuration: Configuration::new_with(std::iter::once(Validator::A2_B), PdfVersion::Pdf14)
+            .unwrap(),
         ..settings_1()
     }
 }
@@ -1090,6 +1091,15 @@ pub fn settings_30() -> SerializeSettings {
 pub fn settings_31() -> SerializeSettings {
     SerializeSettings {
         pretty: false,
+        ..settings_1()
+    }
+}
+
+// PDF/A-3b + PDF/UA-1 combined.
+pub fn settings_32() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validators([Validator::A3_B, Validator::UA1])
+            .unwrap(),
         ..settings_1()
     }
 }

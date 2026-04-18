@@ -9,7 +9,7 @@ use pdf_writer::{Finish, Pdf, Ref, TextStr};
 use std::cell::LazyCell;
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
-use crate::configure::{Configuration, PdfVersion, ValidationError};
+use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
 use crate::serialize::SerializeContext;
 
 /// Metadata for a PDF document.
@@ -201,8 +201,9 @@ impl Metadata {
 
             if sc
                 .serialize_settings()
-                .validator()
-                .requires_file_provenance_information()
+                .validators()
+                .iter()
+                .any(Validator::requires_file_provenance_information)
             {
                 let mut history = xmp.history();
                 let mut saved = history.add_event();
@@ -211,10 +212,11 @@ impl Metadata {
                     .action(xmp_writer::ResourceEventAction::Saved)
                     .when(date);
 
-                if !sc
+                if sc
                     .serialize_settings()
-                    .validator()
-                    .prohibits_instance_id_in_xmp_metadata()
+                    .validators()
+                    .iter()
+                    .all(|v| !v.prohibits_instance_id_in_xmp_metadata())
                 {
                     saved.instance_id(&format!("{instance_id}_source"));
                 }
@@ -231,10 +233,11 @@ impl Metadata {
                     converted.software_agent(creator);
                 }
 
-                if !sc
+                if sc
                     .serialize_settings()
-                    .validator()
-                    .prohibits_instance_id_in_xmp_metadata()
+                    .validators()
+                    .iter()
+                    .all(|v| !v.prohibits_instance_id_in_xmp_metadata())
                 {
                     converted.instance_id(&format!("{instance_id}_source"));
                 }
@@ -248,9 +251,9 @@ impl Metadata {
         &self,
         ref_: &mut Ref,
         pdf: &mut Pdf,
-        config: Configuration,
+        config: &Configuration,
     ) {
-        if !config.validator().allows_info_dict() {
+        if config.validators().iter().any(|v| !v.allows_info_dict()) {
             return;
         }
 
