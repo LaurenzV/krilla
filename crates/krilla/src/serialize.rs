@@ -14,7 +14,7 @@ use crate::chunk_container::{ChunkContainer, ChunkContainerFn};
 use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
 use crate::configure::validate::ValidationStore;
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
-use crate::error::{KrillaError, KrillaResult};
+use crate::error::{KrillaError, KrillaResult, LimitError};
 use crate::geom::Size;
 use crate::graphics::color::{rgb, ColorSpace};
 use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
@@ -35,6 +35,14 @@ use crate::surface::{Location, Surface};
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier};
 use crate::util::{Deferred, SipHashable};
+
+const STR_LEN: usize = 32767;
+const NAME_LEN: usize = 127;
+
+// These only apply to PDF 1.4 and PDF/A-1.
+const MAX_FLOAT: f32 = 32767.0;
+const DICT_LEN: usize = 4095;
+const ARRAY_LEN: usize = 8191;
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
@@ -414,7 +422,7 @@ impl SerializeContext {
         };
         self.register_limits(pdf.limits());
 
-        self.check_limits();
+        self.check_validator_limits();
 
         if !self.validation_errors.is_empty() {
             // Deduplicate errors, while still preserving order.
@@ -429,6 +437,10 @@ impl SerializeContext {
             }
 
             return Err(KrillaError::Validation(errors));
+        }
+
+        if let Some(limit_error) = self.check_version_limits() {
+            return Err(KrillaError::Limit(limit_error));
         }
 
         // Just a sanity check that we've actually processed all items.
@@ -851,15 +863,7 @@ impl SerializeContext {
         Ok(())
     }
 
-    fn check_limits(&mut self) {
-        const STR_LEN: usize = 32767;
-        const NAME_LEN: usize = 127;
-
-        // These only apply to PDF 1.4 and PDF/A-1.
-        const MAX_FLOAT: f32 = 32767.0;
-        const DICT_LEN: usize = 4095;
-        const ARRAY_LEN: usize = 8191;
-
+    fn check_validator_limits(&mut self) {
         if self.cur_ref > Ref::new(8388607) {
             self.register_validation_error(ValidationError::TooManyIndirectObjects)
         }
@@ -883,6 +887,26 @@ impl SerializeContext {
         if self.limits.dict_entries() > DICT_LEN {
             self.register_validation_error(ValidationError::TooLongDictionary);
         }
+    }
+
+    fn check_version_limits(&self) -> Option<LimitError> {
+        if self.serialize_settings.pdf_version() != PdfVersion::Pdf14 {
+            return None;
+        }
+
+        if self.limits.real() > MAX_FLOAT {
+            return Some(LimitError::TooLargeFloat);
+        }
+
+        if self.limits.array_len() > ARRAY_LEN {
+            return Some(LimitError::TooLongArray);
+        }
+
+        if self.limits.dict_entries() > DICT_LEN {
+            return Some(LimitError::TooLongDictionary);
+        }
+
+        None
     }
 }
 

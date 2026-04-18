@@ -25,6 +25,8 @@ pub enum KrillaError {
     ///
     /// [`SerializeSettings`]: crate::SerializeSettings
     Validation(Vec<ValidationError>),
+    /// A hard limit of the selected PDF version was exceeded.
+    Limit(LimitError),
     /// A duplicate [`Tag::id`] was provided.
     ///
     /// [`Tag::id`]: crate::interchange::tagging::Tag::id
@@ -45,4 +47,15 @@ pub enum KrillaError {
     /// supported by the used PDF version (only available in PDF 1.5+).
     #[cfg(feature = "raster-images")]
     SixteenBitImage(Image, Option<Location>),
+}
+
+/// A limit imposed by the selected PDF version.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum LimitError {
+    /// A float exceeded the maximum allowed size for the PDF version.
+    TooLargeFloat,
+    /// An array exceeded the maximum allowed length for the PDF version.
+    TooLongArray,
+    /// A dictionary exceeded the maximum allowed number of entries for the PDF version.
+    TooLongDictionary,
 }
