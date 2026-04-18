@@ -1,6 +1,6 @@
 use image::load_from_memory;
 use krilla::configure::{PdfVersion, ValidationError};
-use krilla::error::KrillaError;
+use krilla::error::{KrillaError, LimitError};
 use krilla::geom::{Size, Transform};
 use krilla::page::{Page, PageSettings};
 use krilla::pdf::PdfError;
@@ -13,7 +13,8 @@ use crate::metadata::metadata_impl;
 use crate::svg::sample_svg;
 use crate::text::simple_text_impl;
 use crate::{
-    load_pdf, load_png_image, loc, rect_to_path, red_fill, settings_16, settings_2, NOTO_SANS,
+    load_pdf, load_png_image, loc, rect_to_path, red_fill, settings_16, settings_17, settings_2,
+    youtube_link, NOTO_SANS,
 };
 
 #[snapshot(document)]
@@ -67,6 +68,19 @@ fn pdf_14_no_sixteen_bit_images() {
     assert_eq!(
         document.finish(),
         Err(KrillaError::SixteenBitImage(image.clone(), None))
+    );
+}
+
+#[test]
+fn pdf_14_unvalidated_version_limit_error() {
+    let mut document = Document::new_with(settings_17());
+    let mut page = document.start_page();
+    page.add_annotation(youtube_link(66000.1, 66000.1, 100.0, 100.0));
+    page.finish();
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Limit(LimitError::TooLargeFloat))
     );
 }
 
