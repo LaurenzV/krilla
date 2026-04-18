@@ -61,7 +61,7 @@ jobs:
         run: |
           git clone https://github.com/LaurenzV/pdfcpu /tmp/pdfcpu
           cd /tmp/pdfcpu
-          git checkout 4639fc2
+          git checkout 59b622105a4d9baa35bd4eaf07c0d8650ffecc1f
           go install ./cmd/pdfcpu
 
       - name: Validate store PDFs with pdfcpu
