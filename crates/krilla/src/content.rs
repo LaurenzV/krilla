@@ -11,7 +11,7 @@ use pdf_writer::{Content, Finish, Name, Ref, Str, TextStr};
 use tiny_skia_path::{Path, PathSegment, PathVerb};
 
 use crate::color::rgb;
-use crate::configure::ValidationError;
+use crate::configure::{ValidationError, Validator};
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
 use crate::geom::{Point, Rect, Transform};
@@ -674,8 +674,9 @@ impl ContentBuilder {
                         text,
                         reversed,
                         sc.serialize_settings()
-                            .validator()
-                            .requires_codepoint_mappings(),
+                            .validators()
+                            .iter()
+                            .any(Validator::requires_codepoint_mappings),
                         context_color,
                         font_container.clone(),
                     );
