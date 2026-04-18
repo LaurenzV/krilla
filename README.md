@@ -233,7 +233,7 @@ in which case other programs could tamper with that memory.
 With that said, we do rely on crates such as `bytemuck` and `yoke` that do use unsafe code.
 
 # Minimum Supported Rust Version (MSRV)
-The minimum supported Rust version is **1.89**.
+The minimum supported Rust version is **1.92**.
 
 # License
 This crate is dual-licensed under the MIT and Apache 2.0 licenses.

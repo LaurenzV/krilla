@@ -143,7 +143,7 @@ std::fs::write(path, &pdf).unwrap();
 
 ## Minimum Supported Rust Version (MSRV)
 
-The minimum supported Rust version is **1.89**.
+The minimum supported Rust version is **1.92**.
 
 [krilla]: https://github.com/LaurenzV/krilla
 [pdf-writer]: https://github.com/typst/pdf-writer
