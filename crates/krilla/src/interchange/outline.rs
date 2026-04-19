@@ -141,7 +141,7 @@ impl OutlineNode {
     /// `text` is the string that should be displayed in the outline tree, and
     /// `destination` is the destination that should be jumped to when clicking on
     /// the outline entry. The node is created in the *closed* state; use
-    /// [`OutlineNode::new_with_state`] or [`OutlineNode::set_open`] to change this.
+    /// [`OutlineNode::with_open`] or [`OutlineNode::set_open`] to change this.
     pub fn new(text: String, destination: XyzDestination) -> Self {
         Self {
             children: vec![],
@@ -151,26 +151,19 @@ impl OutlineNode {
         }
     }
 
-    /// Create a new outline node, explicitly specifying the initial open state.
+    /// Set whether this node is initially open (children shown expanded).
     ///
     /// If `open` is `true`, the node's children will be shown expanded when the
     /// document is opened in a PDF viewer; if `false`, the children will be
     /// collapsed. Leaf nodes (nodes without children) are unaffected by this flag.
-    pub fn new_with_state(text: String, destination: XyzDestination, open: bool) -> Self {
-        Self {
-            children: vec![],
-            text,
-            destination,
-            open,
-        }
+    pub fn with_open(mut self, open: bool) -> Self {
+        self.open = open;
+        self
     }
 
     /// Set whether this node is initially open (children shown expanded).
-    ///
-    /// Returns `&mut Self` to allow chaining with other builder-style calls.
-    pub fn set_open(&mut self, open: bool) -> &mut Self {
+    pub fn set_open(&mut self, open: bool) {
         self.open = open;
-        self
     }
 
     /// Add a new child to the outline node.

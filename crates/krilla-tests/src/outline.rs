@@ -94,16 +94,16 @@ fn outline_mixed_state(d: &mut Document) {
 
     // Open parent containing an open child, so the root /Outlines must count
     // grand-children as visible too.
-    let mut child1 = OutlineNode::new_with_state(
+    let mut child1 = OutlineNode::new(
         "Heading 1".to_string(),
         XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
-        true,
-    );
-    let mut nested = OutlineNode::new_with_state(
+    )
+    .with_open(true);
+    let mut nested = OutlineNode::new(
         "Heading 1.1".to_string(),
         XyzDestination::new(1, Point::from_xy(50.0, 50.0)),
-        true,
-    );
+    )
+    .with_open(true);
     nested.push_child(OutlineNode::new(
         "Heading 1.1.1".to_string(),
         XyzDestination::new(1, Point::from_xy(60.0, 60.0)),
