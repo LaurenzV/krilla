@@ -142,15 +142,10 @@ pub enum ValidationError {
     EmbeddedPDF(Option<Location>),
 }
 
-/// A validator for exporting PDF documents to a specific subset of PDF.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+/// The archival standard to export the PDF to.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
-pub enum Validator {
-    /// A dummy validator, that does not perform any actual validation.
-    ///
-    /// **Requirements**: -
-    #[default]
-    None,
+pub enum Archival {
     /// The validator for the PDF/A-1a standard.
     ///
     /// **Requirements**:
@@ -221,6 +216,27 @@ pub enum Validator {
     /// **Requirements**:
     /// - All requirements of PDF/A-2b
     A3_U,
+    /// The validator for the PDF/A-4 standard.
+    ///
+    /// **Requirements**:
+    /// - While not required, it's recommended to enable tagging.
+    A4,
+    /// The validator for the PDF/A-4f standard.
+    ///
+    /// **Requirements**:
+    /// - All requirements of PDF/A-4
+    A4F,
+    /// The validator for the PDF/A-4e standard.
+    ///
+    /// **Requirements**:
+    /// - All requirements of PDF/A-4
+    A4E,
+}
+
+/// The universal accessibility standard to export the PDF to.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+pub enum UniversalAccessibility {
     /// The validator for the PDF/UA-1 standard.
     ///
     /// **Requirements**:
@@ -292,28 +308,155 @@ pub enum Validator {
     ///
     /// [`TagKind`]: crate::interchange::tagging::TagKind
     UA1,
-    /// The validator for the PDF/A-4 standard.
+}
+
+/// A set of validators for stricter export.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Validators {
+    archival: Option<Archival>,
+    universal_accessibility: Option<UniversalAccessibility>,
+    recommended_version: PdfVersion,
+}
+
+impl Validators {
+    /// Create a [`Validators`] object without any active validators.
+    pub fn dummy() -> Self {
+        Self {
+            archival: None,
+            universal_accessibility: None,
+            recommended_version: PdfVersion::Pdf17,
+        }
+    }
+
+    /// Create a validator set from a number of standards.
     ///
-    /// **Requirements**:
-    /// - While not required, it's recommended to enable tagging.
-    A4,
-    /// The validator for the PDF/A-4f standard.
-    ///
-    /// **Requirements**:
-    /// - All requirements of PDF/A-4
-    A4F,
-    /// The validator for the PDF/A-4e standard.
-    ///
-    /// **Requirements**:
-    /// - All requirements of PDF/A-4
-    A4E,
+    /// Returns `None` if the selected validators are not mutually compatible.
+    pub fn with(
+        archival: Option<Archival>,
+        universal_accessibility: Option<UniversalAccessibility>,
+    ) -> Option<Self> {
+        let recommended_version = Self::find_version(archival, universal_accessibility)?;
+        
+        Some(Self {
+            archival,
+            universal_accessibility,
+            recommended_version,
+        })
+    }
+
+    /// Create a validator set with an archival standard.
+    pub fn new_a(archival: Archival) -> Self {
+        Self::with(Some(archival), None).unwrap()
+    }
+
+    /// Create a validator set with a universal accessibility standard.
+    pub fn new_ua(universal_accessibility: UniversalAccessibility) -> Self {
+        Self::with(None, Some(universal_accessibility)).unwrap()
+    }
+
+    /// Return the archival standard, if active.
+    pub fn archival_standard(&self) -> Option<Archival> {
+        self.archival
+    }
+
+    /// Return the universal accessibility standard, if active.
+    pub fn universal_accessibility_standard(&self) -> Option<UniversalAccessibility> {
+        self.universal_accessibility
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.archival.is_none() && self.universal_accessibility.is_none()
+    }
+
+    /// Return the recommended PDF version selected for this set of validators.
+    pub fn recommended_version(&self) -> PdfVersion {
+        self.recommended_version
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = Validator> {
+        Self::standards_iter(self.archival, self.universal_accessibility)
+    }
+
+    fn standards_iter(
+        archival: Option<Archival>,
+        universal_accessibility: Option<UniversalAccessibility>,
+    ) -> impl Iterator<Item = Validator> {
+        archival
+            .map(Validator::from)
+            .into_iter()
+            .chain(universal_accessibility.map(Validator::from))
+    }
+
+    fn find_version(
+        archival: Option<Archival>,
+        universal_accessibility: Option<UniversalAccessibility>,
+    ) -> Option<PdfVersion> {
+        let mut iter = Self::standards_iter(archival, universal_accessibility);
+        
+        let Some(first) = iter.next() else {
+            return Some(PdfVersion::Pdf17);
+        };
+
+        let mut min_version = first.minimum_pdf_version().unwrap_or(PdfVersion::min());
+        let mut max_version = first.maximum_pdf_version().unwrap_or(PdfVersion::max());
+
+        for validator in iter {
+            min_version = min_version.max(validator.minimum_pdf_version().unwrap_or(PdfVersion::min()));
+            max_version = max_version.min(validator.maximum_pdf_version().unwrap_or(PdfVersion::max()));
+        }
+
+        if min_version > max_version {
+            return None;
+        }
+
+        // If possible, we always prefer 1.7 since it represents the best balance
+        // between not too old and not too new (for now).
+        // Otherwise, just take the maximum possible version.
+        if min_version <= PdfVersion::Pdf17 && PdfVersion::Pdf17 <= max_version {
+            Some(PdfVersion::Pdf17)
+        } else {
+            Some(max_version)
+        }
+    }
+}
+
+impl From<Archival> for Validators {
+    fn from(archival: Archival) -> Self {
+        Self::new_a(archival)
+    }
+}
+
+impl From<UniversalAccessibility> for Validators {
+    fn from(universal_accessibility: UniversalAccessibility) -> Self {
+        Self::new_ua(universal_accessibility)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum Validator {
+    Archival(Archival),
+    UniversalAccessibility(UniversalAccessibility),
+}
+
+impl From<Archival> for Validator {
+    fn from(archival: Archival) -> Self {
+        Self::Archival(archival)
+    }
+}
+
+impl From<UniversalAccessibility> for Validator {
+    fn from(universal_accessibility: UniversalAccessibility) -> Self {
+        Self::UniversalAccessibility(universal_accessibility)
+    }
 }
 
 impl Validator {
-    pub(crate) fn prohibits(&self, validation_error: &ValidationError) -> bool {
+    pub(crate) fn prohibits(self, validation_error: &ValidationError) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => false,
-            Validator::A1_A | Validator::A1_B => match validation_error {
+            Validator::Archival(A1_A | A1_B) => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooLongName => true,
                 ValidationError::TooLongArray => true,
@@ -329,12 +472,12 @@ impl Validator {
                 ValidationError::InvalidCodepointMapping(_, _, _, _) => false,
                 ValidationError::UnicodePrivateArea(_, _, _, _) => false,
                 ValidationError::RestrictedLicense(_) => true,
-                ValidationError::NoDocumentLanguage => *self == Validator::A1_A,
+                ValidationError::NoDocumentLanguage => self == Validator::Archival(A1_A),
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => *self == Validator::A1_A,
+                ValidationError::MissingAltText(_) => self == Validator::Archival(A1_A),
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => *self == Validator::A1_A,
+                ValidationError::MissingAnnotationAltText(_) => self == Validator::Archival(A1_A),
                 ValidationError::Transparency(_) => true,
                 ValidationError::ImageInterpolation(_) => true,
                 // PDF/A-1 doesn't strictly forbid, but it disallows the EF key,
@@ -348,11 +491,11 @@ impl Validator {
                     EmbedError::MissingDescription => false,
                     EmbedError::MissingMimeType => false,
                 },
-                ValidationError::MissingTagging => *self == Validator::A1_A,
+                ValidationError::MissingTagging => self == Validator::Archival(A1_A),
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::EmbeddedPDF(_) => true,
             },
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
+            Validator::Archival(A2_A | A2_B | A2_U) => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooLongName => true,
                 ValidationError::TooLargeFloat => false,
@@ -368,14 +511,14 @@ impl Validator {
                 | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
                     self.requires_codepoint_mappings()
                 }
-                ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A2_A,
+                ValidationError::UnicodePrivateArea(_, _, _, _) => self == Validator::Archival(A2_A),
                 ValidationError::RestrictedLicense(_) => true,
-                ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
+                ValidationError::NoDocumentLanguage => self == Validator::Archival(A2_A),
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => *self == Validator::A2_A,
+                ValidationError::MissingAltText(_) => self == Validator::Archival(A2_A),
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => *self == Validator::A2_A,
+                ValidationError::MissingAnnotationAltText(_) => self == Validator::Archival(A2_A),
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
                 // Also not strictly forbidden, but we can't ensure that it is PDF/A-2 compliant,
@@ -389,11 +532,11 @@ impl Validator {
                     EmbedError::MissingDescription => false,
                     EmbedError::MissingMimeType => false,
                 },
-                ValidationError::MissingTagging => *self == Validator::A2_A,
+                ValidationError::MissingTagging => self == Validator::Archival(A2_A),
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::EmbeddedPDF(_) => true,
             },
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
+            Validator::Archival(A3_A | A3_B | A3_U) => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooLongName => true,
                 ValidationError::TooLargeFloat => false,
@@ -409,14 +552,14 @@ impl Validator {
                 | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
                     self.requires_codepoint_mappings()
                 }
-                ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A3_A,
+                ValidationError::UnicodePrivateArea(_, _, _, _) => self == Validator::Archival(A3_A),
                 ValidationError::RestrictedLicense(_) => true,
-                ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
+                ValidationError::NoDocumentLanguage => self == Validator::Archival(A3_A),
                 ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => *self == Validator::A3_A,
+                ValidationError::MissingAltText(_) => self == Validator::Archival(A3_A),
                 ValidationError::MissingHeadingTitle => false,
                 ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => *self == Validator::A3_A,
+                ValidationError::MissingAnnotationAltText(_) => self == Validator::Archival(A3_A),
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
                 ValidationError::EmbeddedFile(er, _) => match er {
@@ -425,11 +568,11 @@ impl Validator {
                     EmbedError::MissingDescription => true,
                     EmbedError::MissingMimeType => true,
                 },
-                ValidationError::MissingTagging => *self == Validator::A3_A,
+                ValidationError::MissingTagging => self == Validator::Archival(A3_A),
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::EmbeddedPDF(_) => true,
             },
-            Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
+            Validator::Archival(A4 | A4F | A4E) => match validation_error {
                 ValidationError::TooLongString => false,
                 ValidationError::TooLongName => false,
                 ValidationError::TooLongArray => false,
@@ -456,13 +599,13 @@ impl Validator {
                 ValidationError::Transparency(_) => false,
                 ValidationError::ImageInterpolation(_) => true,
                 ValidationError::EmbeddedFile(e, _) => match e {
-                    EmbedError::Existence => matches!(self, Validator::A4),
+                    EmbedError::Existence => matches!(self, Validator::Archival(A4)),
                     // Since existence is forbidden in the first place for A4,
                     // we can just set the others to `false` to prevent
                     // unnecessary validation errors.
                     EmbedError::MissingDate => false,
                     EmbedError::MissingDescription => {
-                        matches!(self, Validator::A4E | Validator::A4F)
+                        matches!(self, Validator::Archival(A4E | A4F))
                     }
                     EmbedError::MissingMimeType => false,
                 },
@@ -471,7 +614,7 @@ impl Validator {
                 ValidationError::MissingDocumentDate => true,
                 ValidationError::EmbeddedPDF(_) => true,
             },
-            Validator::UA1 => match validation_error {
+            Validator::UniversalAccessibility(UA1) => match validation_error {
                 ValidationError::TooLongString => false,
                 ValidationError::TooLargeFloat => false,
                 ValidationError::TooLongName => false,
@@ -510,295 +653,309 @@ impl Validator {
         }
     }
 
+    /// Returns the minimum PDF version required by this validator, if any.
+    pub fn minimum_pdf_version(self) -> Option<PdfVersion> {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
+        match self {
+            Validator::Archival(A1_A | A1_B) => None,
+            Validator::Archival(A2_A | A2_B | A2_U) => None,
+            Validator::Archival(A3_A | A3_B | A3_U) => None,
+            Validator::Archival(A4 | A4F | A4E) => Some(PdfVersion::Pdf20),
+            Validator::UniversalAccessibility(UA1) => Some(PdfVersion::Pdf14),
+        }
+    }
+
+    /// Returns the maximum PDF version allowed by this validator, if any.
+    pub fn maximum_pdf_version(self) -> Option<PdfVersion> {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
+        match self {
+            Validator::Archival(A1_A | A1_B) => Some(PdfVersion::Pdf14),
+            Validator::Archival(A2_A | A2_B | A2_U) => Some(PdfVersion::Pdf17),
+            Validator::Archival(A3_A | A3_B | A3_U) => Some(PdfVersion::Pdf17),
+            Validator::Archival(A4 | A4F | A4E) => None,
+            Validator::UniversalAccessibility(UA1) => Some(PdfVersion::Pdf17),
+        }
+    }
+
     /// Check whether the validator is compatible with a specific pdf version.
-    pub fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
-        match self {
-            Validator::None => true,
-            Validator::A1_A | Validator::A1_B => pdf_version <= PdfVersion::Pdf14,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => pdf_version <= PdfVersion::Pdf17,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => pdf_version <= PdfVersion::Pdf17,
-            // It can be any 2.x version, but we're not there yet.
-            Validator::A4 | Validator::A4F | Validator::A4E => pdf_version == PdfVersion::Pdf20,
-            Validator::UA1 => pdf_version <= PdfVersion::Pdf17,
+    pub fn compatible_with_version(self, pdf_version: PdfVersion) -> bool {
+        if let Some(min_version) = self.minimum_pdf_version() {
+            if pdf_version < min_version {
+                return false;
+            }
         }
-    }
 
-    /// Get the recommended PDF version of a validator.
-    pub fn recommended_version(&self) -> PdfVersion {
-        match self {
-            Validator::None => PdfVersion::Pdf17,
-            Validator::A1_A | Validator::A1_B => PdfVersion::Pdf14,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => PdfVersion::Pdf17,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => PdfVersion::Pdf17,
-            Validator::A4 | Validator::A4F | Validator::A4E => PdfVersion::Pdf20,
-            Validator::UA1 => PdfVersion::Pdf17,
+        if let Some(max_version) = self.maximum_pdf_version() {
+            if pdf_version > max_version {
+                return false;
+            }
         }
+
+        true
     }
 
-    fn is_pdf_a(&self) -> bool {
-        matches!(
-            self,
-            Validator::A1_A
-                | Validator::A1_B
-                | Validator::A2_A
-                | Validator::A2_B
-                | Validator::A2_U
-                | Validator::A3_A
-                | Validator::A3_B
-                | Validator::A3_U
-                | Validator::A4
-                | Validator::A4F
-                | Validator::A4E
-        )
+    fn is_pdf_a(self) -> bool {
+        matches!(self, Validator::Archival(_))
     }
 
-    pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
-        // TODO: Also needed for PDF/UA?
+    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter, all_validators: &Validators) {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         if self.is_pdf_a() {
+            let combined_with_ua1 = all_validators
+                .iter()
+                .any(|validator| validator == Validator::UniversalAccessibility(UA1));
             let mut extension_schemas = xmp.extension_schemas();
             extension_schemas
                 .xmp_media_management()
                 .properties()
                 .describe_instance_id();
             extension_schemas.pdf().properties().describe_all();
+
+            if combined_with_ua1 {
+                // The pdfuaid namespace written by the UA-1 validator is not
+                // part of the predefined XMP schemas allowed by PDF/A-1/2/3.
+                // When combining PDF/A with PDF/UA-1, it must be declared as a
+                // PDF/A extension schema so that PDF/A validators accept it.
+                let mut schema = extension_schemas.add_schema();
+                schema.namespace(xmp_writer::Namespace::PdfUAId);
+                schema
+                    .properties()
+                    .add_property()
+                    .name("part")
+                    .value_type("Integer")
+                    .category(true)
+                    .description(
+                        "Indicates which part of ISO 14289 (PDF/UA) this document conforms to",
+                    );
+            }
             extension_schemas.finish();
         }
 
         match self {
-            Validator::None => {}
-            Validator::A1_A => {
+            Validator::Archival(A1_A) => {
                 xmp.pdfa_part(1);
                 xmp.pdfa_conformance("A");
             }
-            Validator::A1_B => {
+            Validator::Archival(A1_B) => {
                 xmp.pdfa_part(1);
                 xmp.pdfa_conformance("B");
             }
-            Validator::A2_A => {
+            Validator::Archival(A2_A) => {
                 xmp.pdfa_part(2);
                 xmp.pdfa_conformance("A");
             }
-            Validator::A2_B => {
+            Validator::Archival(A2_B) => {
                 xmp.pdfa_part(2);
                 xmp.pdfa_conformance("B");
             }
-            Validator::A2_U => {
+            Validator::Archival(A2_U) => {
                 xmp.pdfa_part(2);
                 xmp.pdfa_conformance("U");
             }
-            Validator::A3_A => {
+            Validator::Archival(A3_A) => {
                 xmp.pdfa_part(3);
                 xmp.pdfa_conformance("A");
             }
-            Validator::A3_B => {
+            Validator::Archival(A3_B) => {
                 xmp.pdfa_part(3);
                 xmp.pdfa_conformance("B");
             }
-            Validator::A3_U => {
+            Validator::Archival(A3_U) => {
                 xmp.pdfa_part(3);
                 xmp.pdfa_conformance("U");
             }
-            Validator::A4 => {
+            Validator::Archival(A4) => {
                 xmp.pdfa_part(4);
                 xmp.pdfa_rev(2020);
             }
-            Validator::A4F => {
+            Validator::Archival(A4F) => {
                 xmp.pdfa_part(4);
                 xmp.pdfa_rev(2020);
                 xmp.pdfa_conformance("F");
             }
-            Validator::A4E => {
+            Validator::Archival(A4E) => {
                 xmp.pdfa_part(4);
                 xmp.pdfa_rev(2020);
                 xmp.pdfa_conformance("E");
             }
-            Validator::UA1 => {
+            Validator::UniversalAccessibility(UA1) => {
                 xmp.pdfua_part(1);
             }
         }
     }
 
-    pub(crate) fn requires_codepoint_mappings(&self) -> bool {
+    pub(crate) fn requires_codepoint_mappings(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => false,
-            Validator::A1_A | Validator::A1_B => *self != Validator::A1_B,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => *self != Validator::A2_B,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => *self != Validator::A3_B,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => true,
+            Validator::Archival(A1_A | A1_B) => self != Validator::Archival(A1_B),
+            Validator::Archival(A2_A | A2_B | A2_U) => self != Validator::Archival(A2_B),
+            Validator::Archival(A3_A | A3_B | A3_U) => self != Validator::Archival(A3_B),
+            Validator::Archival(A4 | A4F | A4E) => true,
+            Validator::UniversalAccessibility(UA1) => true,
         }
     }
 
-    pub(crate) fn requires_display_doc_title(&self) -> bool {
+    pub(crate) fn requires_display_doc_title(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => false,
-            Validator::A1_A | Validator::A1_B => false,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
-            Validator::A4 | Validator::A4F | Validator::A4E => false,
-            Validator::UA1 => true,
+            Validator::Archival(A1_A | A1_B) => false,
+            Validator::Archival(A2_A | A2_B | A2_U) => false,
+            Validator::Archival(A3_A | A3_B | A3_U) => false,
+            Validator::Archival(A4 | A4F | A4E) => false,
+            Validator::UniversalAccessibility(UA1) => true,
         }
     }
 
-    pub(crate) fn requires_no_device_cs(&self) -> bool {
+    pub(crate) fn requires_no_device_cs(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => false,
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => false,
+            Validator::Archival(A1_A | A1_B) => true,
+            Validator::Archival(A2_A | A2_B | A2_U) => true,
+            Validator::Archival(A3_A | A3_B | A3_U) => true,
+            Validator::Archival(A4 | A4F | A4E) => true,
+            Validator::UniversalAccessibility(UA1) => false,
         }
     }
 
-    pub(crate) fn requires_annotation_flags(&self) -> bool {
+    pub(crate) fn requires_annotation_flags(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None | Validator::UA1 => false,
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
+            Validator::UniversalAccessibility(UA1) => false,
+            Validator::Archival(A1_A | A1_B) => true,
+            Validator::Archival(A2_A | A2_B | A2_U) => true,
+            Validator::Archival(A3_A | A3_B | A3_U) => true,
+            Validator::Archival(A4 | A4F | A4E) => true,
         }
     }
 
-    pub(crate) fn requires_tagging(&self) -> bool {
+    pub(crate) fn requires_tagging(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => false,
-            Validator::A1_A => true,
-            Validator::A1_B => false,
-            Validator::A2_A => true,
-            Validator::A2_B | Validator::A2_U => false,
-            Validator::A3_A => true,
-            Validator::A3_B | Validator::A3_U => false,
-            Validator::A4 | Validator::A4F | Validator::A4E => false,
-            Validator::UA1 => true,
+            Validator::Archival(A1_A) => true,
+            Validator::Archival(A1_B) => false,
+            Validator::Archival(A2_A) => true,
+            Validator::Archival(A2_B | A2_U) => false,
+            Validator::Archival(A3_A) => true,
+            Validator::Archival(A3_B | A3_U) => false,
+            Validator::Archival(A4 | A4F | A4E) => false,
+            Validator::UniversalAccessibility(UA1) => true,
         }
     }
 
-    pub(crate) fn xmp_metadata(&self) -> bool {
+    pub(crate) fn xmp_metadata(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => false,
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => true,
+            Validator::Archival(A1_A | A1_B) => true,
+            Validator::Archival(A2_A | A2_B | A2_U) => true,
+            Validator::Archival(A3_A | A3_B | A3_U) => true,
+            Validator::Archival(A4 | A4F | A4E) => true,
+            Validator::UniversalAccessibility(UA1) => true,
         }
     }
 
-    pub(crate) fn requires_binary_header(&self) -> bool {
+    pub(crate) fn requires_binary_header(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => false,
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => false,
+            Validator::Archival(A1_A | A1_B) => true,
+            Validator::Archival(A2_A | A2_B | A2_U) => true,
+            Validator::Archival(A3_A | A3_B | A3_U) => true,
+            Validator::Archival(A4 | A4F | A4E) => true,
+            Validator::UniversalAccessibility(UA1) => false,
         }
     }
 
-    pub(crate) fn requires_file_provenance_information(&self) -> bool {
+    pub(crate) fn requires_file_provenance_information(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => false,
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => false,
+            Validator::Archival(A1_A | A1_B) => true,
+            Validator::Archival(A2_A | A2_B | A2_U) => true,
+            Validator::Archival(A3_A | A3_B | A3_U) => true,
+            Validator::Archival(A4 | A4F | A4E) => true,
+            Validator::UniversalAccessibility(UA1) => false,
         }
     }
 
-    pub(crate) fn prohibits_instance_id_in_xmp_metadata(&self) -> bool {
+    pub(crate) fn prohibits_instance_id_in_xmp_metadata(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => false,
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
-            Validator::A4 | Validator::A4F | Validator::A4E => false,
-            Validator::UA1 => false,
+            Validator::Archival(A1_A | A1_B) => true,
+            Validator::Archival(A2_A | A2_B | A2_U) => false,
+            Validator::Archival(A3_A | A3_B | A3_U) => false,
+            Validator::Archival(A4 | A4F | A4E) => false,
+            Validator::UniversalAccessibility(UA1) => false,
         }
     }
 
-    pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype<'_>> {
+    pub(crate) fn output_intent(self) -> Option<OutputIntentSubtype<'static>> {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None => None,
-            Validator::A1_A | Validator::A1_B => Some(OutputIntentSubtype::PDFA),
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
-            Validator::A4 | Validator::A4F | Validator::A4E => Some(OutputIntentSubtype::PDFA),
-            Validator::UA1 => None,
+            Validator::Archival(A1_A | A1_B) => Some(OutputIntentSubtype::PDFA),
+            Validator::Archival(A2_A | A2_B | A2_U) => Some(OutputIntentSubtype::PDFA),
+            Validator::Archival(A3_A | A3_B | A3_U) => Some(OutputIntentSubtype::PDFA),
+            Validator::Archival(A4 | A4F | A4E) => Some(OutputIntentSubtype::PDFA),
+            Validator::UniversalAccessibility(UA1) => None,
         }
     }
 
-    pub(crate) fn allows_info_dict(&self) -> bool {
+    pub(crate) fn allows_info_dict(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None
-            | Validator::A1_A
-            | Validator::A1_B
-            | Validator::A2_A
-            | Validator::A2_B
-            | Validator::A2_U
-            | Validator::A3_A
-            | Validator::A3_B
-            | Validator::A3_U
-            | Validator::UA1 => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => false,
+            Validator::Archival(A1_A | A1_B | A2_A | A2_B | A2_U | A3_A | A3_B | A3_U) => true,
+            Validator::UniversalAccessibility(UA1) => true,
+            Validator::Archival(A4 | A4F | A4E) => false,
         }
     }
 
-    pub(crate) fn write_embedded_files(&self, is_empty: bool) -> bool {
+    pub(crate) fn write_embedded_files(self, is_empty: bool) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
+
         match self {
-            Validator::None
-            | Validator::A1_A
-            | Validator::A1_B
-            | Validator::A2_A
-            | Validator::A2_B
-            | Validator::A2_U
-            | Validator::A3_A
-            | Validator::A3_B
-            | Validator::A3_U
-            | Validator::A4
-            | Validator::A4E
-            | Validator::UA1 => !is_empty,
+            Validator::Archival(A1_A | A1_B | A2_A | A2_B | A2_U | A3_A | A3_B | A3_U | A4 | A4E)
+            | Validator::UniversalAccessibility(UA1) => !is_empty,
             // For this one we always need to write an `EmbeddedFiles` entry,
             // even if empty.
-            Validator::A4F => true,
+            Validator::Archival(A4F) => true,
         }
     }
 
-    pub(crate) fn allows_associated_files(&self) -> bool {
-        match self {
-            // PDF 2.0 _does_ support associated files. However, in this case the document has to
-            // provide a modification date, since it's a required field. Therefore, it's easier to
-            // just use the associated files feature, apart from PDF/A-3.
-            Validator::None => false,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::A1_A
-            | Validator::A1_B
-            | Validator::A2_A
-            | Validator::A2_B
-            | Validator::A2_U
-            | Validator::UA1 => false,
-        }
-    }
+    pub(crate) fn allows_associated_files(self) -> bool {
+        use Archival::*;
+        use UniversalAccessibility::*;
 
-    /// The string representation of the validator.
-    pub fn as_str(self) -> &'static str {
         match self {
-            Validator::None => "None",
-            Validator::A1_A => "PDF/A-1a",
-            Validator::A1_B => "PDF/A-1b",
-            Validator::A2_A => "PDF/A-2a",
-            Validator::A2_B => "PDF/A-2b",
-            Validator::A2_U => "PDF/A-2u",
-            Validator::A3_A => "PDF/A-3a",
-            Validator::A3_B => "PDF/A-3b",
-            Validator::A3_U => "PDF/A-3u",
-            Validator::A4 => "PDF/A-4",
-            Validator::A4F => "PDF/A-4f",
-            Validator::A4E => "PDF/A-4e",
-            Validator::UA1 => "PDF/UA-1",
+            Validator::Archival(A3_A | A3_B | A3_U) => true,
+            Validator::Archival(A4 | A4F | A4E) => true,
+            Validator::Archival(A1_A | A1_B | A2_A | A2_B | A2_U) => false,
+            Validator::UniversalAccessibility(UA1) => false,
         }
     }
 }

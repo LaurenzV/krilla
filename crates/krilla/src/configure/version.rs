@@ -22,6 +22,14 @@ pub enum PdfVersion {
 }
 
 impl PdfVersion {
+    pub(crate) const fn min() -> Self {
+        Self::Pdf14
+    }
+
+    pub(crate) const fn max() -> Self {
+        Self::Pdf20
+    }
+
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
         match self {
             PdfVersion::Pdf14 => xmp.pdf_version("1.4"),

@@ -16,7 +16,9 @@ use difference::{Changeset, Difference};
 use krilla::action::LinkAction;
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{cmyk, luma, rgb};
-use krilla::configure::{Configuration, PdfVersion, Validator};
+use krilla::configure::{
+    Archival, Configuration, PdfVersion, UniversalAccessibility, Validators,
+};
 use krilla::geom::{Path, PathBuilder, Point, Transform};
 use krilla::icc::ICCProfile;
 use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
@@ -921,14 +923,14 @@ pub fn settings_6() -> SerializeSettings {
 
 pub fn settings_7() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A2_B),
+        configuration: Configuration::new_with_validators(Archival::A2_B),
         ..settings_1()
     }
 }
 
 pub fn settings_8() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A2_B),
+        configuration: Configuration::new_with_validators(Archival::A2_B),
         cmyk_profile: Some(
             ICCProfile::new(&std::fs::read(ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap())
                 .unwrap(),
@@ -939,21 +941,21 @@ pub fn settings_8() -> SerializeSettings {
 
 pub fn settings_9() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A2_U),
+        configuration: Configuration::new_with_validators(Archival::A2_U),
         ..settings_1()
     }
 }
 
 pub fn settings_10() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A3_B),
+        configuration: Configuration::new_with_validators(Archival::A3_B),
         ..settings_1()
     }
 }
 
 pub fn settings_11() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A3_U),
+        configuration: Configuration::new_with_validators(Archival::A3_U),
         ..settings_1()
     }
 }
@@ -967,21 +969,21 @@ pub fn settings_12() -> SerializeSettings {
 
 pub fn settings_13() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A2_A),
+        configuration: Configuration::new_with_validators(Archival::A2_A),
         ..settings_1()
     }
 }
 
 pub fn settings_14() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A3_A),
+        configuration: Configuration::new_with_validators(Archival::A3_A),
         ..settings_1()
     }
 }
 
 pub fn settings_15() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::UA1),
+        configuration: Configuration::new_with_validators(UniversalAccessibility::UA1),
         ..settings_1()
     }
 }
@@ -1011,35 +1013,35 @@ pub fn settings_18() -> SerializeSettings {
 
 pub fn settings_19() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A1_B),
+        configuration: Configuration::new_with_validators(Archival::A1_B),
         ..settings_1()
     }
 }
 
 pub fn settings_20() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A1_A),
+        configuration: Configuration::new_with_validators(Archival::A1_A),
         ..settings_1()
     }
 }
 
 pub fn settings_22() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with(Validator::A2_B, PdfVersion::Pdf14).unwrap(),
+        configuration: Configuration::new_with(Archival::A2_B, PdfVersion::Pdf14).unwrap(),
         ..settings_1()
     }
 }
 
 pub fn settings_23() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A3_B),
+        configuration: Configuration::new_with_validators(Archival::A3_B),
         ..settings_1()
     }
 }
 
 pub fn settings_24() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A3_A),
+        configuration: Configuration::new_with_validators(Archival::A3_A),
         ..settings_1()
     }
 }
@@ -1053,21 +1055,21 @@ pub fn settings_25() -> SerializeSettings {
 
 pub fn settings_26() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A4),
+        configuration: Configuration::new_with_validators(Archival::A4),
         ..settings_1()
     }
 }
 
 pub fn settings_27() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A4F),
+        configuration: Configuration::new_with_validators(Archival::A4F),
         ..settings_1()
     }
 }
 
 pub fn settings_28() -> SerializeSettings {
     SerializeSettings {
-        configuration: Configuration::new_with_validator(Validator::A4E),
+        configuration: Configuration::new_with_validators(Archival::A4E),
         ..settings_1()
     }
 }
@@ -1080,6 +1082,17 @@ pub fn settings_30() -> SerializeSettings {
     SerializeSettings {
         configuration: Configuration::new_with_version(PdfVersion::Pdf20),
         xmp_metadata: true,
+        ..settings_1()
+    }
+}
+
+// PDF/A-3b + PDF/UA-1 combined.
+pub fn settings_31() -> SerializeSettings {
+    SerializeSettings {
+        configuration: Configuration::new_with_validators(
+            Validators::with(Some(Archival::A3_B), Some(UniversalAccessibility::UA1)).unwrap(),
+        )
+        ,
         ..settings_1()
     }
 }
