@@ -551,25 +551,8 @@ impl Validator {
         }
     }
 
-    fn is_pdf_a(&self) -> bool {
-        matches!(
-            self,
-            Validator::A1_A
-                | Validator::A1_B
-                | Validator::A2_A
-                | Validator::A2_B
-                | Validator::A2_U
-                | Validator::A3_A
-                | Validator::A3_B
-                | Validator::A3_U
-                | Validator::A4
-                | Validator::A4F
-                | Validator::A4E
-        )
-    }
-
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter, all_validators: &[Validator]) {
-        if self.is_pdf_a() {
+        if matches!(self.standard_family(), StandardFamily::PdfA) {
             let combined_with_ua1 = all_validators.contains(&Validator::UA1);
             let mut extension_schemas = xmp.extension_schemas();
             extension_schemas
