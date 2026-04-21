@@ -583,17 +583,7 @@ impl Validator {
                 // part of the predefined XMP schemas allowed by PDF/A-1/2/3.
                 // When combining PDF/A with PDF/UA-1, it must be declared as a
                 // PDF/A extension schema so that PDF/A validators accept it.
-                let mut schema = extension_schemas.add_schema();
-                schema.namespace(xmp_writer::Namespace::PdfUAId);
-                schema
-                    .properties()
-                    .add_property()
-                    .name("part")
-                    .value_type("Integer")
-                    .category(true)
-                    .description(
-                        "Indicates which part of ISO 14289 (PDF/UA) this document conforms to",
-                    );
+                extension_schemas.pdfua_id().properties().describe_part();
             }
             extension_schemas.finish();
         }
@@ -646,6 +636,9 @@ impl Validator {
                 xmp.pdfa_conformance("E");
             }
             Validator::UA1 => {
+                // Should we write more properties from this schema in the
+                // future, the branch `combined_with_ua1` above will need an
+                // update.
                 xmp.pdfua_part(1);
             }
         }

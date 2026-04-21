@@ -51,7 +51,7 @@ syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.12.0"
 tiny-skia-path = "0.12.0"
 usvg = "0.47.0"
-xmp-writer = "0.3.2"
+xmp-writer = "0.3.3"
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.18.1"
 zune-jpeg = "0.5.5"
