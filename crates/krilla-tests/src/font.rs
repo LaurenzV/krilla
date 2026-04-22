@@ -135,7 +135,8 @@ mod svg {
     use krilla_macros::visreg;
 
     use crate::{
-        all_glyphs_to_pdf, purple_fill, red_fill, EMOJI_ONE, SVG_EXTRA, TWITTER_COLOR_EMOJI,
+        all_glyphs_to_pdf, purple_fill, red_fill, EMOJI_ONE, NOTO_COLOR_EMOJI_SVG, SVG_EXTRA,
+        TWITTER_COLOR_EMOJI,
     };
 
     #[visreg(document, all)]
@@ -147,6 +148,12 @@ mod svg {
     #[visreg(document)]
     fn font_emoji_one(document: &mut Document) {
         let font_data = EMOJI_ONE.clone();
+        all_glyphs_to_pdf(font_data, None, false, document);
+    }
+
+    #[visreg(document, all)]
+    fn font_noto_color_emoji_svg(document: &mut Document) {
+        let font_data = NOTO_COLOR_EMOJI_SVG.clone();
         all_glyphs_to_pdf(font_data, None, false, document);
     }
 
