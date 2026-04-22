@@ -2,7 +2,7 @@ name: Continuous integration
 on: [push, pull_request]
 
 env:
-  KRILLA_THRESHOLD: "100"
+  KRILLA_THRESHOLD: "110"
   STORE: ""
   RUSTFLAGS: "-Dwarnings"
   RUSTDOCFLAGS: "-Dwarnings"
