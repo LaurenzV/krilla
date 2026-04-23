@@ -548,7 +548,8 @@ impl ColorPainter for ColrBuilder {
     }
 
     fn pop_layer(&mut self) {
-        let (Some(composite), Some(mut instructions)) = (self.layers.pop(), self.stack.pop()) else {
+        let (Some(composite), Some(mut instructions)) = (self.layers.pop(), self.stack.pop())
+        else {
             self.error = true;
             return;
         };
@@ -558,7 +559,7 @@ impl ColorPainter for ColrBuilder {
             return;
         };
 
-        // See the skrifa code to see how it handles composite operations. 
+        // See the skrifa code to see how it handles composite operations.
         // https://github.com/googlefonts/fontations/blob/fd0178ce4ea48301a7f06b35a6fce9879c102292/skrifa/src/color/traversal.rs#L566-L593
         // Everything is wrapped in a `SrcOver` base layer.
         if composite == CompositeMode::SrcOver {
