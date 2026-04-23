@@ -127,7 +127,7 @@ mod colr {
         all_glyphs_to_pdf(font_data, None, false, document);
     }
 
-    #[visreg(document, pdfium)]
+    #[visreg(document)]
     fn font_noto_color_emoji_composite_modes(document: &mut Document) {
         let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0).unwrap();
         let emojis = "🇫🇷 🇩🇪 🇮🇹 🇬🇧 👓 📦 🗞";
