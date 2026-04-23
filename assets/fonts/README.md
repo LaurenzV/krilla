@@ -2,7 +2,7 @@
 
 The emoji fonts were subsetted using the following commands:
 
-- Noto Color Emoji COLR: `fonttools subset NotoColorEmoji_COLR.ttf --text-file=assets/emojis.txt --text='🇫🇷 🇩🇪 🇮🇹 🇬🇧 👓 📦 🗞' --output-file=assets/fonts/NotoColorEmoji.COLR.subset.ttf`
+- Noto Color Emoji COLR: `fonttools subset --text-file=../emojis.txt --text-file=../emojis_colr_composite.txt --drop-tables+=SVG --output-file=NotoColorEmoji.COLR.subset.ttf NotoColorEmoji_COLR.ttf`
 - Noto Color Emoji SVG: `fonttools subset --text-file=../emojis.txt --output-file=NotoColorEmoji.SVG.subset.ttf --drop-tables+=COLR NotoColorEmoji-Regular.ttf`
 - Noto Color EMOJI EBDT: `hb-subset --text-file ../emojis.txt --output-file=NotoColorEmoji.CBDT.subset.ttf NotoColorEmoji.ttf`
 - Twitter Color Emoji: `fonttools subset --text-file=../emojis.txt --output-file=TwitterColorEmoji.subset.ttf TwitterColorEmoji-SVGinOT.ttf`

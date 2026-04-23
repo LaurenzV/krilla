@@ -130,11 +130,11 @@ mod colr {
     #[visreg(document)]
     fn font_noto_color_emoji_composite_modes(document: &mut Document) {
         let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0).unwrap();
-        let emojis = "🇫🇷 🇩🇪 🇮🇹 🇬🇧 👓 📦 🗞";
+        let emojis = include_str!("../../../assets/emojis_colr_composite.txt");
         let emojis = emojis.split_whitespace().collect::<Vec<_>>();
 
         let cell_size = 40.0;
-        let num_cols = 7;
+        let num_cols = 10;
         let height = (emojis.len() as f32 / num_cols as f32).ceil() * cell_size;
 
         let mut page = document.start_page_with(PageSettings::from_wh(400.0, height).unwrap());
