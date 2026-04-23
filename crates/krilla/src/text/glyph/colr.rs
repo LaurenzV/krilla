@@ -8,6 +8,7 @@ use tiny_skia_path::{Path, PathBuilder};
 use crate::geom::Transform;
 use crate::graphics::blend::BlendMode;
 use crate::graphics::color::rgb;
+use crate::graphics::mask::{Mask, MaskType};
 use crate::graphics::paint::{
     Fill, FillRule, LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient,
 };
@@ -57,13 +58,19 @@ pub(crate) fn draw_glyph(
 fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
     for instruction in instructions {
         match instruction {
-            Instruction::Layer(blend, instructions) => {
+            Instruction::Layer(mode, instructions) => {
+                let blend = mode.to_blend_mode().unwrap_or(BlendMode::Normal);
                 surface.push_blend_mode(blend);
                 surface.push_isolated();
                 interpret(instructions, surface);
                 surface.pop();
                 surface.pop();
             }
+            Instruction::Composite {
+                source,
+                mode,
+                backdrop,
+            } => interpret_composite(source, mode, backdrop, surface),
             Instruction::Filled(fill, mut clips) => {
                 let filled = clips.split_off(clips.len() - 1);
 
@@ -91,21 +98,121 @@ fn interpret(instructions: Vec<Instruction>, surface: &mut Surface) {
     }
 }
 
+fn interpret_composite(
+    source: Vec<Instruction>,
+    mode: CompositeMode,
+    backdrop: Vec<Instruction>,
+    surface: &mut Surface,
+) {
+    match mode {
+        CompositeMode::Clear => {}
+        CompositeMode::Src => {
+            surface.push_isolated();
+            interpret(source, surface);
+            surface.pop();
+        }
+        CompositeMode::Dest => {
+            surface.push_isolated();
+            interpret(backdrop, surface);
+            surface.pop();
+        }
+        CompositeMode::SrcOver => {
+            surface.push_isolated();
+            interpret(backdrop, surface);
+            interpret(source, surface);
+            surface.pop();
+        }
+        CompositeMode::DestOver => {
+            surface.push_isolated();
+            interpret(source, surface);
+            interpret(backdrop, surface);
+            surface.pop();
+        }
+        CompositeMode::SrcIn => interpret_masked(source, backdrop, surface),
+        CompositeMode::DestIn => interpret_masked(backdrop, source, surface),
+        _ => {
+            let Some(blend) = mode.to_blend_mode() else {
+                surface.push_isolated();
+                interpret(backdrop, surface);
+                interpret(source, surface);
+                surface.pop();
+                return;
+            };
+
+            surface.push_isolated();
+            interpret(backdrop, surface);
+            surface.push_blend_mode(blend);
+            surface.push_isolated();
+            interpret(source, surface);
+            surface.pop();
+            surface.pop();
+            surface.pop();
+        }
+    }
+}
+
+fn interpret_masked(visible: Vec<Instruction>, mask: Vec<Instruction>, surface: &mut Surface) {
+    let mask_stream = {
+        let mut builder = surface.stream_builder();
+        let mut mask_surface = builder.surface();
+        interpret(mask, &mut mask_surface);
+        mask_surface.finish();
+        builder.finish()
+    };
+
+    surface.push_mask(Mask::new(mask_stream, MaskType::Alpha));
+    interpret(visible, surface);
+    surface.pop();
+}
+
 /// The context necessary for creating the bytecode of a COLR-based glyph.
 struct ColrBuilder {
     font: Font,
     context_color: rgb::Color,
     clips: Vec<Vec<Path>>,
     stack: Vec<Vec<Instruction>>,
-    layers: Vec<BlendMode>,
+    layers: Vec<CompositeMode>,
     transforms: Vec<Transform>,
     error: bool,
 }
 
 /// A bytecode instruction for drawing a COLR glyph.
 enum Instruction {
-    Layer(BlendMode, Vec<Instruction>),
+    Layer(CompositeMode, Vec<Instruction>),
+    Composite {
+        source: Vec<Instruction>,
+        mode: CompositeMode,
+        backdrop: Vec<Instruction>,
+    },
     Filled(Box<Fill>, Vec<Path>),
+}
+
+trait CompositeModeExt {
+    fn to_blend_mode(self) -> Option<BlendMode>;
+}
+
+impl CompositeModeExt for CompositeMode {
+    fn to_blend_mode(self) -> Option<BlendMode> {
+        match self {
+            CompositeMode::SrcOver => Some(BlendMode::Normal),
+            CompositeMode::Screen => Some(BlendMode::Screen),
+            CompositeMode::Overlay => Some(BlendMode::Overlay),
+            CompositeMode::Darken => Some(BlendMode::Darken),
+            CompositeMode::Lighten => Some(BlendMode::Lighten),
+            CompositeMode::ColorDodge => Some(BlendMode::ColorDodge),
+            CompositeMode::ColorBurn => Some(BlendMode::ColorBurn),
+            CompositeMode::HardLight => Some(BlendMode::HardLight),
+            CompositeMode::SoftLight => Some(BlendMode::SoftLight),
+            CompositeMode::Difference => Some(BlendMode::Difference),
+            CompositeMode::Exclusion => Some(BlendMode::Exclusion),
+            CompositeMode::Multiply => Some(BlendMode::Multiply),
+            CompositeMode::HslHue => Some(BlendMode::Hue),
+            CompositeMode::HslColor => Some(BlendMode::Color),
+            CompositeMode::HslLuminosity => Some(BlendMode::Luminosity),
+            CompositeMode::HslSaturation => Some(BlendMode::Saturation),
+            _ => None,
+        }
+    }
 }
 
 impl ColrBuilder {
@@ -436,32 +543,12 @@ impl ColorPainter for ColrBuilder {
     }
 
     fn push_layer(&mut self, composite_mode: CompositeMode) {
-        let mode = match composite_mode {
-            CompositeMode::SrcOver => BlendMode::Normal,
-            CompositeMode::Screen => BlendMode::Screen,
-            CompositeMode::Overlay => BlendMode::Overlay,
-            CompositeMode::Darken => BlendMode::Darken,
-            CompositeMode::Lighten => BlendMode::Lighten,
-            CompositeMode::ColorDodge => BlendMode::ColorDodge,
-            CompositeMode::ColorBurn => BlendMode::ColorBurn,
-            CompositeMode::HardLight => BlendMode::HardLight,
-            CompositeMode::SoftLight => BlendMode::SoftLight,
-            CompositeMode::Difference => BlendMode::Difference,
-            CompositeMode::Exclusion => BlendMode::Exclusion,
-            CompositeMode::Multiply => BlendMode::Multiply,
-            CompositeMode::HslHue => BlendMode::Hue,
-            CompositeMode::HslColor => BlendMode::Color,
-            CompositeMode::HslLuminosity => BlendMode::Luminosity,
-            CompositeMode::HslSaturation => BlendMode::Saturation,
-            _ => BlendMode::Normal,
-        };
-
-        self.layers.push(mode);
+        self.layers.push(composite_mode);
         self.stack.push(vec![]);
     }
 
     fn pop_layer(&mut self) {
-        let (Some(blend), Some(instructions)) = (self.layers.pop(), self.stack.pop()) else {
+        let (Some(composite), Some(mut instructions)) = (self.layers.pop(), self.stack.pop()) else {
             self.error = true;
             return;
         };
@@ -471,6 +558,23 @@ impl ColorPainter for ColrBuilder {
             return;
         };
 
-        stack.push(Instruction::Layer(blend, instructions));
+        // See the skrifa code to see how it handles composite operations. 
+        // https://github.com/googlefonts/fontations/blob/fd0178ce4ea48301a7f06b35a6fce9879c102292/skrifa/src/color/traversal.rs#L566-L593
+        // Everything is wrapped in a `SrcOver` base layer.
+        if composite == CompositeMode::SrcOver {
+            if let Some(Instruction::Layer(_, _)) = instructions.last() {
+                let Some(Instruction::Layer(mode, source)) = instructions.pop() else {
+                    unreachable!();
+                };
+                stack.push(Instruction::Composite {
+                    source,
+                    mode,
+                    backdrop: instructions,
+                });
+                return;
+            }
+        }
+
+        stack.push(Instruction::Layer(composite, instructions));
     }
 }
