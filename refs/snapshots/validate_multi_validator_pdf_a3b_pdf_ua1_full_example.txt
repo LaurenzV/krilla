@@ -1,0 +1,390 @@
+%PDF-1.7
+%€€€€
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [17 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /Outlines
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /OutputIntent
+  /DestOutputProfile 16 0 R
+  /S /GTS_PDFA1
+  /OutputConditionIdentifier (Custom)
+  /OutputCondition (sRGB)
+  /RegistryName ()
+  /Info (sRGB v4.2)
+>>
+endobj
+
+4 0 obj
+[3 0 R]
+endobj
+
+5 0 obj
+<<
+  /Type /StructTreeRoot
+  /RoleMap <<
+    /Datetime /Span
+    /Terms /Part
+    /Title /P
+    /Strong /Span
+    /Em /Span
+  >>
+  /K [7 0 R]
+  /ParentTree <<
+    /Nums [0 6 0 R]
+  >>
+  /ParentTreeNextKey 1
+>>
+endobj
+
+6 0 obj
+[7 0 R]
+endobj
+
+7 0 obj
+<<
+  /Type /StructElem
+  /S /Document
+  /P 5 0 R
+  /K [0]
+  /Pg 17 0 R
+>>
+endobj
+
+8 0 obj
+<<
+  /Type /Font
+  /Subtype /Type0
+  /BaseFont /IKTDBX+NotoSans-Regular
+  /Encoding /Identity-H
+  /DescendantFonts [9 0 R]
+  /ToUnicode 12 0 R
+>>
+endobj
+
+9 0 obj
+<<
+  /Type /Font
+  /Subtype /CIDFontType2
+  /BaseFont /IKTDBX+NotoSans-Regular
+  /CIDSystemInfo <<
+    /Registry (Adobe)
+    /Ordering (Identity)
+    /Supplement 0
+  >>
+  /FontDescriptor 11 0 R
+  /DW 0
+  /CIDToGIDMap /Identity
+  /W [0 0 600 1 1 741 2 2 564 3 3 258 4 4 605 5 5 268 6 6 260 7 7 605 8 8 730 9 9 519 10 10 372 11 11 639 12 12 322 13 13 572 14 14 615 15 15 572 16 16 731 17 17 572]
+>>
+endobj
+
+10 0 obj
+<<
+  /Length 22
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789CFBFFFF000005BE02BF
+endstream
+endobj
+
+11 0 obj
+<<
+  /Type /FontDescriptor
+  /FontName /IKTDBX+NotoSans-Regular
+  /Flags 131076
+  /FontBBox [0 -129 669 760]
+  /ItalicAngle 0
+  /Ascent 1069
+  /Descent -293
+  /CapHeight 714
+  /StemV 95.4
+  /CIDSet 10 0 R
+  /FontFile2 13 0 R
+>>
+endobj
+
+12 0 obj
+<<
+  /Length 844
+  /Type /CMap
+  /WMode 0
+>>
+stream
+%!PS-Adobe-3.0 Resource-CMap
+%%DocumentNeededResources: procset CIDInit
+%%IncludeResource: procset CIDInit
+%%BeginResource: CMap Custom
+%%Title: (Custom Adobe Identity 0)
+%%Version: 1
+%%EndComments
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo 3 dict dup begin
+    /Registry (Adobe) def
+    /Ordering (Identity) def
+    /Supplement 0 def
+end def
+/CMapName /Custom def
+/CMapVersion 1 def
+/CMapType 0 def
+/WMode 0 def
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+17 beginbfchar
+<0001> <0048>
+<0002> <0065>
+<0003> <006C>
+<0004> <006F>
+<0005> <002C>
+<0006> <0020>
+<0007> <0050>
+<0008> <0044>
+<0009> <0046>
+<000A> <002F>
+<000B> <0041>
+<000C> <002D>
+<000D> <0033>
+<000E> <0062>
+<000F> <002B>
+<0010> <0055>
+<0011> <0031>
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+%%EndResource
+%%EOF
+endstream
+endobj
+
+13 0 obj
+<<
+  /Length 3343
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C8D957D6C53D719C67FE7D8F12501526E881D1A6DCC1F1043200EE4C60E2559D240
+3E21900F489A049170EB18DBE0C469EC90A6B485AACDC62855D7B22FA9EDFEED5F6C48
+55B74993A64EDA14C9B46C9AA6695A575475A2DA2A6DA29B16A55BE34CF7E48642BA4A
+F595E5E7C8EFFB3ECFFBBCE79C8B000AB988834DF1D4ECE93F9CBFE4045E05C7622266
+8E05FE76FC1638BF0344128998B9E18D82CBE07C1BD89618CF3EBEBDD31907E71DA023
+958E9A858FADCB40C13EA062DC7C7C92B0B80005A700EF84391E339FFCD6275070119C
+A1C97426CBC7E2BB50781D689B9C8A4D265C57E6A07011D0908C80F844E670A081A1FB
+F4ED3EDD37225EC9FF4084F337646E2962C8310426C867658EF5E00BE83E3DA05BC186
+7C7638FFF2F0B098181647F26FC85CFE772284A46E79410AE9A78CAD206A3C1EB7DBE7
+F11835913AB7CB15F05754846B239132BF4BF35554886DADD170FE2539D4637457EEEC
+A9EB9A6EAE3FDBD6D4A9095D344A7FC37867F8C4E8E69223257AE3F9A1C1A75B3A7A3B
+5AFA11F403D7E4220E3002BA716D70502E627307A59F8D3C08A27495CEA8F1780A4A2D
+0DE1DA8A80DF2583DFCCB4A71FFE46A633DD943F7BB8AFB7ABABAFEF90D838F772F353
+4373DF6E3E3F349A4E8F8EA65220D8B97C81B7C8B20EEA5C2E2D1089D4196F6DDCBBA5
+B9F8ABDA48327C21F2D0A55A8BDB72A952B954AAFA7697BA5C81801ED0CB02FA0AB3D8
+7AE562F8A9B37DC36F9EE8383D3628731363F5F187F31FC9DC91FC8707BA5B5BEC2AAF
+C91C85E82B1D58C91E8F565B6121AF7CEDD7D7E7FF9CFAE1C0E80BCF4C9BC22F526FFE
+54E67A5E39F7E2DCD26F2DB526883B2ADF72C6E756CFCF87C58BF91BC29FBF2573DD4B
+DD565C1188336AF6081110E24C7E61401459339739AB1B403E2DDF41B374F8823E2D20
+0C214232E872699A217D03F9DBFD274459AFF0E43F70146F746A25AEDE0FDE7B4FBEB3
+64C8827595551BBE56AFFF11C10E6E8B7261583C7561C3BDE39FB78F1EB5F8AB9617A4
+43FE9E4AD5A5E6F6ACF8E5AF08863DAB830A84EF4E4C0B46AC298ABFF7B40C1CDF3F3B
+BAEFD4EEAAC49E53FDC9D1D6B6C1136D0DFBFB76ECAE78AC63725C063AFA8B9D4583ED
+8D6644F7F4791E3C7CE060FDE1435FAF7DC85FDEB075F798D55BFFF282DC231771E383
+CDA52ECD50C5DD6ABF04035A403736FB5D6EB7BD63AE396441594FD3D8EC13D1A69E32
+ADA469F0FBFD079A073BDA6593BF5EF7879EBF7CF94AC8DB2217F3EF3F1A77469367C6
+6E581DD69096EBE431EBD408C31D7007C281B0113644F3FC7CC7FC7C8778AEFDE6CDF6
+DF5891C3CB0BF2A2CC5102DB574C08EB86BEC2AE1BF262C3F9D1B9E7874F8E988F0C7D
+7A68A6F5A519F1767EEF23A7E2BDE226822110519963833A9DB5116B936AC13A434407
+A4DC545EDA15FA65A7F8D7AEDAAF6CF2E88DF5DFC3BA93A4B8F1E1C7977F32FA40C3BF
+7138FE6A4DFB56508BD8BFCD4B57F3E78AEE141C045C2B7B014B27CEAAFCBBB07ECBD2
+D5FF3E57744755BAF75322071991B731652D7542D22F4F522736B05338419EC4947FC2
+941AA6C852242F8038C00ED940958CD32F1BA891EF322C1BAC8E28651727497295D779
+9D1C1F9117C5A246348A27C58FC5AFC45FC4A72B9A28114EB6308B6B8D1EA75A17F323
+1C08672190001B0B4A48D85852CC13367610E1928D9DF8F9858D0B28E77D1BBBF0F21F
+1B6BB488721BAFA3528CD8B8901D62B5CE7A1AC5751B6FA041FCC3C61B855F56DAB898
+5A4717074933C92C53248993208B971AF6B09730550AD5B0172FEDA4491327450C2F5D
+589921BC3493228597BEBBF919B58A9121C614E788314688A3A4C992C6CB314C26C8A8
+9838D3A43099A286107BD8431DF5B4D34D37EDD4DFCD5ACDA95A93F5F9AADE3511034A
+4586246926546FAB3C5FBE7652D535F192650A9331628CAB98B3784973FA0BFD39A258
+AD3AB34CAA7F3A55669C2413C4D57A82E8FF8D6C511E5AAE5ABA8F13C3645C399C6592
+FD5453CD8C7A42C4EF610F1125CD38D5C48991A5DAAE9BA6FA0BB2C7D7707F56214396
+69C6947BC749D84EB4A9786BA71C53DD6799516E58AA57225224891253BE5AF3F732CD
+84F26D4AB99850B1C7E8A40B2FDD8A75E2BECA5DF755D88DF77393DC4B487DBDF7284B
+DD97F5D9E4CE619254737DD49ED00C49A56365AE6D34D3AB7096FD78EFFA94B19DCA10
+55276452EDEF90529122449A29E254D34D1B5D6BDCFD7239F67B0F965FA566CDDD66DF
+70C02E3AE8A68F077060106427256C63131E5A29669FF5F6FF99589EBBEE7C81FF0106
+58ED30
+endstream
+endobj
+
+14 0 obj
+[/ICCBased 15 0 R]
+endobj
+
+15 0 obj
+<<
+  /Length 523
+  /N 1
+  /Range [0 1]
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C758FB14AC35018464F8CB555AA0E76AC10449C14441F40A4605D5CDA0A46A7EB4D
+6B8A4988B991529F427C031DEAEA26D8A58E6E82E0A48BB8BA28B848B972EB54C5B3FC
+CB39F07F60F9810CD5A803619426E5CABABBE3EE3AD9176C0A8C33C5AC902ADEAA6ED4
+00946829992601437C3E6299FBB0E48BC8EBDEECE7BA9DABE9BB93E6F541E7ED76D8FD
+43C6AB2B09F48079192729F00ACCB5D238052B0714A42F3CB08AC0E261AD52026B1370
+C2E0D8B406F341BE1E6D5701D31451944968FFE38C0D9C122596C16CFEBD453556577E
+AAFC1A649EB5FE5880EC29F4CFB4FE3AD7BA7F01F613F48E629188816B03238D26BC5F
+C2A40B33F730B1F70DD81E49EC
+endstream
+endobj
+
+16 0 obj
+<<
+  /Length 636
+  /N 3
+  /Range [0 1 0 1 0 1]
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C7D90BF4B027118C63FD75596580D3934141C254D05514B5381864E11F823D4A6F3
+FC51A076DDF7429ACBA1A96888466B09A2D9C61CFA0382A0210AA2ADD5A086928BAF0E
+5A50CFF27E78785EDE970794E7BC5110DD1A148AB6150EF9B57822A9B95E50F1D2CF20
+63BA21CCE548300A20F492306C2BCF0FBDDFA3C87937BDAE17D33BAFD7ABC905A5BA3B
+518E053F562EF85FEE744618C017E0334CCB064503C64BB6297909F01AEB7A1A943830
+65C5134950F6A49F6BF189E4548B2F255BD17000941AA0E53A38D5C185FCB6BC2B25BF
+F7648AB108D0078C220813C2FF47A6B79909106006645FBF7B10D9B9D9D69667117A9E
+1CE76D125C87D038729CCF53C7699C81FA08B5ADF6FE6605E6EBA01EB4BDD4315CEDC3
+C843DBF35560A80CD51B53B7F4A6A5025DD90DA89FC34002866FC1BDF60DE3E25FB1
+endstream
+endobj
+
+17 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /ColorSpace <<
+      /c0 14 0 R
+    >>
+    /Font <<
+      /f0 8 0 R
+    >>
+  >>
+  /MediaBox [0 0 595 842]
+  /StructParents 0
+  /Parent 1 0 R
+  /Contents 18 0 R
+>>
+endobj
+
+18 0 obj
+<<
+  /Length 307
+>>
+stream
+/Span <<
+  /MCID 0
+>> BDC
+q
+1 0 0 -1 0 842 cm
+/c0 cs
+0 scn
+BT
+0 Tr
+/f0 20 Tf
+1 0 0 -1 0 100 Tm
+[(\000\001\000\002\000\003\000\003\000\004\000\005\000\006\000\007\000\b\000\t\000\n\000\013\000\f\000\r\000\016\000\006\000\017\000\006\000\007\000\b\000\t\000\n\000\020) 10 (\000\013\000\f\000\021)] TJ
+ET
+Q
+EMC
+endstream
+endobj
+
+19 0 obj
+<<
+  /Title (a nice title)
+  /ModDate (D:20010101000000Z)
+  /CreationDate (D:20010101000000Z)
+>>
+endobj
+
+20 0 obj
+<<
+  /Length 4663
+  /Type /Metadata
+  /Subtype /XML
+>>
+stream
+<?xpacket begin="ï»¿" id="W5M0MpCehiHzreSzNTczkc9d"?><x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="xmp-writer"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"  xmlns:xmp="http://ns.adobe.com/xap/1.0/"  xmlns:stEvt="http://ns.adobe.com/xap/1.0/sType/ResourceEvent#"  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"  xmlns:xmpTPg="http://ns.adobe.com/xap/1.0/t/pg/"  xmlns:pdf="http://ns.adobe.com/pdf/1.3/"  xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"  xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/"  xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/"  xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#"  xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#" ><dc:title><rdf:Alt><rdf:li xml:lang="x-default">a nice title</rdf:li></rdf:Alt></dc:title><dc:language><rdf:Bag><rdf:li>en</rdf:li></rdf:Bag></dc:language><xmp:ModifyDate>2001-01-01T00:00:00Z</xmp:ModifyDate><xmp:CreateDate>2001-01-01T00:00:00Z</xmp:CreateDate><xmpMM:History><rdf:Seq><rdf:li rdf:parseType="Resource"><stEvt:action>saved</stEvt:action><stEvt:when>2001-01-01T00:00:00Z</stEvt:when><stEvt:instanceID>Uj68t0s3vPo/CDFnLupGVw==_source</stEvt:instanceID></rdf:li><rdf:li rdf:parseType="Resource"><stEvt:action>converted</stEvt:action><stEvt:when>2001-01-01T00:00:00Z</stEvt:when><stEvt:instanceID>Uj68t0s3vPo/CDFnLupGVw==_source</stEvt:instanceID></rdf:li></rdf:Seq></xmpMM:History><pdfaExtension:schemas><rdf:Bag><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>XMP Media Management schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/xap/1.0/mm/</pdfaSchema:namespaceURI><pdfaSchema:prefix>xmpMM</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>UUID based identifier for specific incarnation of a document</pdfaProperty:description><pdfaProperty:name>InstanceID</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>Adobe PDF schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://ns.adobe.com/pdf/1.3/</pdfaSchema:namespaceURI><pdfaSchema:prefix>pdf</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>Keywords associated with the document</pdfaProperty:description><pdfaProperty:name>Keywords</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Version of the PDF specification to which the document conforms</pdfaProperty:description><pdfaProperty:name>PDFVersion</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Name of the application that created the PDF document</pdfaProperty:description><pdfaProperty:name>Producer</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li><rdf:li rdf:parseType="Resource"><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Whether the document has been trapped</pdfaProperty:description><pdfaProperty:name>Trapped</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>PDF/UA Identification schema</pdfaSchema:schema><pdfaSchema:namespaceURI>http://www.aiim.org/pdfua/ns/id/</pdfaSchema:namespaceURI><pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix><pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:name>part</pdfaProperty:name><pdfaProperty:valueType>Integer</pdfaProperty:valueType><pdfaProperty:category>internal</pdfaProperty:category><pdfaProperty:description>Indicates which part of ISO 14289 (PDF/UA) this document conforms to</pdfaProperty:description></rdf:li></rdf:Seq></pdfaSchema:property></rdf:li></rdf:Bag></pdfaExtension:schemas><pdfaid:part>3</pdfaid:part><pdfaid:conformance>B</pdfaid:conformance><pdfuaid:part>1</pdfuaid:part><xmpTPg:NPages>1</xmpTPg:NPages><dc:format>application/pdf</dc:format><xmpMM:InstanceID>Uj68t0s3vPo/CDFnLupGVw==</xmpMM:InstanceID><xmpMM:DocumentID>Uj68t0s3vPo/CDFnLupGVw==</xmpMM:DocumentID><xmpMM:RenditionClass>proof</xmpMM:RenditionClass><pdf:PDFVersion>1.7</pdf:PDFVersion></rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>
+endstream
+endobj
+
+21 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /Metadata 20 0 R
+  /OutputIntents 4 0 R
+  /Lang (en)
+  /StructTreeRoot 5 0 R
+  /MarkInfo <<
+    /Marked true
+    /Suspects false
+  >>
+  /ViewerPreferences <<
+    /DisplayDocTitle true
+  >>
+  /Outlines 2 0 R
+>>
+endobj
+
+xref
+0 22
+0000000000 65535 f
+0000000016 00000 n
+0000000081 00000 n
+0000000121 00000 n
+0000000312 00000 n
+0000000336 00000 n
+0000000562 00000 n
+0000000586 00000 n
+0000000676 00000 n
+0000000838 00000 n
+0000001251 00000 n
+0000001368 00000 n
+0000001613 00000 n
+0000002537 00000 n
+0000005977 00000 n
+0000006013 00000 n
+0000006654 00000 n
+0000007416 00000 n
+0000007675 00000 n
+0000008037 00000 n
+0000008151 00000 n
+0000012904 00000 n
+trailer
+<<
+  /Size 22
+  /Root 21 0 R
+  /Info 19 0 R
+  /ID [(Uj68t0s3vPo/CDFnLupGVw==) (Uj68t0s3vPo/CDFnLupGVw==)]
+>>
+startxref
+13168
+%%EOF

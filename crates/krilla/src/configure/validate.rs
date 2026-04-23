@@ -143,14 +143,9 @@ pub enum ValidationError {
 }
 
 /// A validator for exporting PDF documents to a specific subset of PDF.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
 pub enum Validator {
-    /// A dummy validator, that does not perform any actual validation.
-    ///
-    /// **Requirements**: -
-    #[default]
-    None,
     /// The validator for the PDF/A-1a standard.
     ///
     /// **Requirements**:
@@ -312,7 +307,6 @@ pub enum Validator {
 impl Validator {
     pub(crate) fn prohibits(&self, validation_error: &ValidationError) -> bool {
         match self {
-            Validator::None => false,
             Validator::A1_A | Validator::A1_B => match validation_error {
                 ValidationError::TooLongString => true,
                 ValidationError::TooLongName => true,
@@ -510,28 +504,50 @@ impl Validator {
         }
     }
 
+    /// Returns the minimum PDF version required by this validator, if any.
+    pub fn minimum_pdf_version(&self) -> Option<PdfVersion> {
+        match self {
+            Validator::A1_A | Validator::A1_B => None,
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => None,
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => None,
+            Validator::A4 | Validator::A4F | Validator::A4E => Some(PdfVersion::Pdf20),
+            Validator::UA1 => Some(PdfVersion::Pdf14),
+        }
+    }
+
+    /// Returns the maximum PDF version allowed by this validator, if any.
+    pub fn maximum_pdf_version(&self) -> Option<PdfVersion> {
+        match self {
+            Validator::A1_A | Validator::A1_B => Some(PdfVersion::Pdf14),
+            Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(PdfVersion::Pdf17),
+            Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(PdfVersion::Pdf17),
+            Validator::A4 | Validator::A4F | Validator::A4E => None,
+            Validator::UA1 => Some(PdfVersion::Pdf17),
+        }
+    }
+
     /// Check whether the validator is compatible with a specific pdf version.
     pub fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
-        match self {
-            Validator::None => true,
-            Validator::A1_A | Validator::A1_B => pdf_version <= PdfVersion::Pdf14,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => pdf_version <= PdfVersion::Pdf17,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => pdf_version <= PdfVersion::Pdf17,
-            // It can be any 2.x version, but we're not there yet.
-            Validator::A4 | Validator::A4F | Validator::A4E => pdf_version == PdfVersion::Pdf20,
-            Validator::UA1 => pdf_version <= PdfVersion::Pdf17,
+        if let Some(min_version) = self.minimum_pdf_version() {
+            if pdf_version < min_version {
+                return false;
+            }
         }
+
+        if let Some(max_version) = self.maximum_pdf_version() {
+            if pdf_version > max_version {
+                return false;
+            }
+        }
+
+        true
     }
 
     /// Get the recommended PDF version of a validator.
     pub fn recommended_version(&self) -> PdfVersion {
         match self {
-            Validator::None => PdfVersion::Pdf17,
-            Validator::A1_A | Validator::A1_B => PdfVersion::Pdf14,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => PdfVersion::Pdf17,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => PdfVersion::Pdf17,
             Validator::A4 | Validator::A4F | Validator::A4E => PdfVersion::Pdf20,
-            Validator::UA1 => PdfVersion::Pdf17,
+            _ => self.maximum_pdf_version().unwrap_or(PdfVersion::Pdf17),
         }
     }
 
@@ -552,20 +568,37 @@ impl Validator {
         )
     }
 
-    pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
-        // TODO: Also needed for PDF/UA?
+    pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter, all_validators: &[Validator]) {
         if self.is_pdf_a() {
+            let combined_with_ua1 = all_validators.contains(&Validator::UA1);
             let mut extension_schemas = xmp.extension_schemas();
             extension_schemas
                 .xmp_media_management()
                 .properties()
                 .describe_instance_id();
             extension_schemas.pdf().properties().describe_all();
+
+            if combined_with_ua1 {
+                // The pdfuaid namespace written by the UA-1 validator is not
+                // part of the predefined XMP schemas allowed by PDF/A-1/2/3.
+                // When combining PDF/A with PDF/UA-1, it must be declared as a
+                // PDF/A extension schema so that PDF/A validators accept it.
+                let mut schema = extension_schemas.add_schema();
+                schema.namespace(xmp_writer::Namespace::PdfUAId);
+                schema
+                    .properties()
+                    .add_property()
+                    .name("part")
+                    .value_type("Integer")
+                    .category(true)
+                    .description(
+                        "Indicates which part of ISO 14289 (PDF/UA) this document conforms to",
+                    );
+            }
             extension_schemas.finish();
         }
 
         match self {
-            Validator::None => {}
             Validator::A1_A => {
                 xmp.pdfa_part(1);
                 xmp.pdfa_conformance("A");
@@ -620,7 +653,6 @@ impl Validator {
 
     pub(crate) fn requires_codepoint_mappings(&self) -> bool {
         match self {
-            Validator::None => false,
             Validator::A1_A | Validator::A1_B => *self != Validator::A1_B,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => *self != Validator::A2_B,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => *self != Validator::A3_B,
@@ -631,7 +663,6 @@ impl Validator {
 
     pub(crate) fn requires_display_doc_title(&self) -> bool {
         match self {
-            Validator::None => false,
             Validator::A1_A | Validator::A1_B => false,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
@@ -642,7 +673,6 @@ impl Validator {
 
     pub(crate) fn requires_no_device_cs(&self) -> bool {
         match self {
-            Validator::None => false,
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
@@ -653,7 +683,7 @@ impl Validator {
 
     pub(crate) fn requires_annotation_flags(&self) -> bool {
         match self {
-            Validator::None | Validator::UA1 => false,
+            Validator::UA1 => false,
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
@@ -663,7 +693,6 @@ impl Validator {
 
     pub(crate) fn requires_tagging(&self) -> bool {
         match self {
-            Validator::None => false,
             Validator::A1_A => true,
             Validator::A1_B => false,
             Validator::A2_A => true,
@@ -677,7 +706,6 @@ impl Validator {
 
     pub(crate) fn xmp_metadata(&self) -> bool {
         match self {
-            Validator::None => false,
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
@@ -688,7 +716,6 @@ impl Validator {
 
     pub(crate) fn requires_binary_header(&self) -> bool {
         match self {
-            Validator::None => false,
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
@@ -699,7 +726,6 @@ impl Validator {
 
     pub(crate) fn requires_file_provenance_information(&self) -> bool {
         match self {
-            Validator::None => false,
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
@@ -710,7 +736,6 @@ impl Validator {
 
     pub(crate) fn prohibits_instance_id_in_xmp_metadata(&self) -> bool {
         match self {
-            Validator::None => false,
             Validator::A1_A | Validator::A1_B => true,
             Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
@@ -721,7 +746,6 @@ impl Validator {
 
     pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype<'_>> {
         match self {
-            Validator::None => None,
             Validator::A1_A | Validator::A1_B => Some(OutputIntentSubtype::PDFA),
             Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
             Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
@@ -732,8 +756,7 @@ impl Validator {
 
     pub(crate) fn allows_info_dict(&self) -> bool {
         match self {
-            Validator::None
-            | Validator::A1_A
+            Validator::A1_A
             | Validator::A1_B
             | Validator::A2_A
             | Validator::A2_B
@@ -748,8 +771,7 @@ impl Validator {
 
     pub(crate) fn write_embedded_files(&self, is_empty: bool) -> bool {
         match self {
-            Validator::None
-            | Validator::A1_A
+            Validator::A1_A
             | Validator::A1_B
             | Validator::A2_A
             | Validator::A2_B
@@ -768,10 +790,6 @@ impl Validator {
 
     pub(crate) fn allows_associated_files(&self) -> bool {
         match self {
-            // PDF 2.0 _does_ support associated files. However, in this case the document has to
-            // provide a modification date, since it's a required field. Therefore, it's easier to
-            // just use the associated files feature, apart from PDF/A-3.
-            Validator::None => false,
             Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
             Validator::A4 | Validator::A4F | Validator::A4E => true,
             Validator::A1_A
@@ -786,7 +804,6 @@ impl Validator {
     /// The string representation of the validator.
     pub fn as_str(self) -> &'static str {
         match self {
-            Validator::None => "None",
             Validator::A1_A => "PDF/A-1a",
             Validator::A1_B => "PDF/A-1b",
             Validator::A2_A => "PDF/A-2a",
@@ -801,6 +818,54 @@ impl Validator {
             Validator::UA1 => "PDF/UA-1",
         }
     }
+
+    fn standard_family(self) -> StandardFamily {
+        match self {
+            Validator::A1_A
+            | Validator::A1_B
+            | Validator::A2_A
+            | Validator::A2_B
+            | Validator::A2_U
+            | Validator::A3_A
+            | Validator::A3_B
+            | Validator::A3_U
+            | Validator::A4
+            | Validator::A4F
+            | Validator::A4E => StandardFamily::PdfA,
+            Validator::UA1 => StandardFamily::PdfUa,
+        }
+    }
+
+    /// Check whether two validators are mutually compatible
+    pub(crate) fn mutually_compatible_with(self, other: Self) -> bool {
+        match (self.standard_family(), other.standard_family()) {
+            (a, b) if a == b => false,
+            _ => {
+                // Each validator must appear at most once, so if they are the
+                // same, they are not compatible.
+                if self == other {
+                    return false;
+                }
+
+                let range_self = self.minimum_pdf_version().unwrap_or(PdfVersion::Pdf14)
+                    ..=self.maximum_pdf_version().unwrap_or(PdfVersion::Pdf20);
+                let range_other = other.minimum_pdf_version().unwrap_or(PdfVersion::Pdf14)
+                    ..=other.maximum_pdf_version().unwrap_or(PdfVersion::Pdf20);
+
+                // The ranges of compatible PDF versions must overlap, otherwise
+                // the validators are not compatible.
+                range_other.end().min(range_self.end())
+                    >= range_other.start().max(range_self.start())
+            }
+        }
+    }
+}
+
+/// The part-less standard family of a validator.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum StandardFamily {
+    PdfA,
+    PdfUa,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]

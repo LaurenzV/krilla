@@ -20,8 +20,8 @@ use crate::embed::{embedded_file_impl, file_1};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
     metadata_1, rect_to_path, red_fill, settings_13, settings_15, settings_19, settings_20,
-    settings_23, settings_24, settings_7, settings_8, settings_9, stops_with_2_solid_1,
-    youtube_link, NOTO_SANS,
+    settings_23, settings_24, settings_31, settings_7, settings_8, settings_9,
+    stops_with_2_solid_1, youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
@@ -979,4 +979,97 @@ fn validate_inconsistent_separation_fallback() {
             )
         ]))
     );
+}
+
+#[snapshot(document)]
+fn no_validators_embedded_file_no_af(d: &mut Document) {
+    // Embedded files are written but no AF (associated files) entry is
+    // produced, because an empty validator set means `allows_associated_files`
+    // is vacuously false.
+    embedded_file_impl(d);
+}
+
+// A-3b + UA-1: UA-1 does not allow associated files, so even though A-3b does,
+// the AF entry must not be written (all(allows_associated_files) is false when
+// UA1 is present).
+#[test]
+fn validate_multi_validator_embedded_file_no_af() {
+    let mut d = Document::new_with(settings_31());
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string())
+        .creation_date(DateTime::new(2001));
+    d.set_metadata(metadata);
+    d.set_tag_tree(TagTree::new());
+    d.set_outline(Outline::new());
+
+    d.embed_file(file_1());
+
+    let pdf_bytes = d.finish().expect("expected valid PDF");
+    // /AF is the associated files key; it must be absent since UA-1 does not
+    // allow it.
+    assert!(
+        !pdf_bytes.windows(3).any(|w| w == b"/AF"),
+        "unexpected /AF entry in PDF output"
+    );
+}
+
+// A-3b + UA-1: UA-1 requires an outline; A-3b does not.
+#[test]
+fn validate_multi_validator_ua1_prohibits_missing_outline() {
+    let mut document = Document::new_with(settings_31());
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("title".to_string())
+        .creation_date(DateTime::new(2001));
+    document.set_metadata(metadata);
+    document.set_tag_tree(TagTree::new());
+    // No outline is set — this is fine for A3_B alone, but UA1 requires it.
+
+    let mut page = document.start_page();
+    page.surface().finish();
+    page.finish();
+
+    assert_eq!(
+        document.finish(),
+        Err(KrillaError::Validation(vec![
+            ValidationError::MissingDocumentOutline
+        ]))
+    );
+}
+
+#[snapshot(document, settings_31)]
+fn validate_multi_validator_pdf_a3b_pdf_ua1_full_example(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font_data = NOTO_SANS.clone();
+    let font = Font::new(font_data, 0).unwrap();
+
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font,
+        20.0,
+        "Hello, PDF/A-3b + PDF/UA-1",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+
+    surface.finish();
+    page.finish();
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(id1);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string())
+        .creation_date(DateTime::new(2001));
+    document.set_metadata(metadata);
+
+    document.set_outline(Outline::new());
 }
