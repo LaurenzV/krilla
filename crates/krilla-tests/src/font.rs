@@ -22,6 +22,7 @@ mod bitmap {
 
 mod colr {
     use krilla::geom::Point;
+    use krilla::page::PageSettings;
     use krilla::paint::Stroke;
     use krilla::surface::Surface;
     use krilla::text::TextDirection;
@@ -124,6 +125,34 @@ mod colr {
     fn font_noto_color_emoji_colr(document: &mut Document) {
         let font_data = NOTO_COLOR_EMOJI_COLR.clone();
         all_glyphs_to_pdf(font_data, None, false, document);
+    }
+
+    #[visreg(document)]
+    fn font_noto_color_emoji_composite_modes(document: &mut Document) {
+        let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0).unwrap();
+        let emojis = include_str!("../../../assets/emojis_colr_composite.txt");
+        let emojis = emojis.split_whitespace().collect::<Vec<_>>();
+
+        let cell_size = 40.0;
+        let num_cols = 10;
+        let height = (emojis.len() as f32 / num_cols as f32).ceil() * cell_size;
+
+        let mut page = document.start_page_with(PageSettings::from_wh(400.0, height).unwrap());
+        let mut surface = page.surface();
+
+        for (i, emoji) in emojis.iter().enumerate() {
+            let col = i % num_cols;
+            let row = i / num_cols;
+
+            surface.draw_text(
+                Point::from_xy(col as f32 * cell_size, row as f32 * cell_size + 34.0),
+                font.clone(),
+                32.0,
+                emoji,
+                false,
+                TextDirection::Auto,
+            );
+        }
     }
 }
 
