@@ -1,2 +1,3 @@
 *.pdf -text
+*.svg -text
 refs/snapshots/*.txt -text
