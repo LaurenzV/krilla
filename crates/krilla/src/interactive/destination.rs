@@ -113,7 +113,7 @@ impl From<XyzDestination> for Destination {
 impl XyzDestination {
     /// Create a new XYZ destination. `page_index` should be the index (i.e. number) of the
     /// target page, and point indicates the specific location on that page that should be
-    /// targeted. If the `page_index` is out of range, export will fail gracefully.
+    /// targeted. If the `page_index` is out of range, export will panic.
     pub fn new(page_index: usize, point: Point) -> Self {
         Self(Arc::new(XyzDestRepr { page_index, point }))
     }
