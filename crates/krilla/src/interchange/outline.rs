@@ -21,7 +21,6 @@
 use pdf_writer::writers::OutlineItem;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
-use crate::error::KrillaResult;
 use crate::interactive::destination::XyzDestination;
 use crate::serialize::SerializeContext;
 
@@ -79,6 +78,25 @@ impl Outlineable for OutlineItem<'_> {
     }
 }
 
+struct SerializedChildren {
+    first: Ref,
+    last: Ref,
+    visible_count: usize,
+}
+
+impl SerializedChildren {
+    fn write(&self, outlineable: &mut impl Outlineable, negate_count: bool) {
+        outlineable.first(self.first);
+        outlineable.last(self.last);
+
+        let mut count = i32::try_from(self.visible_count).unwrap();
+        if negate_count {
+            count = -count;
+        }
+        outlineable.count(count);
+    }
+}
+
 impl Outline {
     /// Create a new, empty outline.
     pub fn new() -> Self {
@@ -90,27 +108,17 @@ impl Outline {
         self.children.push(node)
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root: Ref) -> KrillaResult<()> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root: Ref) {
         let mut chunk = Chunk::new();
-        let mut sub_chunks = vec![];
+        let children = serialize_children(&self.children, root, &mut chunk, sc);
 
         let mut outline = chunk.outline(root);
-        serialize_children(
-            &self.children,
-            root,
-            &mut sub_chunks,
-            sc,
-            &mut outline,
-            false,
-        )?;
+        if let Some(children) = &children {
+            children.write(&mut outline, false);
+        }
         outline.finish();
 
-        for sub_chunk in sub_chunks {
-            chunk.extend(&sub_chunk);
-        }
-
         sc.chunk_container.outline = Some((root, chunk));
-        Ok(())
     }
 }
 
@@ -169,11 +177,9 @@ impl OutlineNode {
         root: Ref,
         next: Option<Ref>,
         prev: Option<Ref>,
-    ) -> KrillaResult<(Chunk, usize)> {
-        let mut chunk = Chunk::new();
-
-        let mut sub_chunks = vec![];
-
+        chunk: &mut Chunk,
+    ) -> usize {
+        let children = serialize_children(&self.children, root, chunk, sc);
         let mut outline_entry = chunk.outline_item(root);
         outline_entry.parent(parent);
 
@@ -185,14 +191,9 @@ impl OutlineNode {
             outline_entry.prev(prev);
         }
 
-        let visible_child_count = serialize_children(
-            &self.children,
-            root,
-            &mut sub_chunks,
-            sc,
-            &mut outline_entry,
-            !self.open,
-        )?;
+        if let Some(children) = &children {
+            children.write(&mut outline_entry, !self.open);
+        }
 
         outline_entry.title(TextStr(&self.text));
 
@@ -201,32 +202,25 @@ impl OutlineNode {
 
         outline_entry.finish();
 
-        for sub_chunk in sub_chunks {
-            chunk.extend(&sub_chunk);
-        }
-
         // See the algorithm described in the PDF spec. When recursing down, we
         // do not go into nodes that whose count is negative (i.e. nodes that are
         // closed). Therefore, in case the node is closed, the visible count is
         // just the node itself, so 1.
-        let visible_count = if self.open {
-            1 + visible_child_count
+
+        if self.open {
+            1 + children.map_or(0, |children| children.visible_count)
         } else {
             1
-        };
-
-        Ok((chunk, visible_count))
+        }
     }
 }
 
 fn serialize_children(
     children: &[OutlineNode],
-    root: Ref,
-    sub_chunks: &mut Vec<Chunk>,
+    parent: Ref,
+    chunk: &mut Chunk,
     sc: &mut SerializeContext,
-    outlineable: &mut impl Outlineable,
-    negate_count: bool,
-) -> KrillaResult<usize> {
+) -> Option<SerializedChildren> {
     let mut visible_count = 0;
 
     if !children.is_empty() {
@@ -245,23 +239,19 @@ fn serialize_children(
 
             last = cur.unwrap();
 
-            let (chunk, child_visible_count) = children[i].serialize(sc, root, last, next, prev)?;
+            let child_visible_count = children[i].serialize(sc, parent, last, next, prev, chunk);
             visible_count += child_visible_count;
-            sub_chunks.push(chunk);
 
             prev = cur;
             cur = next;
         }
 
-        outlineable.first(first);
-        outlineable.last(last);
-
-        let mut count = i32::try_from(visible_count).unwrap();
-        if negate_count {
-            count = -count;
-        }
-        outlineable.count(count);
+        Some(SerializedChildren {
+            first,
+            last,
+            visible_count,
+        })
+    } else {
+        None
     }
-
-    Ok(visible_count)
 }
