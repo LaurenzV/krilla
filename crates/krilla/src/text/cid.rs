@@ -183,12 +183,13 @@ impl CIDFont {
         FontIdentifier::Cid(CIDIdentifier(self.font.clone()))
     }
 
-    pub(crate) fn serialize(
+    pub(crate) fn serialize_into(
         &self,
         sc: &mut SerializeContext,
         root_ref: Ref,
-    ) -> KrillaResult<Chunk> {
+    ) -> KrillaResult<()> {
         let mut chunk = Chunk::new();
+        let mut stream_chunk = Chunk::new();
 
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();
@@ -314,7 +315,7 @@ impl CIDFont {
 
             let cid_stream = FilterStreamBuilder::new_from_binary_data(&cid_stream_data)
                 .finish(&sc.serialize_settings());
-            let mut cid_set = chunk.stream(cid_set_ref, cid_stream.encoded_data());
+            let mut cid_set = stream_chunk.stream(cid_set_ref, cid_stream.encoded_data());
             cid_stream.write_filters(cid_set.deref_mut());
             cid_set.finish();
             cid_stream.finish();
@@ -386,11 +387,11 @@ impl CIDFont {
         };
 
         let cmap_stream = cmap.finish();
-        let mut cmap = chunk.cmap(cmap_ref, &cmap_stream);
+        let mut cmap = stream_chunk.cmap(cmap_ref, &cmap_stream);
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
 
-        let mut stream = chunk.stream(data_ref, font_stream.encoded_data());
+        let mut stream = stream_chunk.stream(data_ref, font_stream.encoded_data());
         font_stream.write_filters(stream.deref_mut());
         if is_cff {
             stream.pair(Name(b"Subtype"), Name(b"CIDFontType0C"));
@@ -398,7 +399,10 @@ impl CIDFont {
 
         stream.finish();
 
-        Ok(chunk)
+        sc.chunk_container.fonts.push(chunk);
+        sc.chunk_container.fonts_stream.push(stream_chunk);
+
+        Ok(())
     }
 }
 

@@ -10,8 +10,6 @@ use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
 use crate::util::{stable_hash_base64, Deferred};
 
-type DChunk = Deferred<Chunk>;
-
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
 #[derive(Default)]
@@ -29,16 +27,21 @@ pub(crate) struct ChunkContainer {
     pub(crate) destinations: Vec<Chunk>,
     pub(crate) ext_g_states: Vec<Chunk>,
     pub(crate) masks: Vec<Chunk>,
-
-    // Mixed chunks.
     pub(crate) fonts: Vec<Chunk>,
     pub(crate) shading_functions: Vec<Chunk>,
     pub(crate) patterns: Vec<Chunk>,
-    pub(crate) pages: Vec<DChunk>,
+    pub(crate) pages: Vec<Chunk>,
     pub(crate) embedded_files: Vec<Chunk>,
+
+    // Mixed chunks.
     pub(crate) embedded_pdfs: Vec<Deferred<KrillaResult<EmbeddedPdfChunk>>>,
 
     // Stream objects.
+    pub(crate) fonts_stream: Vec<Chunk>,
+    pub(crate) shading_functions_stream: Vec<Chunk>,
+    pub(crate) patterns_stream: Vec<Chunk>,
+    pub(crate) pages_stream: Vec<Chunk>,
+    pub(crate) embedded_files_stream: Vec<Chunk>,
     pub(crate) icc_profiles: Vec<Chunk>,
     pub(crate) x_objects: Vec<Chunk>,
     pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
@@ -351,7 +354,6 @@ impl Visit for ChunkContainer {
         self.destinations.visit(sc, f)?;
         self.ext_g_states.visit(sc, f)?;
         self.masks.visit(sc, f)?;
-
         self.fonts.visit(sc, f)?;
         self.shading_functions.visit(sc, f)?;
         self.patterns.visit(sc, f)?;
@@ -359,6 +361,11 @@ impl Visit for ChunkContainer {
         self.embedded_files.visit(sc, f)?;
         self.embedded_pdfs.visit(sc, f)?;
 
+        self.fonts_stream.visit(sc, f)?;
+        self.shading_functions_stream.visit(sc, f)?;
+        self.patterns_stream.visit(sc, f)?;
+        self.pages_stream.visit(sc, f)?;
+        self.embedded_files_stream.visit(sc, f)?;
         self.icc_profiles.visit(sc, f)?;
         self.x_objects.visit(sc, f)?;
         self.images.visit(sc, f)?;
