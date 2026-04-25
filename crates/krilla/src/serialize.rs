@@ -418,7 +418,7 @@ impl SerializeContext {
         // Serialize all objects that can only be written in the end.
         self.serialize_destination_profiles();
         self.serialize_page_label_tree();
-        self.serialize_outline()?;
+        self.serialize_outline();
         self.serialize_fonts()?;
         self.serialize_pages()?;
         self.serialize_page_tree();
@@ -666,16 +666,14 @@ impl SerializeContext {
         }
     }
 
-    fn serialize_outline(&mut self) -> KrillaResult<()> {
+    fn serialize_outline(&mut self) {
         let outline = self.global_objects.outline.take();
         if let Some(outline) = &outline {
             let outline_ref = self.new_ref();
-            outline.serialize(self, outline_ref)?;
+            outline.serialize(self, outline_ref);
         } else {
             self.register_validation_error(ValidationError::MissingDocumentOutline);
         }
-
-        Ok(())
     }
 
     #[cfg(feature = "pdf")]
