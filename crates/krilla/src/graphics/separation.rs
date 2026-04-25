@@ -1,12 +1,10 @@
 use pdf_writer::writers::ExponentialFunction;
 use pdf_writer::{Chunk, Finish, Name, Ref, Writer};
 
-use crate::chunk_container::ChunkContainerFn;
 use crate::color::separation::SeparationSpace;
 use crate::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::resource::{self, Resource, Resourceable};
 use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
-use crate::util::Deferred;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub(crate) struct SeparationColorSpace {
@@ -20,11 +18,7 @@ impl SeparationColorSpace {
 }
 
 impl Cacheable for SeparationColorSpace {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.color_spaces
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         // Delegate fallback color space registration to existing logic
         let fallback_cs = self.space.fallback.color_space(sc);
         let fallback_cs_resource = sc.register_colorspace(fallback_cs.into());
@@ -46,42 +40,40 @@ impl Cacheable for SeparationColorSpace {
             sc.register_validation_error(validation_error);
         }
 
-        Deferred::new(move || {
-            let mut chunk = Chunk::new();
+        let mut chunk = Chunk::new();
 
-            // Write Separation color space array: [/Separation name alternateSpace tintTransform]
-            let mut array = chunk.indirect(root_ref).array();
-            array.item(Name(b"Separation"));
+        // Write Separation color space array: [/Separation name alternateSpace tintTransform]
+        let mut array = chunk.indirect(root_ref).array();
+        array.item(Name(b"Separation"));
 
-            // Colorant name
-            array.item(self.space.colorant.to_pdf());
+        // Colorant name
+        array.item(self.space.colorant.to_pdf());
 
-            // Fallback color space - write as name for device CS, or ref for others
-            match fallback_cs_resource {
-                MaybeDeviceColorSpace::DeviceRgb => array.item(Name(DEVICE_RGB.as_bytes())),
-                MaybeDeviceColorSpace::DeviceGray => array.item(Name(DEVICE_GRAY.as_bytes())),
-                MaybeDeviceColorSpace::DeviceCMYK => array.item(Name(DEVICE_CMYK.as_bytes())),
-                MaybeDeviceColorSpace::ColorSpace(cs) => {
-                    // Use get_ref() to extract the underlying Ref
-                    array.item(cs.get_ref())
-                }
-            };
+        // Fallback color space - write as name for device CS, or ref for others
+        match fallback_cs_resource {
+            MaybeDeviceColorSpace::DeviceRgb => array.item(Name(DEVICE_RGB.as_bytes())),
+            MaybeDeviceColorSpace::DeviceGray => array.item(Name(DEVICE_GRAY.as_bytes())),
+            MaybeDeviceColorSpace::DeviceCMYK => array.item(Name(DEVICE_CMYK.as_bytes())),
+            MaybeDeviceColorSpace::ColorSpace(cs) => {
+                // Use get_ref() to extract the underlying Ref
+                array.item(cs.get_ref())
+            }
+        };
 
-            // Write Type 2 (Exponential) function for tint transform
-            // Maps tint [0.0-1.0] from white (no ink) to fallback color (full ink)
-            ExponentialFunction::start(array.push())
-                .domain([0.0, 1.0])
-                .range([0.0, 1.0].repeat(num_components))
-                // C0: white/no ink (tint = 0.0) - value depends on color space
-                .c0(vec![c0_value; num_components])
-                // C1: fallback color (tint = 1.0)
-                .c1(fallback_color)
-                .n(1.0);
+        // Write Type 2 (Exponential) function for tint transform
+        // Maps tint [0.0-1.0] from white (no ink) to fallback color (full ink)
+        ExponentialFunction::start(array.push())
+            .domain([0.0, 1.0])
+            .range([0.0, 1.0].repeat(num_components))
+            // C0: white/no ink (tint = 0.0) - value depends on color space
+            .c0(vec![c0_value; num_components])
+            // C1: fallback color (tint = 1.0)
+            .c1(fallback_color)
+            .n(1.0);
 
-            array.finish();
+        array.finish();
 
-            chunk
-        })
+        sc.chunk_container.color_spaces.push(chunk);
     }
 }
 

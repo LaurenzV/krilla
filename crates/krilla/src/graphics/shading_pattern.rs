@@ -3,13 +3,11 @@ use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
-use crate::chunk_container::ChunkContainerFn;
 use crate::geom::Transform;
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::util::Deferred;
 
 #[derive(Debug, PartialEq)]
 struct Repr {
@@ -40,11 +38,7 @@ impl ShadingPattern {
 }
 
 impl Cacheable for ShadingPattern {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.patterns
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
 
         let shading_ref = sc.register_cacheable(self.0.shading_function.clone());
@@ -53,8 +47,7 @@ impl Cacheable for ShadingPattern {
         shading_pattern.matrix(self.0.shading_transform.to_pdf_transform());
 
         shading_pattern.finish();
-
-        Deferred::new(|| chunk)
+        sc.chunk_container.patterns.push(chunk);
     }
 }
 

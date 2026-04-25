@@ -7,7 +7,6 @@ use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Finish, Ref};
 use tiny_skia_path::Point;
 
-use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
 use crate::geom::{Rect, Transform};
 use crate::graphics::color::luma;
@@ -18,7 +17,7 @@ use crate::num::NormalizedF32;
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::util::{set_colorspace, Deferred};
+use crate::util::set_colorspace;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GradientType {
@@ -225,11 +224,7 @@ impl ShadingFunction {
 }
 
 impl Cacheable for ShadingFunction {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.shading_functions
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
 
         match &self.0.properties {
@@ -242,7 +237,7 @@ impl Cacheable for ShadingFunction {
             }
         }
 
-        Deferred::new(|| chunk)
+        sc.chunk_container.shading_functions.push(chunk);
     }
 }
 

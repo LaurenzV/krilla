@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
-use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
 use crate::geom::Rect;
 use crate::graphics::color::{rgb, DEVICE_RGB};
@@ -11,7 +10,7 @@ use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::{Deferred, NameExt, Prehashed};
+use crate::util::{NameExt, Prehashed};
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
@@ -61,11 +60,7 @@ impl XObject {
 }
 
 impl Cacheable for XObject {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.x_objects
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
 
         for validation_error in &self.0.stream.validation_errors {
@@ -93,55 +88,50 @@ impl Cacheable for XObject {
             None
         };
 
-        Deferred::new(move || {
-            let x_object_stream = FilterStreamBuilder::new_from_content_stream(
-                &self.0.stream.content,
-                &serialize_settings,
-            )
-            .finish(&serialize_settings);
-            let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
-            x_object_stream.write_filters(x_object.deref_mut().deref_mut());
+        let x_object_stream = FilterStreamBuilder::new_from_content_stream(
+            &self.0.stream.content,
+            &serialize_settings,
+        )
+        .finish(&serialize_settings);
+        let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
+        x_object_stream.write_filters(x_object.deref_mut().deref_mut());
 
+        self.0
+            .stream
+            .resource_dictionary
+            .to_pdf_resources(&mut x_object, serialize_settings.pdf_version());
+        x_object.bbox(
             self.0
-                .stream
-                .resource_dictionary
-                .to_pdf_resources(&mut x_object, serialize_settings.pdf_version());
-            x_object.bbox(
-                self.0
-                    .custom_bbox
-                    .unwrap_or(self.0.stream.bbox)
-                    .to_pdf_rect(),
-            );
+                .custom_bbox
+                .unwrap_or(self.0.stream.bbox)
+                .to_pdf_rect(),
+        );
 
-            if use_transparency_group {
-                let mut group = x_object.group();
-                let transparency = group.transparency();
+        if use_transparency_group {
+            let mut group = x_object.group();
+            let transparency = group.transparency();
 
-                if self.0.isolated {
-                    transparency.isolated(self.0.isolated);
-                }
-
-                if let Some(transparency_group_cs) = transparency_group_cs {
-                    let pdf_cs = transparency.insert(Name(b"CS"));
-
-                    match transparency_group_cs {
-                        MaybeDeviceColorSpace::DeviceRgb => {
-                            pdf_cs.primitive(DEVICE_RGB.to_pdf_name())
-                        }
-                        // Can only be SRGB
-                        MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
-                        _ => unreachable!(),
-                    }
-                }
-
-                transparency.finish();
-                group.finish();
+            if self.0.isolated {
+                transparency.isolated(self.0.isolated);
             }
 
-            x_object.finish();
+            if let Some(transparency_group_cs) = transparency_group_cs {
+                let pdf_cs = transparency.insert(Name(b"CS"));
 
-            chunk
-        })
+                match transparency_group_cs {
+                    MaybeDeviceColorSpace::DeviceRgb => pdf_cs.primitive(DEVICE_RGB.to_pdf_name()),
+                    // Can only be SRGB
+                    MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
+                    _ => unreachable!(),
+                }
+            }
+
+            transparency.finish();
+            group.finish();
+        }
+
+        x_object.finish();
+        sc.chunk_container.x_objects.push(chunk);
     }
 }
 

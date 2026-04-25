@@ -6,7 +6,6 @@ use std::ops::DerefMut;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 
-use crate::chunk_container::ChunkContainerFn;
 use crate::geom::Transform;
 use crate::num::NormalizedF32;
 use crate::resource;
@@ -14,7 +13,6 @@ use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::StreamBuilder;
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::Deferred;
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct TilingPattern {
@@ -73,11 +71,7 @@ impl TilingPattern {
 }
 
 impl Cacheable for TilingPattern {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.patterns
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
 
         for validation_error in self.stream.validation_errors {
@@ -107,8 +101,7 @@ impl Cacheable for TilingPattern {
             .y_step(final_bbox.y2 - final_bbox.y1);
 
         tiling_pattern.finish();
-
-        Deferred::new(|| chunk)
+        sc.chunk_container.patterns.push(chunk);
     }
 }
 
