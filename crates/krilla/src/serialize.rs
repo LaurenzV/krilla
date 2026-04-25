@@ -697,9 +697,7 @@ impl SerializeContext {
             if !borrowed.type3_mapper().is_empty() {
                 for t3_font in borrowed.type3_mapper().fonts() {
                     let f = self.register_font_identifier(t3_font.identifier());
-                    let (chunk, stream_chunk) = t3_font.serialize(self, f.get_ref());
-                    self.chunk_container.fonts.push(chunk);
-                    self.chunk_container.fonts_stream.push(stream_chunk);
+                    t3_font.serialize_into(self, f.get_ref());
                 }
             }
 
