@@ -1,0 +1,127 @@
+%PDF-2.0
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [8 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /StructTreeRoot
+  /Namespaces [3 0 R 4 0 R]
+  /K [5 0 R]
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Namespace
+  /NS (https://www.iso.org/pdf2/ssn)
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /Namespace
+  /NS (https://github.com/LaurenzV/krilla)
+  /RoleMapNS <<
+    /Datetime [/Span 3 0 R]
+    /Terms [/Part 3 0 R]
+  >>
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /StructElem
+  /S /Document
+  /P 2 0 R
+  /K [6 0 R]
+>>
+endobj
+
+6 0 obj
+<<
+  /Type /StructElem
+  /S /Datetime
+  /NS 4 0 R
+  /P 5 0 R
+  /K [7 0 R]
+>>
+endobj
+
+7 0 obj
+<<
+  /Type /StructElem
+  /S /Span
+  /NS 3 0 R
+  /P 6 0 R
+  /K []
+>>
+endobj
+
+8 0 obj
+<<
+  /Type /Page
+  /Resources <<>>
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 9 0 R
+>>
+endobj
+
+9 0 obj
+<<
+  /Length 66
+>>
+stream
+q
+1 0 0 -1 0 842 cm
+0 1 0 rg
+20 20 m
+80 20 l
+80 80 l
+20 80 l
+h
+f
+Q
+endstream
+endobj
+
+10 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /StructTreeRoot 2 0 R
+  /MarkInfo <<
+    /Marked true
+  >>
+>>
+endobj
+
+xref
+0 11
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000167 00000 n
+0000000245 00000 n
+0000000403 00000 n
+0000000484 00000 n
+0000000577 00000 n
+0000000661 00000 n
+0000000775 00000 n
+0000000894 00000 n
+trailer
+<<
+  /Size 11
+  /Root 10 0 R
+  /ID [(c03RIEfJBtxaKvqukY7BjA==) (c03RIEfJBtxaKvqukY7BjA==)]
+>>
+startxref
+1010
+%%EOF

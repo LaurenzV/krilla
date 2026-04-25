@@ -625,6 +625,23 @@ fn tagging_strong_and_em_pdf_20(document: &mut Document) {
     tagging_strong_and_em_impl(document);
 }
 
+#[snapshot(document, settings_25)]
+fn tagging_custom_namespace_pdf_20(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    surface.set_fill(Some(green_fill(1.0)));
+    surface.draw_path(&rect_to_path(20.0, 20.0, 80.0, 80.0));
+    surface.finish();
+    page.finish();
+
+    let mut datetime = TagGroup::new(Tag::Datetime);
+    datetime.push(TagGroup::new(Tag::Span));
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(datetime);
+    document.set_tag_tree(tag_tree);
+}
+
 fn tagging_strong_and_em_impl(document: &mut Document) {
     document.set_metadata(
         Metadata::new()
