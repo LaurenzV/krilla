@@ -118,11 +118,6 @@ impl Outline {
 ///
 /// This represents either an intermediate node in the outline tree, or a leaf node
 /// if it does not contain any further children itself.
-///
-/// An outline node can be either *open* or *closed*, which controls whether its
-/// children are initially shown expanded or collapsed when the document is opened
-/// in a PDF viewer. The sign of the `/Count` entry emitted in the PDF (see PDF 1.7
-/// §12.3.3) reflects this state. By default, a node is *closed*.
 #[derive(Debug, Clone)]
 pub struct OutlineNode {
     /// The children of the outline node.
