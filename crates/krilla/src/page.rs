@@ -442,11 +442,8 @@ impl InternalPage {
         *annotations = annotation_refs;
 
         page.finish();
-
-        sc.chunk_container.pages.push(Deferred::new(move || {
-            chunk.extend(self.stream_chunk.wait());
-            chunk
-        }));
+        sc.chunk_container.pages.push(chunk);
+        sc.chunk_container.page_streams.push(self.stream_chunk);
     }
 }
 

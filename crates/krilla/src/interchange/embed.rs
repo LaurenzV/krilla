@@ -58,6 +58,7 @@ impl Cacheable for EmbeddedFile {
         ));
 
         let mut chunk = Chunk::new();
+        let mut stream_chunk = Chunk::new();
         let stream_ref = sc.new_ref();
 
         let file_stream = match self.compress {
@@ -67,7 +68,8 @@ impl Cacheable for EmbeddedFile {
         }
         .finish(&sc.serialize_settings());
 
-        let mut embedded_file_stream = chunk.embedded_file(stream_ref, file_stream.encoded_data());
+        let mut embedded_file_stream =
+            stream_chunk.embedded_file(stream_ref, file_stream.encoded_data());
         file_stream.write_filters(embedded_file_stream.deref_mut().deref_mut());
 
         if let Some(mime_type) = &self.mime_type {
@@ -130,6 +132,7 @@ impl Cacheable for EmbeddedFile {
 
         file_spec.finish();
         sc.chunk_container.embedded_files.push(chunk);
+        sc.chunk_container.embedded_file_streams.push(stream_chunk);
     }
 }
 
