@@ -1037,7 +1037,7 @@ impl TagTree {
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         id_tree_map: &mut BTreeMap<TagId, Ref>,
         struct_tree_ref: Ref,
-    ) -> KrillaResult<(Ref, Chunk)> {
+    ) -> KrillaResult<Ref> {
         let root_ref = sc.new_ref();
         let mut struct_elems = Chunk::new();
 
@@ -1080,8 +1080,9 @@ impl TagTree {
         )?;
 
         struct_elem.finish();
+        sc.chunk_container.struct_elements = Some(struct_elems);
 
-        Ok((root_ref, struct_elems))
+        Ok(root_ref)
     }
 
     pub(crate) fn validate(&self, id_tree: &BTreeMap<TagId, Ref>) -> KrillaResult<()> {

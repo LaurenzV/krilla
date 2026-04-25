@@ -90,9 +90,8 @@ impl Outline {
         self.children.push(node)
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root: Ref) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root: Ref) -> KrillaResult<()> {
         let mut chunk = Chunk::new();
-
         let mut sub_chunks = vec![];
 
         let mut outline = chunk.outline(root);
@@ -110,7 +109,8 @@ impl Outline {
             chunk.extend(&sub_chunk);
         }
 
-        Ok(chunk)
+        sc.chunk_container.outline = Some((root, chunk));
+        Ok(())
     }
 }
 

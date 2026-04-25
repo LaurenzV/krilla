@@ -20,7 +20,7 @@ use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
 
 use crate::configure::ValidationError;
-use crate::error::{KrillaError, KrillaResult};
+use crate::error::KrillaError;
 use crate::graphics::color::DEVICE_GRAY;
 use crate::graphics::color::{cmyk, luma, rgb};
 use crate::graphics::icc::{GenericICCProfile, ICCBasedColorSpace, ICCProfile};
@@ -356,11 +356,7 @@ impl Image {
         self.0.color_space()
     }
 
-    pub(crate) fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        root_ref: Ref,
-    ) -> Deferred<KrillaResult<Chunk>> {
+    pub(crate) fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let soft_mask_id = self.0.metadata.has_alpha.then(|| {
             sc.register_validation_error(ValidationError::Transparency(sc.location));
             sc.new_ref()
@@ -420,7 +416,7 @@ impl Image {
             .supports_bit_depth(self.0.metadata.bits_per_component);
         let location = sc.location;
 
-        Deferred::new(move || {
+        let chunk = Deferred::new(move || {
             if !supports_bit_depth {
                 return Err(KrillaError::SixteenBitImage(self.clone(), location));
             }
@@ -500,7 +496,9 @@ impl Image {
             image_x_object.finish();
 
             Ok(chunk)
-        })
+        });
+
+        sc.chunk_container.images.push(chunk);
     }
 }
 

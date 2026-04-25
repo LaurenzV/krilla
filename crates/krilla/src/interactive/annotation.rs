@@ -67,7 +67,7 @@ impl Annotation {
         sc: &mut SerializeContext,
         root_ref: Ref,
         page_height: f32,
-    ) -> KrillaResult<Chunk> {
+    ) -> KrillaResult<()> {
         let mut chunk = Chunk::new();
         let mut annotation = chunk
             .indirect(root_ref)
@@ -105,8 +105,9 @@ impl Annotation {
         }
 
         annotation.finish();
+        sc.chunk_container.annotations.push(chunk);
 
-        Ok(chunk)
+        Ok(())
     }
 }
 

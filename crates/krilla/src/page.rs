@@ -376,12 +376,7 @@ impl InternalPage {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
 
-                let a = annotation.serialize(
-                    sc,
-                    annot_ref,
-                    self.page_settings.surface_size().height(),
-                )?;
-                chunk.extend(&a);
+                annotation.serialize(sc, annot_ref, self.page_settings.surface_size().height())?;
                 annotation_refs.push((annot_ref, OnceCell::new()));
             }
         }
@@ -487,7 +482,7 @@ impl PageLabel {
         self.style.is_none() && self.prefix.is_none() && self.offset.is_none()
     }
 
-    pub(crate) fn serialize(&self, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
         let mut label = chunk
             .indirect(root_ref)
@@ -506,8 +501,7 @@ impl PageLabel {
         }
 
         label.finish();
-
-        chunk
+        sc.chunk_container.page_labels.push(chunk);
     }
 }
 
@@ -525,7 +519,7 @@ impl<'a> PageLabelContainer<'a> {
         }
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];
@@ -557,7 +551,6 @@ impl<'a> PageLabelContainer<'a> {
 
         nums.finish();
         num_tree.finish();
-
-        chunk
+        sc.chunk_container.page_label_tree = Some((root_ref, chunk));
     }
 }
