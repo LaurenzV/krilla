@@ -10,6 +10,8 @@ use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
 use crate::util::{stable_hash_base64, Deferred};
 
+type DChunk = Deferred<Chunk>;
+
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
 #[derive(Default)]
@@ -40,7 +42,7 @@ pub(crate) struct ChunkContainer {
     pub(crate) fonts_stream: Vec<Chunk>,
     pub(crate) shading_functions_stream: Vec<Chunk>,
     pub(crate) patterns_stream: Vec<Chunk>,
-    pub(crate) pages_stream: Vec<Chunk>,
+    pub(crate) pages_stream: Vec<DChunk>,
     pub(crate) embedded_files_stream: Vec<Chunk>,
     pub(crate) icc_profiles: Vec<Chunk>,
     pub(crate) x_objects: Vec<Chunk>,

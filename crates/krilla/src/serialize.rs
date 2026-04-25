@@ -697,15 +697,15 @@ impl SerializeContext {
             if !borrowed.type3_mapper().is_empty() {
                 for t3_font in borrowed.type3_mapper().fonts() {
                     let f = self.register_font_identifier(t3_font.identifier());
-                    let chunk = t3_font.serialize(self, f.get_ref());
+                    let (chunk, stream_chunk) = t3_font.serialize(self, f.get_ref());
                     self.chunk_container.fonts.push(chunk);
+                    self.chunk_container.fonts_stream.push(stream_chunk);
                 }
             }
 
             if !borrowed.cid_font().is_empty() {
                 let f = self.register_font_identifier(borrowed.cid_font().identifier());
-                let chunk = borrowed.cid_font().serialize(self, f.get_ref())?;
-                self.chunk_container.fonts.push(chunk);
+                borrowed.cid_font().serialize_into(self, f.get_ref())?;
             }
         }
 

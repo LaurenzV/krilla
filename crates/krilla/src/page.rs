@@ -449,10 +449,8 @@ impl InternalPage {
 
         page.finish();
 
-        sc.chunk_container.pages.push(Deferred::new(move || {
-            chunk.extend(self.stream_chunk.wait());
-            chunk
-        }));
+        sc.chunk_container.pages.push(chunk);
+        sc.chunk_container.pages_stream.push(self.stream_chunk);
 
         Ok(())
     }

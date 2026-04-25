@@ -226,6 +226,7 @@ impl ShadingFunction {
 impl Cacheable for ShadingFunction {
     fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
+        let mut stream_chunk = Chunk::new();
 
         match &self.0.properties {
             GradientProperties::RadialAxialGradient(rag) => {
@@ -233,11 +234,22 @@ impl Cacheable for ShadingFunction {
             }
             GradientProperties::PostScriptGradient(psg) => {
                 sc.register_validation_error(ValidationError::ContainsPostScript(sc.location));
-                serialize_postscript_shading(sc, &mut chunk, root_ref, psg, self.0.use_opacities)
+                serialize_postscript_shading(
+                    sc,
+                    &mut chunk,
+                    &mut stream_chunk,
+                    root_ref,
+                    psg,
+                    self.0.use_opacities,
+                )
             }
         }
 
         sc.chunk_container.shading_functions.push(chunk);
+        // Note: Might be empty.
+        sc.chunk_container
+            .shading_functions_stream
+            .push(stream_chunk);
     }
 }
 
@@ -248,6 +260,7 @@ impl Resourceable for ShadingFunction {
 fn serialize_postscript_shading(
     sc: &mut SerializeContext,
     chunk: &mut Chunk,
+    stream_chunk: &mut Chunk,
     root_ref: Ref,
     post_script_gradient: &PostScriptGradient,
     use_opacities: bool,
@@ -256,7 +269,7 @@ fn serialize_postscript_shading(
 
     let bump = Bump::new();
     let function_ref =
-        select_postscript_function(post_script_gradient, chunk, sc, &bump, use_opacities);
+        select_postscript_function(post_script_gradient, stream_chunk, sc, &bump, use_opacities);
     let cs = if use_opacities {
         luma::color_space(sc.serialize_settings().no_device_cs).into()
     } else {
