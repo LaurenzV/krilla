@@ -18,28 +18,32 @@ pub(crate) type ChunkContainerFn = fn(&mut ChunkContainer) -> &mut Vec<DChunk>;
 /// the PDF and then writes them out in an orderly manner.
 #[derive(Default)]
 pub(crate) struct ChunkContainer {
+    // Non-stream objects.
     pub(crate) page_tree: Option<(Ref, Chunk)>,
     pub(crate) outline: Option<(Ref, Chunk)>,
     pub(crate) page_label_tree: Option<(Ref, Chunk)>,
     pub(crate) destination_profiles: Option<(Ref, Chunk)>,
     pub(crate) struct_tree_root: Option<(Ref, Chunk)>,
-
     pub(crate) struct_elements: Option<Chunk>,
     pub(crate) page_labels: Vec<Chunk>,
     pub(crate) annotations: Vec<Chunk>,
-    pub(crate) fonts: Vec<Chunk>,
     pub(crate) color_spaces: Vec<DChunk>,
-    pub(crate) icc_profiles: Vec<DChunk>,
     pub(crate) destinations: Vec<Chunk>,
     pub(crate) ext_g_states: Vec<DChunk>,
     pub(crate) masks: Vec<DChunk>,
-    pub(crate) x_objects: Vec<DChunk>,
+
+    // Mixed chunks.
+    pub(crate) fonts: Vec<Chunk>,
     pub(crate) shading_functions: Vec<DChunk>,
     pub(crate) patterns: Vec<DChunk>,
     pub(crate) pages: Vec<DChunk>,
-    pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
     pub(crate) embedded_files: Vec<DChunk>,
     pub(crate) embedded_pdfs: Vec<Deferred<KrillaResult<EmbeddedPdfChunk>>>,
+
+    // Stream objects.
+    pub(crate) icc_profiles: Vec<DChunk>,
+    pub(crate) x_objects: Vec<DChunk>,
+    pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
 
     pub(crate) metadata: Option<Metadata>,
 }
@@ -345,19 +349,22 @@ impl Visit for ChunkContainer {
         self.struct_elements.visit(sc, f)?;
         self.page_labels.visit(sc, f)?;
         self.annotations.visit(sc, f)?;
-        self.fonts.visit(sc, f)?;
         self.color_spaces.visit(sc, f)?;
-        self.icc_profiles.visit(sc, f)?;
         self.destinations.visit(sc, f)?;
         self.ext_g_states.visit(sc, f)?;
         self.masks.visit(sc, f)?;
-        self.x_objects.visit(sc, f)?;
+
+        self.fonts.visit(sc, f)?;
         self.shading_functions.visit(sc, f)?;
         self.patterns.visit(sc, f)?;
         self.pages.visit(sc, f)?;
-        self.images.visit(sc, f)?;
         self.embedded_files.visit(sc, f)?;
         self.embedded_pdfs.visit(sc, f)?;
+
+        self.icc_profiles.visit(sc, f)?;
+        self.x_objects.visit(sc, f)?;
+        self.images.visit(sc, f)?;
+
         Ok(())
     }
 }
