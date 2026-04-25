@@ -11,7 +11,6 @@ use std::sync::Arc;
 use pdf_writer::{Chunk, Obj, Ref, Str};
 use tiny_skia_path::Transform;
 
-use crate::error::KrillaResult;
 use crate::geom::Point;
 use crate::serialize::{PageInfo, SerializeContext};
 
@@ -25,12 +24,11 @@ pub enum Destination {
 }
 
 impl Destination {
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, buffer: Obj) -> KrillaResult<()> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, buffer: Obj) {
         match self {
             Destination::Xyz(xyz) => {
                 let ref_ = sc.register_xyz_destination(xyz.clone());
                 buffer.primitive(ref_);
-                Ok(())
             }
             Destination::Named(named) => named.serialize(sc, buffer),
         }
@@ -65,14 +63,9 @@ impl NamedDestination {
         }
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        destination: Obj,
-    ) -> KrillaResult<()> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, destination: Obj) {
         sc.register_named_destination(self.clone());
         destination.primitive(Str(self.name.as_bytes()));
-        Ok(())
     }
 }
 
@@ -118,7 +111,7 @@ impl XyzDestination {
         Self(Arc::new(XyzDestRepr { page_index, point }))
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) -> KrillaResult<()> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
         let destination = chunk.destination(root_ref);
 
@@ -149,7 +142,5 @@ impl XyzDestination {
             .page(page_ref)
             .xyz(mapped_point.x, mapped_point.y, None);
         sc.chunk_container.destinations.push(chunk);
-
-        Ok(())
     }
 }
