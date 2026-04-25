@@ -42,6 +42,74 @@ fn outline_simple(d: &mut Document) {
     d.set_outline(outline);
 }
 #[snapshot(document)]
+fn outline_open_state(d: &mut Document) {
+    for _ in 0..3 {
+        let _ = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+    }
+
+    let mut outline = Outline::new();
+
+    let mut child1 = OutlineNode::new(
+        "Heading 1".to_string(),
+        XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
+    )
+    .with_open(true);
+    child1.push_child(OutlineNode::new(
+        "Heading 1.1".to_string(),
+        XyzDestination::new(1, Point::from_xy(50.0, 50.0)),
+    ));
+
+    let child2 = OutlineNode::new(
+        "Heading 2".to_string(),
+        XyzDestination::new(2, Point::from_xy(100.0, 100.0)),
+    );
+
+    outline.push_child(child1);
+    outline.push_child(child2);
+
+    d.set_outline(outline);
+}
+
+#[snapshot(document)]
+fn outline_mixed_state(d: &mut Document) {
+    for _ in 0..3 {
+        let _ = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+    }
+
+    let mut outline = Outline::new();
+
+    let mut child1 = OutlineNode::new(
+        "Heading 1".to_string(),
+        XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
+    )
+    .with_open(true);
+    let mut nested = OutlineNode::new(
+        "Heading 1.1".to_string(),
+        XyzDestination::new(1, Point::from_xy(50.0, 50.0)),
+    )
+    .with_open(true);
+    nested.push_child(OutlineNode::new(
+        "Heading 1.1.1".to_string(),
+        XyzDestination::new(1, Point::from_xy(60.0, 60.0)),
+    ));
+    child1.push_child(nested);
+
+    let mut child2 = OutlineNode::new(
+        "Heading 2".to_string(),
+        XyzDestination::new(2, Point::from_xy(100.0, 100.0)),
+    );
+    child2.push_child(OutlineNode::new(
+        "Heading 2.1".to_string(),
+        XyzDestination::new(2, Point::from_xy(120.0, 120.0)),
+    ));
+
+    outline.push_child(child1);
+    outline.push_child(child2);
+
+    d.set_outline(outline);
+}
+
+#[snapshot(document)]
 fn outline_with_empty_title(d: &mut Document) {
     let mut outline = Outline::new();
 
