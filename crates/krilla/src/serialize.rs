@@ -756,7 +756,7 @@ impl SerializeContext {
                 &mut id_tree_map,
                 struct_tree_root_ref,
             )?;
-            self.chunk_container.struct_elements = vec![struct_elems];
+            self.chunk_container.struct_elements = Some(struct_elems);
 
             root.validate(&id_tree_map)?;
 
