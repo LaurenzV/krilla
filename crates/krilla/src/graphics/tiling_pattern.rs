@@ -101,7 +101,7 @@ impl Cacheable for TilingPattern {
             .y_step(final_bbox.y2 - final_bbox.y1);
 
         tiling_pattern.finish();
-        sc.chunk_container.patterns.push(chunk);
+        sc.chunk_container.pattern_streams.push(chunk);
     }
 }
 

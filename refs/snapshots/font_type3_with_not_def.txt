@@ -5,30 +5,11 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [7 0 R]
+  /Kids [4 0 R]
 >>
 endobj
 
 2 0 obj
-<<
-  /Length 6
->>
-stream
-0 0 d0
-endstream
-endobj
-
-3 0 obj
-<<
-  /Length 16
->>
-stream
-2048 0 d0
-/x0 Do
-endstream
-endobj
-
-4 0 obj
 <<
   /Type /FontDescriptor
   /FontName /TwitterColorEmojiSVGinOT
@@ -43,7 +24,7 @@ endobj
 >>
 endobj
 
-5 0 obj
+3 0 obj
 <<
   /Type /Font
   /Subtype /Type3
@@ -55,15 +36,15 @@ endobj
   >>
   /Name /TwitterColorEmojiSVGinOT
   /FontBBox [0 -402.84998 2048 1645.15]
-  /ToUnicode 6 0 R
+  /ToUnicode 7 0 R
   /FontMatrix [0.00048828125 0 0 0.00048828125 0 0]
   /FirstChar 0
   /LastChar 1
   /Widths [0 2048]
-  /FontDescriptor 4 0 R
+  /FontDescriptor 2 0 R
   /CharProcs <<
-    /g0 2 0 R
-    /g1 3 0 R
+    /g0 5 0 R
+    /g1 6 0 R
   >>
   /Encoding <<
     /Type /Encoding
@@ -72,7 +53,41 @@ endobj
 >>
 endobj
 
+4 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /Font <<
+      /f0 3 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 8 0 R
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 6
+>>
+stream
+0 0 d0
+endstream
+endobj
+
 6 0 obj
+<<
+  /Length 16
+>>
+stream
+2048 0 d0
+/x0 Do
+endstream
+endobj
+
+7 0 obj
 <<
   /Length 629
   /Type /CMap
@@ -112,21 +127,6 @@ end
 %%EndResource
 %%EOF
 endstream
-endobj
-
-7 0 obj
-<<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /Font <<
-      /f0 5 0 R
-    >>
-  >>
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 8 0 R
->>
 endobj
 
 8 0 obj
@@ -227,11 +227,11 @@ xref
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000138 00000 n
-0000000207 00000 n
-0000000486 00000 n
-0000000977 00000 n
-0000001685 00000 n
+0000000359 00000 n
+0000000850 00000 n
+0000001045 00000 n
+0000001103 00000 n
+0000001172 00000 n
 0000001880 00000 n
 0000002013 00000 n
 0000003532 00000 n
@@ -239,7 +239,7 @@ trailer
 <<
   /Size 11
   /Root 10 0 R
-  /ID [(0fMG2nIgI4BJAmsnqrJ9Mg==) (0fMG2nIgI4BJAmsnqrJ9Mg==)]
+  /ID [(ozynND0uyOrg4rgGGoJa7w==) (ozynND0uyOrg4rgGGoJa7w==)]
 >>
 startxref
 3587

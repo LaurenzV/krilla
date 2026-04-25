@@ -129,6 +129,7 @@ impl Type3Font {
 
     pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
+        let mut stream_chunk = Chunk::new();
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut font_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
@@ -197,7 +198,7 @@ impl Type3Font {
                 .finish(&sc.serialize_settings());
 
                 let stream_ref = sc.new_ref();
-                let mut stream = chunk.stream(stream_ref, font_stream.encoded_data());
+                let mut stream = stream_chunk.stream(stream_ref, font_stream.encoded_data());
                 font_stream.write_filters(stream.deref_mut());
 
                 stream_ref
@@ -358,10 +359,11 @@ impl Type3Font {
         };
 
         let cmap_stream = cmap.finish();
-        let mut cmap = chunk.cmap(cmap_ref, &cmap_stream);
+        let mut cmap = stream_chunk.cmap(cmap_ref, &cmap_stream);
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
         sc.chunk_container.fonts.push(chunk);
+        sc.chunk_container.font_streams.push(stream_chunk);
     }
 }
 

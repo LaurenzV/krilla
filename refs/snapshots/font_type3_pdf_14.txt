@@ -5,21 +5,11 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [5 0 R]
+  /Kids [3 0 R]
 >>
 endobj
 
 2 0 obj
-<<
-  /Length 16
->>
-stream
-2048 0 d0
-/x0 Do
-endstream
-endobj
-
-3 0 obj
 <<
   /Type /Font
   /Subtype /Type3
@@ -31,13 +21,13 @@ endobj
   >>
   /Name /TwitterColorEmojiSVGinOT
   /FontBBox [-0.00000000000020210994 -402.84998 2048 1645.15]
-  /ToUnicode 4 0 R
+  /ToUnicode 5 0 R
   /FontMatrix [0.00048828125 0 0 0.00048828125 0 0]
   /FirstChar 0
   /LastChar 0
   /Widths [2048]
   /CharProcs <<
-    /g0 2 0 R
+    /g0 4 0 R
   >>
   /Encoding <<
     /Type /Encoding
@@ -46,7 +36,32 @@ endobj
 >>
 endobj
 
+3 0 obj
+<<
+  /Type /Page
+  /Resources <<
+    /ProcSet [/PDF /Text /ImageC /ImageB]
+    /Font <<
+      /f0 2 0 R
+    >>
+  >>
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 6 0 R
+>>
+endobj
+
 4 0 obj
+<<
+  /Length 16
+>>
+stream
+2048 0 d0
+/x0 Do
+endstream
+endobj
+
+5 0 obj
 <<
   /Length 617
   /Type /CMap
@@ -85,21 +100,6 @@ end
 %%EndResource
 %%EOF
 endstream
-endobj
-
-5 0 obj
-<<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /Font <<
-      /f0 3 0 R
-    >>
-  >>
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 6 0 R
->>
 endobj
 
 6 0 obj
@@ -203,9 +203,9 @@ xref
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000149 00000 n
-0000000618 00000 n
-0000001314 00000 n
+0000000549 00000 n
+0000000744 00000 n
+0000000813 00000 n
 0000001509 00000 n
 0000001635 00000 n
 0000002931 00000 n
@@ -213,7 +213,7 @@ trailer
 <<
   /Size 9
   /Root 8 0 R
-  /ID [(4H4nrfqcZG0XaFFHpztdMg==) (4H4nrfqcZG0XaFFHpztdMg==)]
+  /ID [(jgGY2RLyntty5g1J+DE9NQ==) (jgGY2RLyntty5g1J+DE9NQ==)]
 >>
 startxref
 2985

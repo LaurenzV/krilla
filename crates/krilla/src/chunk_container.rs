@@ -29,16 +29,21 @@ pub(crate) struct ChunkContainer {
     pub(crate) destinations: Vec<Chunk>,
     pub(crate) ext_g_states: Vec<Chunk>,
     pub(crate) masks: Vec<Chunk>,
-
-    // Mixed chunks.
     pub(crate) fonts: Vec<Chunk>,
     pub(crate) shading_functions: Vec<Chunk>,
     pub(crate) patterns: Vec<Chunk>,
-    pub(crate) pages: Vec<DChunk>,
+    pub(crate) pages: Vec<Chunk>,
     pub(crate) embedded_files: Vec<Chunk>,
+
+    // Mixed chunks.
     pub(crate) embedded_pdfs: Vec<Deferred<KrillaResult<EmbeddedPdfChunk>>>,
 
     // Stream objects.
+    pub(crate) font_streams: Vec<Chunk>,
+    pub(crate) shading_function_streams: Vec<Chunk>,
+    pub(crate) pattern_streams: Vec<Chunk>,
+    pub(crate) page_streams: Vec<DChunk>,
+    pub(crate) embedded_file_streams: Vec<Chunk>,
     pub(crate) icc_profiles: Vec<Chunk>,
     pub(crate) x_objects: Vec<Chunk>,
     pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
@@ -351,14 +356,19 @@ impl Visit for ChunkContainer {
         self.destinations.visit(sc, f)?;
         self.ext_g_states.visit(sc, f)?;
         self.masks.visit(sc, f)?;
-
         self.fonts.visit(sc, f)?;
         self.shading_functions.visit(sc, f)?;
         self.patterns.visit(sc, f)?;
         self.pages.visit(sc, f)?;
         self.embedded_files.visit(sc, f)?;
+
         self.embedded_pdfs.visit(sc, f)?;
 
+        self.font_streams.visit(sc, f)?;
+        self.shading_function_streams.visit(sc, f)?;
+        self.pattern_streams.visit(sc, f)?;
+        self.page_streams.visit(sc, f)?;
+        self.embedded_file_streams.visit(sc, f)?;
         self.icc_profiles.visit(sc, f)?;
         self.x_objects.visit(sc, f)?;
         self.images.visit(sc, f)?;
