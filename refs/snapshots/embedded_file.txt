@@ -17,11 +17,24 @@ endobj
   >>
   /MediaBox [0 0 595 842]
   /Parent 1 0 R
-  /Contents 3 0 R
+  /Contents 4 0 R
 >>
 endobj
 
 3 0 obj
+<<
+  /Type /Filespec
+  /F (emojis.txt)
+  /UF (emojis.txt)
+  /EF <<
+    /F 5 0 R
+    /UF 5 0 R
+  >>
+  /Desc (The description of the file.)
+>>
+endobj
+
+4 0 obj
 <<
   /Length 0
 >>
@@ -30,7 +43,7 @@ stream
 endstream
 endobj
 
-4 0 obj
+5 0 obj
 <<
   /Length 209
   /Type /EmbeddedFile
@@ -45,26 +58,13 @@ stream
 endstream
 endobj
 
-5 0 obj
-<<
-  /Type /Filespec
-  /F (emojis.txt)
-  /UF (emojis.txt)
-  /EF <<
-    /F 4 0 R
-    /UF 4 0 R
-  >>
-  /Desc (The description of the file.)
->>
-endobj
-
 6 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
   /Names <<
     /EmbeddedFiles <<
-      /Names [(emojis.txt) 5 0 R]
+      /Names [(emojis.txt) 3 0 R]
     >>
   >>
 >>
@@ -76,14 +76,14 @@ xref
 0000000016 00000 n
 0000000080 00000 n
 0000000239 00000 n
-0000000291 00000 n
-0000000664 00000 n
+0000000396 00000 n
+0000000448 00000 n
 0000000821 00000 n
 trailer
 <<
   /Size 7
   /Root 6 0 R
-  /ID [(CaIg2MJz7l2T0xMYZ0e32w==) (CaIg2MJz7l2T0xMYZ0e32w==)]
+  /ID [(IdKaKwSeOcnCXOwQlXADWQ==) (IdKaKwSeOcnCXOwQlXADWQ==)]
 >>
 startxref
 955

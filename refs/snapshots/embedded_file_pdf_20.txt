@@ -15,11 +15,24 @@ endobj
   /Resources <<>>
   /MediaBox [0 0 595 842]
   /Parent 1 0 R
-  /Contents 3 0 R
+  /Contents 4 0 R
 >>
 endobj
 
 3 0 obj
+<<
+  /Type /Filespec
+  /F (emojis.txt)
+  /UF (emojis.txt)
+  /EF <<
+    /F 5 0 R
+    /UF 5 0 R
+  >>
+  /Desc (The description of the file.)
+>>
+endobj
+
+4 0 obj
 <<
   /Length 0
 >>
@@ -28,7 +41,7 @@ stream
 endstream
 endobj
 
-4 0 obj
+5 0 obj
 <<
   /Length 209
   /Type /EmbeddedFile
@@ -41,19 +54,6 @@ endobj
 stream
 😀😃😄😁😆😅👺🤡💩👻💀🦩🌚🌕🌎🌍🌏🪐💫⭐️🌟✨⚡️☄️💥🔥🌪🌈🍒🍑🥭🍍🥥🥝🍅🍆🍤🍙🍚🍼🫖☕️🍵🧃🥤🧋⛳️🪁🏹🎣
 endstream
-endobj
-
-5 0 obj
-<<
-  /Type /Filespec
-  /F (emojis.txt)
-  /UF (emojis.txt)
-  /EF <<
-    /F 4 0 R
-    /UF 4 0 R
-  >>
-  /Desc (The description of the file.)
->>
 endobj
 
 6 0 obj
@@ -70,7 +70,7 @@ endobj
   /Lang (en)
   /Names <<
     /EmbeddedFiles <<
-      /Names [(emojis.txt) 5 0 R]
+      /Names [(emojis.txt) 3 0 R]
     >>
   >>
 >>
@@ -82,8 +82,8 @@ xref
 0000000016 00000 n
 0000000080 00000 n
 0000000194 00000 n
-0000000246 00000 n
-0000000619 00000 n
+0000000351 00000 n
+0000000403 00000 n
 0000000776 00000 n
 0000000865 00000 n
 trailer
@@ -91,7 +91,7 @@ trailer
   /Size 8
   /Root 7 0 R
   /Info 6 0 R
-  /ID [(AwJYgOM0mC2tg47q7cyN0A==) (AwJYgOM0mC2tg47q7cyN0A==)]
+  /ID [(kNLadNU8kraOHmC4T/13rg==) (kNLadNU8kraOHmC4T/13rg==)]
 >>
 startxref
 1012
