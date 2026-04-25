@@ -684,7 +684,9 @@ impl TagGroup {
             }
         }
 
-        let mut chunk = Chunk::new();
+        // Note: Since we are going to be creating lots of these, we don't want
+        // to use the pdf-writer default of 1KB for the capacity.
+        let mut chunk = Chunk::with_capacity(128);
         let mut struct_elem = chunk.struct_element(elem_ref);
         self.tag.write_kind(&mut struct_elem, sc);
         struct_elem.parent(parent_ref);
