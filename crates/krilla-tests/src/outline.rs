@@ -59,8 +59,8 @@ fn outline_open_state(d: &mut Document) {
     let mut child1 = OutlineNode::new(
         "Heading 1".to_string(),
         XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
-    );
-    child1.set_open(true);
+    )
+    .with_open(true);
     child1.push_child(OutlineNode::new(
         "Heading 1.1".to_string(),
         XyzDestination::new(1, Point::from_xy(50.0, 50.0)),

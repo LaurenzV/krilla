@@ -141,7 +141,7 @@ impl OutlineNode {
     /// `text` is the string that should be displayed in the outline tree, and
     /// `destination` is the destination that should be jumped to when clicking on
     /// the outline entry. The node is created in the *closed* state; use
-    /// [`OutlineNode::with_open`] or [`OutlineNode::set_open`] to change this.
+    /// [`OutlineNode::with_open`] to change this.
     pub fn new(text: String, destination: XyzDestination) -> Self {
         Self {
             children: vec![],
@@ -159,11 +159,6 @@ impl OutlineNode {
     pub fn with_open(mut self, open: bool) -> Self {
         self.open = open;
         self
-    }
-
-    /// Set whether this node is initially open (children shown expanded).
-    pub fn set_open(&mut self, open: bool) {
-        self.open = open;
     }
 
     /// Add a new child to the outline node.
