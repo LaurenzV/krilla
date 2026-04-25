@@ -13,7 +13,6 @@ use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
 use crate::color::Color;
 use crate::configure::{PdfVersion, ValidationError};
-use crate::error::KrillaResult;
 use crate::geom::{Quadrilateral, Rect};
 use crate::interactive::action::Action;
 use crate::interactive::destination::Destination;
@@ -62,19 +61,14 @@ impl From<LinkAnnotation> for Annotation {
 }
 
 impl Annotation {
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        root_ref: Ref,
-        page_height: f32,
-    ) -> KrillaResult<()> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref, page_height: f32) {
         let mut chunk = Chunk::new();
         let mut annotation = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::Annotation>();
 
         self.annotation_type
-            .serialize_type(sc, &mut annotation, page_height)?;
+            .serialize_type(sc, &mut annotation, page_height);
 
         let AnnotationType::Link(l) = &self.annotation_type;
         // Only set the print flag when really necessary (only PDF/A). Don't
@@ -106,8 +100,6 @@ impl Annotation {
 
         annotation.finish();
         sc.chunk_container.annotations.push(chunk);
-
-        Ok(())
     }
 }
 
@@ -123,7 +115,7 @@ impl AnnotationType {
         sc: &mut SerializeContext,
         annotation: &mut pdf_writer::writers::Annotation,
         page_height: f32,
-    ) -> KrillaResult<()> {
+    ) {
         match self {
             AnnotationType::Link(l) => l.serialize_type(sc, annotation, page_height),
         }
@@ -231,7 +223,7 @@ impl LinkAnnotation {
         sc: &mut SerializeContext,
         annotation: &mut pdf_writer::writers::Annotation,
         page_height: f32,
-    ) -> KrillaResult<()> {
+    ) {
         annotation.subtype(pdf_writer::types::AnnotationType::Link);
 
         let actual_rect = self
@@ -274,11 +266,9 @@ impl LinkAnnotation {
 
         match &self.target {
             Target::Destination(destination) => {
-                destination.serialize(sc, annotation.insert(Name(b"Dest")))?
+                destination.serialize(sc, annotation.insert(Name(b"Dest")))
             }
-            Target::Action(action) => action.serialize(sc, annotation.action())?,
-        };
-
-        Ok(())
+            Target::Action(action) => action.serialize(sc, annotation.action()),
+        }
     }
 }

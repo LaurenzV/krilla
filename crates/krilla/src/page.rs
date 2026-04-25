@@ -10,7 +10,6 @@ use pdf_writer::{Chunk, Finish, Ref, TextStr};
 
 use crate::configure::PdfVersion;
 use crate::content::ContentBuilder;
-use crate::error::KrillaResult;
 use crate::geom::{Rect, Size, Transform};
 use crate::interactive::annotation::Annotation;
 use crate::interchange::tagging::{Identifier, PageTagIdentifier};
@@ -367,7 +366,7 @@ impl InternalPage {
         }
     }
 
-    pub(crate) fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> KrillaResult<()> {
+    pub(crate) fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
 
         let mut annotation_refs = vec![];
@@ -376,7 +375,7 @@ impl InternalPage {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
 
-                annotation.serialize(sc, annot_ref, self.page_settings.surface_size().height())?;
+                annotation.serialize(sc, annot_ref, self.page_settings.surface_size().height());
                 annotation_refs.push((annot_ref, OnceCell::new()));
             }
         }
@@ -448,8 +447,6 @@ impl InternalPage {
             chunk.extend(self.stream_chunk.wait());
             chunk
         }));
-
-        Ok(())
     }
 }
 

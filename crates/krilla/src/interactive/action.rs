@@ -9,7 +9,6 @@
 use pdf_writer::types::ActionType;
 use pdf_writer::{Name, Str};
 
-use crate::error::KrillaResult;
 use crate::interactive::destination::Destination;
 use crate::serialize::SerializeContext;
 
@@ -26,16 +25,14 @@ impl Action {
         &self,
         sc: &mut SerializeContext,
         mut action: pdf_writer::writers::Action,
-    ) -> KrillaResult<()> {
+    ) {
         match self {
             Action::Link(link) => link.serialize(action),
             Action::Goto(dest) => {
                 let dest_entry = action.action_type(ActionType::GoTo).insert(Name(b"D"));
-                dest.serialize(sc, dest_entry)?
+                dest.serialize(sc, dest_entry)
             }
-        };
-
-        Ok(())
+        }
     }
 }
 

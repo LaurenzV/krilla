@@ -709,7 +709,7 @@ impl SerializeContext {
     fn serialize_pages(&mut self) -> KrillaResult<()> {
         let pages = self.global_objects.pages.take();
         for (ref_, page) in pages {
-            page.serialize(self, ref_)?;
+            page.serialize(self, ref_);
         }
 
         Ok(())
@@ -727,7 +727,7 @@ impl SerializeContext {
     fn serialize_xyz_destinations(&mut self) -> KrillaResult<()> {
         let xyz_destinations = self.global_objects.xyz_destinations.take();
         for (ref_, dest) in &xyz_destinations {
-            dest.serialize(self, *ref_)?;
+            dest.serialize(self, *ref_);
         }
 
         Ok(())
