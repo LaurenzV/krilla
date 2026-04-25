@@ -24,7 +24,7 @@ pub(crate) struct ChunkContainer {
     pub(crate) destination_profiles: Option<(Ref, Chunk)>,
     pub(crate) struct_tree_root: Option<(Ref, Chunk)>,
 
-    pub(crate) struct_elements: Vec<Chunk>,
+    pub(crate) struct_elements: Option<Chunk>,
     pub(crate) page_labels: Vec<Chunk>,
     pub(crate) annotations: Vec<Chunk>,
     pub(crate) fonts: Vec<Chunk>,
@@ -365,6 +365,15 @@ impl Visit for ChunkContainer {
 impl Visit for Chunk {
     fn visit(&self, _: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
         f(self);
+        Ok(())
+    }
+}
+
+impl Visit for Option<Chunk> {
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        if let Some(chunk) = self {
+            chunk.visit(sc, f)?;
+        }
         Ok(())
     }
 }
