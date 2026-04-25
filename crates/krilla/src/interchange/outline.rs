@@ -140,8 +140,7 @@ impl OutlineNode {
     ///
     /// `text` is the string that should be displayed in the outline tree, and
     /// `destination` is the destination that should be jumped to when clicking on
-    /// the outline entry. The node is created in the *closed* state; use
-    /// [`OutlineNode::with_open`] to change this.
+    /// the outline entry.
     pub fn new(text: String, destination: XyzDestination) -> Self {
         Self {
             children: vec![],
