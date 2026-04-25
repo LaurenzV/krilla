@@ -625,6 +625,26 @@ fn tagging_strong_and_em_pdf_20(document: &mut Document) {
     tagging_strong_and_em_impl(document);
 }
 
+#[snapshot(document, settings_25)]
+fn tagging_custom_namespace_pdf_20(document: &mut Document) {
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "2026-04-25");
+    surface.end_tagged();
+    let mut datetime = TagGroup::new(Tag::Datetime);
+    datetime.push(id);
+
+    surface.finish();
+    page.finish();
+
+    tag_tree.push(datetime);
+
+    document.set_tag_tree(tag_tree);
+}
+
 fn tagging_strong_and_em_impl(document: &mut Document) {
     document.set_metadata(
         Metadata::new()
