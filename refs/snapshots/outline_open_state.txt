@@ -11,19 +11,18 @@ endobj
 
 2 0 obj
 <<
-  /Type /Outlines
-  /First 3 0 R
-  /Last 5 0 R
-  /Count 3
+  /Parent 3 0 R
+  /Title (Heading 1.1)
+  /Dest 6 0 R
 >>
 endobj
 
 3 0 obj
 <<
-  /Parent 2 0 R
-  /Next 5 0 R
-  /First 4 0 R
-  /Last 4 0 R
+  /Parent 5 0 R
+  /Next 4 0 R
+  /First 2 0 R
+  /Last 2 0 R
   /Count 1
   /Title (Heading 1)
   /Dest 7 0 R
@@ -32,18 +31,19 @@ endobj
 
 4 0 obj
 <<
-  /Parent 3 0 R
-  /Title (Heading 1.1)
-  /Dest 6 0 R
+  /Parent 5 0 R
+  /Prev 3 0 R
+  /Title (Heading 2)
+  /Dest 8 0 R
 >>
 endobj
 
 5 0 obj
 <<
-  /Parent 2 0 R
-  /Prev 3 0 R
-  /Title (Heading 2)
-  /Dest 8 0 R
+  /Type /Outlines
+  /First 3 0 R
+  /Last 4 0 R
+  /Count 3
 >>
 endobj
 
@@ -126,7 +126,7 @@ endobj
 <<
   /Type /Catalog
   /Pages 1 0 R
-  /Outlines 2 0 R
+  /Outlines 5 0 R
 >>
 endobj
 
@@ -135,9 +135,9 @@ xref
 0000000000 65535 f
 0000000016 00000 n
 0000000094 00000 n
-0000000174 00000 n
-0000000301 00000 n
-0000000376 00000 n
+0000000169 00000 n
+0000000296 00000 n
+0000000383 00000 n
 0000000463 00000 n
 0000000502 00000 n
 0000000539 00000 n
@@ -152,7 +152,7 @@ trailer
 <<
   /Size 16
   /Root 15 0 R
-  /ID [(7nNb0MBCRVqNI7RGxH/VFQ==) (7nNb0MBCRVqNI7RGxH/VFQ==)]
+  /ID [(NVbxj1t5y0R2dGvEbXzgUw==) (NVbxj1t5y0R2dGvEbXzgUw==)]
 >>
 startxref
 1293
