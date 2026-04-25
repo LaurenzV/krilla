@@ -206,13 +206,12 @@ impl OutlineNode {
         // do not go into nodes that whose count is negative (i.e. nodes that are
         // closed). Therefore, in case the node is closed, the visible count is
         // just the node itself, so 1.
-        let visible_count = if self.open {
+
+        if self.open {
             1 + children.map_or(0, |children| children.visible_count)
         } else {
             1
-        };
-
-        visible_count
+        }
     }
 }
 
