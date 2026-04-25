@@ -150,7 +150,7 @@ impl OutlineNode {
     /// If `open` is `true`, the node's children will be shown expanded when the
     /// document is opened in a PDF viewer; if `false`, the children will be
     /// collapsed. Leaf nodes (nodes without children) are unaffected by this flag.
-    /// 
+    ///
     /// By default, this flag is set to `false`.
     pub fn with_open(mut self, open: bool) -> Self {
         self.open = open;
@@ -169,7 +169,7 @@ impl OutlineNode {
         root: Ref,
         next: Option<Ref>,
         prev: Option<Ref>,
-    ) -> KrillaResult<Chunk> {
+    ) -> KrillaResult<(Chunk, usize)> {
         let mut chunk = Chunk::new();
 
         let mut sub_chunks = vec![];
@@ -185,7 +185,7 @@ impl OutlineNode {
             outline_entry.prev(prev);
         }
 
-        serialize_children(
+        let visible_child_count = serialize_children(
             &self.children,
             root,
             &mut sub_chunks,
@@ -205,7 +205,17 @@ impl OutlineNode {
             chunk.extend(&sub_chunk);
         }
 
-        Ok(chunk)
+        // See the algorithm described in the PDF spec. When recursing down, we
+        // do not go into nodes that whose count is negative (i.e. nodes that are
+        // closed). Therefore, in case the node is closed, the visible count is
+        // just the node itself, so 1.
+        let visible_count = if self.open {
+            1 + visible_child_count
+        } else {
+            1
+        };
+
+        Ok((chunk, visible_count))
     }
 }
 
@@ -216,7 +226,9 @@ fn serialize_children(
     sc: &mut SerializeContext,
     outlineable: &mut impl Outlineable,
     negate_count: bool,
-) -> KrillaResult<()> {
+) -> KrillaResult<usize> {
+    let mut visible_count = 0;
+
     if !children.is_empty() {
         let first = sc.new_ref();
         let mut last = first;
@@ -233,7 +245,9 @@ fn serialize_children(
 
             last = cur.unwrap();
 
-            sub_chunks.push(children[i].serialize(sc, root, last, next, prev)?);
+            let (chunk, child_visible_count) = children[i].serialize(sc, root, last, next, prev)?;
+            visible_count += child_visible_count;
+            sub_chunks.push(chunk);
 
             prev = cur;
             cur = next;
@@ -242,26 +256,12 @@ fn serialize_children(
         outlineable.first(first);
         outlineable.last(last);
 
-        let mut count = i32::try_from(visible_descendant_count(children)).unwrap();
+        let mut count = i32::try_from(visible_count).unwrap();
         if negate_count {
             count = -count;
         }
         outlineable.count(count);
     }
 
-    Ok(())
-}
-
-/// Recursively count outline items visible below a given set of siblings,
-/// descending into a node only when that node itself is open. This matches the
-/// semantics of the `/Count` entry described in PDF 1.7 §12.3.3.
-fn visible_descendant_count(children: &[OutlineNode]) -> usize {
-    let mut total = 0;
-    for child in children {
-        total += 1;
-        if child.open {
-            total += visible_descendant_count(&child.children);
-        }
-    }
-    total
+    Ok(visible_count)
 }
