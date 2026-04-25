@@ -127,7 +127,7 @@ impl Type3Font {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) -> Chunk {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
@@ -361,8 +361,7 @@ impl Type3Font {
         let mut cmap = chunk.cmap(cmap_ref, &cmap_stream);
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
-
-        chunk
+        sc.chunk_container.fonts.push(chunk);
     }
 }
 

@@ -563,8 +563,7 @@ impl SerializeContext {
     #[cfg(feature = "raster-images")]
     pub(crate) fn register_image(&mut self, image: Image) -> Ref {
         self.register_cached(image, |sc, object, root_ref| {
-            let chunk = object.serialize(sc, root_ref);
-            sc.chunk_container.images.push(chunk);
+            object.serialize(sc, root_ref);
         })
     }
 
@@ -576,8 +575,7 @@ impl SerializeContext {
 
     pub(crate) fn register_page_label(&mut self, page_label: PageLabel) -> Ref {
         let ref_ = self.new_ref();
-        let chunk = page_label.serialize(ref_);
-        self.chunk_container.page_labels.push(chunk);
+        page_label.serialize(self, ref_);
         ref_
     }
 
@@ -664,8 +662,7 @@ impl SerializeContext {
                 .collect::<Vec<_>>(),
         ) {
             let page_label_tree_ref = self.new_ref();
-            let chunk = container.serialize(self, page_label_tree_ref);
-            self.chunk_container.page_label_tree = Some((page_label_tree_ref, chunk));
+            container.serialize(self, page_label_tree_ref);
         }
     }
 
@@ -673,8 +670,7 @@ impl SerializeContext {
         let outline = self.global_objects.outline.take();
         if let Some(outline) = &outline {
             let outline_ref = self.new_ref();
-            let chunk = outline.serialize(self, outline_ref)?;
-            self.chunk_container.outline = Some((outline_ref, chunk));
+            outline.serialize(self, outline_ref)?;
         } else {
             self.register_validation_error(ValidationError::MissingDocumentOutline);
         }
@@ -697,15 +693,13 @@ impl SerializeContext {
             if !borrowed.type3_mapper().is_empty() {
                 for t3_font in borrowed.type3_mapper().fonts() {
                     let f = self.register_font_identifier(t3_font.identifier());
-                    let chunk = t3_font.serialize(self, f.get_ref());
-                    self.chunk_container.fonts.push(chunk);
+                    t3_font.serialize(self, f.get_ref());
                 }
             }
 
             if !borrowed.cid_font().is_empty() {
                 let f = self.register_font_identifier(borrowed.cid_font().identifier());
-                let chunk = borrowed.cid_font().serialize(self, f.get_ref())?;
-                self.chunk_container.fonts.push(chunk);
+                borrowed.cid_font().serialize(self, f.get_ref())?;
             }
         }
 
@@ -733,8 +727,7 @@ impl SerializeContext {
     fn serialize_xyz_destinations(&mut self) -> KrillaResult<()> {
         let xyz_destinations = self.global_objects.xyz_destinations.take();
         for (ref_, dest) in &xyz_destinations {
-            let chunk = dest.serialize(self, *ref_)?;
-            self.chunk_container.destinations.push(chunk);
+            dest.serialize(self, *ref_)?;
         }
 
         Ok(())
@@ -747,13 +740,12 @@ impl SerializeContext {
             let mut parent_tree_map = HashMap::new();
             let mut id_tree_map = BTreeMap::new();
             let struct_tree_root_ref = self.new_ref();
-            let (document_ref, struct_elems) = root.serialize(
+            let document_ref = root.serialize(
                 self,
                 &mut parent_tree_map,
                 &mut id_tree_map,
                 struct_tree_root_ref,
             )?;
-            self.chunk_container.struct_elements = Some(struct_elems);
 
             root.validate(&id_tree_map)?;
 

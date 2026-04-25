@@ -183,11 +183,7 @@ impl CIDFont {
         FontIdentifier::Cid(CIDIdentifier(self.font.clone()))
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        root_ref: Ref,
-    ) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) -> KrillaResult<()> {
         let mut chunk = Chunk::new();
 
         let cid_ref = sc.new_ref();
@@ -397,8 +393,9 @@ impl CIDFont {
         }
 
         stream.finish();
+        sc.chunk_container.fonts.push(chunk);
 
-        Ok(chunk)
+        Ok(())
     }
 }
 

@@ -118,11 +118,7 @@ impl XyzDestination {
         Self(Arc::new(XyzDestRepr { page_index, point }))
     }
 
-    pub(crate) fn serialize(
-        &self,
-        sc: &mut SerializeContext,
-        root_ref: Ref,
-    ) -> KrillaResult<Chunk> {
+    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) -> KrillaResult<()> {
         let mut chunk = Chunk::new();
         let destination = chunk.destination(root_ref);
 
@@ -152,7 +148,8 @@ impl XyzDestination {
         destination
             .page(page_ref)
             .xyz(mapped_point.x, mapped_point.y, None);
+        sc.chunk_container.destinations.push(chunk);
 
-        Ok(chunk)
+        Ok(())
     }
 }
