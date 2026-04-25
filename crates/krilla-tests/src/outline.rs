@@ -43,17 +43,10 @@ fn outline_simple(d: &mut Document) {
 }
 #[snapshot(document)]
 fn outline_open_state(d: &mut Document) {
-    let fills = [red_fill(1.0), green_fill(1.0), blue_fill(1.0)];
-    for (index, fill) in fills.into_iter().enumerate() {
-        let factor = index as f32 * 50.0;
-        let path = rect_to_path(factor, factor, 100.0 + factor, 100.0 + factor);
-        let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
-        let mut surface = page.surface();
-        surface.set_fill(Some(fill));
-        surface.draw_path(&path);
-        surface.finish();
-        page.finish();
+    for _ in 0..3 {
+        let _ = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
     }
+
     let mut outline = Outline::new();
 
     let mut child1 = OutlineNode::new(
@@ -79,21 +72,12 @@ fn outline_open_state(d: &mut Document) {
 
 #[snapshot(document)]
 fn outline_mixed_state(d: &mut Document) {
-    let fills = [red_fill(1.0), green_fill(1.0), blue_fill(1.0)];
-    for (index, fill) in fills.into_iter().enumerate() {
-        let factor = index as f32 * 50.0;
-        let path = rect_to_path(factor, factor, 100.0 + factor, 100.0 + factor);
-        let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
-        let mut surface = page.surface();
-        surface.set_fill(Some(fill));
-        surface.draw_path(&path);
-        surface.finish();
-        page.finish();
+    for _ in 0..3 {
+        let _ = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
     }
+
     let mut outline = Outline::new();
 
-    // Open parent containing an open child, so the root /Outlines must count
-    // grand-children as visible too.
     let mut child1 = OutlineNode::new(
         "Heading 1".to_string(),
         XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
@@ -110,8 +94,6 @@ fn outline_mixed_state(d: &mut Document) {
     ));
     child1.push_child(nested);
 
-    // Closed parent; its child should contribute to the magnitude but not be
-    // visible from the root's perspective.
     let mut child2 = OutlineNode::new(
         "Heading 2".to_string(),
         XyzDestination::new(2, Point::from_xy(100.0, 100.0)),
