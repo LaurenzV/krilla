@@ -19,27 +19,29 @@ endobj
     /Strong /Span
     /Em /Span
   >>
-  /K [4 0 R]
+  /K [6 0 R]
   /ParentTree <<
     /Nums [0 3 0 R]
   >>
   /IDTree <<
-    /Names [(Note 1) 6 0 R (Note 2) 5 0 R]
+    /Names [(Note 1) 4 0 R (Note 2) 5 0 R]
   >>
   /ParentTreeNextKey 1
 >>
 endobj
 
 3 0 obj
-[6 0 R 5 0 R]
+[4 0 R 5 0 R]
 endobj
 
 4 0 obj
 <<
   /Type /StructElem
-  /S /Document
-  /P 2 0 R
-  /K [6 0 R 5 0 R]
+  /S /Note
+  /P 6 0 R
+  /ID (Note 1)
+  /K [0]
+  /Pg 7 0 R
 >>
 endobj
 
@@ -47,7 +49,7 @@ endobj
 <<
   /Type /StructElem
   /S /Note
-  /P 4 0 R
+  /P 6 0 R
   /ID (Note 2)
   /K [1]
   /Pg 7 0 R
@@ -57,11 +59,9 @@ endobj
 6 0 obj
 <<
   /Type /StructElem
-  /S /Note
-  /P 4 0 R
-  /ID (Note 1)
-  /K [0]
-  /Pg 7 0 R
+  /S /Document
+  /P 2 0 R
+  /K [4 0 R 5 0 R]
 >>
 endobj
 
@@ -133,8 +133,8 @@ xref
 0000000080 00000 n
 0000000367 00000 n
 0000000397 00000 n
-0000000484 00000 n
-0000000584 00000 n
+0000000497 00000 n
+0000000597 00000 n
 0000000684 00000 n
 0000000862 00000 n
 0000001115 00000 n
@@ -142,7 +142,7 @@ trailer
 <<
   /Size 10
   /Root 9 0 R
-  /ID [(1JlRVaSylqAL/Ur/34XRZw==) (1JlRVaSylqAL/Ur/34XRZw==)]
+  /ID [(Uew6GoD7V2X1ZQYjO1wHIQ==) (Uew6GoD7V2X1ZQYjO1wHIQ==)]
 >>
 startxref
 1250

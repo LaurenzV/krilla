@@ -590,7 +590,7 @@ impl Node {
         id_tree: &mut BTreeMap<TagId, Ref>,
         parent: Ref,
         note_id: &mut u32,
-        struct_elems: &mut Vec<Chunk>,
+        struct_elems: &mut Chunk,
     ) -> KrillaResult<Option<Reference>> {
         match self {
             Node::Group(g) => Ok(Some(g.serialize(
@@ -665,7 +665,7 @@ impl TagGroup {
         id_tree: &mut BTreeMap<TagId, Ref>,
         parent_ref: Ref,
         note_id: &mut u32,
-        struct_elems: &mut Vec<Chunk>,
+        struct_elems: &mut Chunk,
     ) -> KrillaResult<Reference> {
         let elem_ref = sc.new_ref();
         let mut children_refs = vec![];
@@ -684,10 +684,7 @@ impl TagGroup {
             }
         }
 
-        // Note: Since we are going to be creating lots of these, we don't want
-        // to use the pdf-writer default of 1KB for the capacity.
-        let mut chunk = Chunk::with_capacity(128);
-        let mut struct_elem = chunk.struct_element(elem_ref);
+        let mut struct_elem = struct_elems.struct_element(elem_ref);
         self.tag.write_kind(&mut struct_elem, sc);
         struct_elem.parent(parent_ref);
 
@@ -970,7 +967,6 @@ impl TagGroup {
             &mut struct_elem,
         )?;
         struct_elem.finish();
-        struct_elems.push(chunk);
 
         Ok(Reference::Ref(elem_ref))
     }
@@ -1041,9 +1037,9 @@ impl TagTree {
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         id_tree_map: &mut BTreeMap<TagId, Ref>,
         struct_tree_ref: Ref,
-    ) -> KrillaResult<(Ref, Vec<Chunk>)> {
+    ) -> KrillaResult<(Ref, Chunk)> {
         let root_ref = sc.new_ref();
-        let mut struct_elems = vec![];
+        let mut struct_elems = Chunk::new();
 
         // Keeps track of the ID of notes in the IDTree. We currently only write IDs for notes,
         // which is why we use this simple variable, but this should be refactored if we write
@@ -1067,8 +1063,7 @@ impl TagTree {
             }
         }
 
-        let mut chunk = Chunk::new();
-        let mut struct_elem = chunk.indirect(root_ref).start::<StructElement>();
+        let mut struct_elem = struct_elems.indirect(root_ref).start::<StructElement>();
         struct_elem.kind(StructRole::Document);
         struct_elem.parent(struct_tree_ref);
         if let Some(lang) = &self.lang {
@@ -1085,11 +1080,6 @@ impl TagTree {
         )?;
 
         struct_elem.finish();
-        struct_elems.push(chunk);
-
-        // Not strictly necessary, but it's nicer to have them in DFS-order instead
-        // of in reverse.
-        struct_elems = struct_elems.into_iter().rev().collect::<Vec<_>>();
 
         Ok((root_ref, struct_elems))
     }
