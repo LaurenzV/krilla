@@ -10,8 +10,8 @@ use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
 use krilla::surface::Surface;
 use krilla::tagging::{
-    ArtifactType, BBox, ColumnDimensions, ContentTag, NaiveRgbColor, Node, Sides, SpanTag,
-    TagGroup, TagTree,
+    Artifact, ArtifactType, BBox, ColumnDimensions, ContentTag, NaiveRgbColor, Node, Sides,
+    SpanTag, TagGroup, TagTree,
 };
 use krilla::tagging::{ListNumbering, Placement, TableHeaderScope, Tag, TagId, WritingMode};
 use krilla::text::{Font, TextDirection};
@@ -178,7 +178,9 @@ fn tagging_multiple_content_tags(document: &mut Document) {
     let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
     surface.fill_text_(25.0, "a span");
     surface.end_tagged();
-    let id2 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Header));
+    let id2 = surface.start_tagged(ContentTag::Artifact(Artifact::with_kind(
+        ArtifactType::Header,
+    )));
     surface.fill_text_(50.0, "a header artifact");
     surface.end_tagged();
     let id3 = surface.start_tagged(ContentTag::Other);
@@ -204,7 +206,9 @@ fn tagging_multiple_content_tags(document: &mut Document) {
     surface.pop();
     surface.end_tagged();
 
-    let id6 = surface.start_tagged(ContentTag::Artifact(ArtifactType::Other));
+    let id6 = surface.start_tagged(ContentTag::Artifact(Artifact::with_kind(
+        ArtifactType::Other,
+    )));
     surface.fill_text_(75.0, "a different type of artifact");
     surface.end_tagged();
 
@@ -494,7 +498,7 @@ fn tagging_tag_attributes(document: &mut Document) {
     let mut page = document.start_page();
     let mut surface = page.surface();
 
-    let logo = surface.start_tagged(ContentTag::Artifact(ArtifactType::Other));
+    let logo = surface.start_tagged(ContentTag::Artifact(Artifact::default()));
     surface.outline_text_(100.0, "NASA");
     surface.end_tagged();
 
@@ -509,6 +513,22 @@ fn tagging_tag_attributes(document: &mut Document) {
     tag_tree.push(TagGroup::with_children(figure, vec![Node::Leaf(logo)]));
 
     document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document)]
+fn tagging_artifact_subtypes(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    surface.start_tagged(ContentTag::Artifact(Artifact::new(
+        ArtifactType::Watermark,
+        Some(Rect::from_xywh(0.0, 80.0, 200.0, 50.0).unwrap()),
+    )));
+    surface.outline_text_(100.0, "++");
+    surface.end_tagged();
+
+    surface.finish();
+    page.finish();
 }
 
 #[snapshot(document, settings_15)]
