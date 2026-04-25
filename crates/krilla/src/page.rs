@@ -367,11 +367,7 @@ impl InternalPage {
         }
     }
 
-    pub(crate) fn serialize(
-        self,
-        sc: &mut SerializeContext,
-        root_ref: Ref,
-    ) -> KrillaResult<Deferred<Chunk>> {
+    pub(crate) fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> KrillaResult<()> {
         let mut chunk = Chunk::new();
 
         let mut annotation_refs = vec![];
@@ -453,10 +449,12 @@ impl InternalPage {
 
         page.finish();
 
-        Ok(Deferred::new(move || {
+        sc.chunk_container.pages.push(Deferred::new(move || {
             chunk.extend(self.stream_chunk.wait());
             chunk
-        }))
+        }));
+
+        Ok(())
     }
 }
 

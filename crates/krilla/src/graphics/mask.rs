@@ -2,7 +2,6 @@
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
-use crate::chunk_container::ChunkContainerFn;
 use crate::geom::{Rect, Transform};
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::graphics::xobject::XObject;
@@ -11,7 +10,6 @@ use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::Stream;
 use crate::stream::StreamBuilder;
-use crate::util::Deferred;
 
 /// A mask. Can be a luminance mask or an alpha mask.
 ///
@@ -102,11 +100,7 @@ impl MaskType {
 }
 
 impl Cacheable for Mask {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.masks
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
 
         let x_object =
@@ -118,8 +112,7 @@ impl Cacheable for Mask {
         dict.pair(Name(b"G"), x_object);
 
         dict.finish();
-
-        Deferred::new(|| chunk)
+        sc.chunk_container.masks.push(chunk);
     }
 }
 

@@ -10,7 +10,7 @@ use pdf_writer::types::{StructRole, StructRole2};
 use pdf_writer::writers::{OutputIntent, StructTreeRoot};
 use pdf_writer::{Chunk, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 
-use crate::chunk_container::{ChunkContainer, ChunkContainerFn};
+use crate::chunk_container::ChunkContainer;
 use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
 use crate::configure::validate::ValidationStore;
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
@@ -34,7 +34,7 @@ use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
 use crate::text::GlyphId;
 use crate::text::{Font, FontContainer, FontIdentifier};
-use crate::util::{Deferred, SipHashable};
+use crate::util::SipHashable;
 
 const STR_LEN: usize = 32767;
 const NAME_LEN: usize = 127;
@@ -549,9 +549,7 @@ impl SerializeContext {
         T: Cacheable,
     {
         self.register_cached(object, |sc, object, root_ref| {
-            let chunk_container_fn = object.chunk_container();
-            let chunk = object.serialize(sc, root_ref);
-            chunk_container_fn(&mut sc.chunk_container).push(chunk);
+            object.serialize(sc, root_ref);
         })
     }
 
@@ -717,8 +715,7 @@ impl SerializeContext {
     fn serialize_pages(&mut self) -> KrillaResult<()> {
         let pages = self.global_objects.pages.take();
         for (ref_, page) in pages {
-            let chunk = page.serialize(self, ref_)?;
-            self.chunk_container.pages.push(chunk);
+            page.serialize(self, ref_)?;
         }
 
         Ok(())
@@ -1028,6 +1025,5 @@ impl GlobalObjects {
 }
 
 pub(crate) trait Cacheable: SipHashable {
-    fn chunk_container(&self) -> ChunkContainerFn;
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk>;
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref);
 }

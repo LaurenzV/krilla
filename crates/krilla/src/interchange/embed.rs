@@ -4,14 +4,13 @@ use std::ops::DerefMut;
 
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
-use crate::chunk_container::ChunkContainerFn;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::interchange::metadata::pdf_date;
 use crate::metadata::DateTime;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::FilterStreamBuilder;
 use crate::surface::Location;
-use crate::util::{Deferred, NameExt};
+use crate::util::NameExt;
 use crate::Data;
 
 /// An error while embedding the file.
@@ -52,11 +51,7 @@ pub struct EmbeddedFile {
 }
 
 impl Cacheable for EmbeddedFile {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.embedded_files
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         sc.register_validation_error(ValidationError::EmbeddedFile(
             EmbedError::Existence,
             self.location,
@@ -134,8 +129,7 @@ impl Cacheable for EmbeddedFile {
         }
 
         file_spec.finish();
-
-        Deferred::new(|| chunk)
+        sc.chunk_container.embedded_files.push(chunk);
     }
 }
 

@@ -6,12 +6,11 @@ use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
-use crate::chunk_container::ChunkContainerFn;
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::{deflate_encode, FilterStreamBuilder};
-use crate::util::{Deferred, Prehashed};
+use crate::util::Prehashed;
 
 /// An ICC profile.
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
@@ -42,11 +41,7 @@ impl<const C: u8> ICCProfile<C> {
 }
 
 impl<const C: u8> Cacheable for ICCProfile<C> {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.icc_profiles
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
         let icc_stream = FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
             .finish(&sc.serialize_settings());
@@ -55,8 +50,7 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
         icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
-
-        Deferred::new(|| chunk)
+        sc.chunk_container.icc_profiles.push(chunk);
     }
 }
 
@@ -78,11 +72,7 @@ impl GenericICCProfile {
 }
 
 impl Cacheable for GenericICCProfile {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.icc_profiles
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         match self {
             GenericICCProfile::Luma(l) => l.serialize(sc, root_ref),
             GenericICCProfile::Rgb(r) => r.serialize(sc, root_ref),
@@ -95,11 +85,7 @@ impl Cacheable for GenericICCProfile {
 pub(crate) struct ICCBasedColorSpace<const C: u8>(pub(crate) ICCProfile<C>);
 
 impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.color_spaces
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let icc_ref = sc.register_cacheable(self.0.clone());
 
         let mut chunk = Chunk::new();
@@ -108,8 +94,7 @@ impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
         array.item(Name(b"ICCBased"));
         array.item(icc_ref);
         array.finish();
-
-        Deferred::new(|| chunk)
+        sc.chunk_container.color_spaces.push(chunk);
     }
 }
 

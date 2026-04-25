@@ -4,7 +4,6 @@ use std::sync::Arc;
 use pdf_writer::types::BlendMode;
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
-use crate::chunk_container::ChunkContainerFn;
 use crate::configure::ValidationError;
 use crate::geom::{Rect, Transform};
 use crate::graphics::mask::Mask;
@@ -12,7 +11,6 @@ use crate::num::NormalizedF32;
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
-use crate::util::Deferred;
 
 /// The inner representation of an external graphics state.
 #[derive(Debug, Hash, PartialEq, Eq, Default, Clone)]
@@ -106,11 +104,7 @@ impl ExtGState {
 }
 
 impl Cacheable for ExtGState {
-    fn chunk_container(&self) -> ChunkContainerFn {
-        |cc| &mut cc.ext_g_states
-    }
-
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) -> Deferred<Chunk> {
+    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
         let mut chunk = Chunk::new();
 
         let mut ext_st = chunk.ext_graphics(root_ref);
@@ -145,8 +139,7 @@ impl Cacheable for ExtGState {
         }
 
         ext_st.finish();
-
-        Deferred::new(|| chunk)
+        sc.chunk_container.ext_g_states.push(chunk);
     }
 }
 
