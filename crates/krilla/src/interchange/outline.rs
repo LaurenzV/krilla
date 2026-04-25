@@ -155,6 +155,8 @@ impl OutlineNode {
     /// If `open` is `true`, the node's children will be shown expanded when the
     /// document is opened in a PDF viewer; if `false`, the children will be
     /// collapsed. Leaf nodes (nodes without children) are unaffected by this flag.
+    /// 
+    /// By default, this flag is set to `false`.
     pub fn with_open(mut self, open: bool) -> Self {
         self.open = open;
         self
