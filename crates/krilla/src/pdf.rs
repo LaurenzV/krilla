@@ -168,6 +168,7 @@ impl PdfSerializerContext {
                 chunk_container,
                 rgb::color_space(sc.serialize_settings().no_device_cs).into(),
             );
+            let chunk_settings = sc.chunk_settings();
 
             let deferred_chunk = Deferred::new(move || {
                 // We can't share the serializer context between threads, so each PDF has it's own
@@ -206,6 +207,7 @@ impl PdfSerializerContext {
                 let extracted = hayro_write::extract(
                     pdf,
                     Box::new(|| new_ref.bump()),
+                    chunk_settings,
                     |group| {
                         if let Some(local_group_color_space_ref) = assigned_cs_ref {
                             group

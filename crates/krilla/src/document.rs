@@ -42,17 +42,23 @@ impl Default for Document {
 impl Document {
     /// Create a new document with default serialize settings.
     pub fn new() -> Self {
+        let serializer_context = SerializeContext::new(SerializeSettings::default());
+        let chunk_container = ChunkContainer::new(&serializer_context);
+
         Self {
-            serializer_context: SerializeContext::new(SerializeSettings::default()),
-            chunk_container: ChunkContainer::new(),
+            serializer_context,
+            chunk_container,
         }
     }
 
     /// Create a new document with custom serialize settings.
     pub fn new_with(serialize_settings: SerializeSettings) -> Self {
+        let serializer_context = SerializeContext::new(serialize_settings);
+        let chunk_container = ChunkContainer::new(&serializer_context);
+
         Self {
-            serializer_context: SerializeContext::new(serialize_settings),
-            chunk_container: ChunkContainer::new(),
+            serializer_context,
+            chunk_container,
         }
     }
 

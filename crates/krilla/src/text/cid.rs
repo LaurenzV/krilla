@@ -1,6 +1,6 @@
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo, UnicodeCmap};
 use pdf_writer::writers::WMode;
-use pdf_writer::{Chunk, Finish, Name, Ref, Str};
+use pdf_writer::{Finish, Name, Ref, Str};
 use rustc_hash::FxHashMap;
 use skrifa::instance::Size;
 use skrifa::outline::DrawSettings;
@@ -191,7 +191,7 @@ impl CIDFont {
         root_ref: Ref,
     ) -> KrillaResult<()> {
         let chunk = &mut chunk_container.fonts;
-        let mut stream_chunk = Chunk::new();
+        let mut stream_chunk = sc.new_chunk();
 
         let cid_ref = sc.new_ref();
         let descriptor_ref = sc.new_ref();

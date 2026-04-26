@@ -2,7 +2,7 @@
 
 use std::ops::DerefMut;
 
-use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
+use pdf_writer::{Finish, Name, Ref, Str, TextStr};
 
 use crate::chunk_container::ChunkContainer;
 use crate::configure::{PdfVersion, ValidationError};
@@ -64,7 +64,7 @@ impl Cacheable for EmbeddedFile {
         ));
 
         let chunk = &mut chunk_container.embedded_files;
-        let mut stream_chunk = Chunk::new();
+        let mut stream_chunk = sc.new_chunk();
         let stream_ref = sc.new_ref();
 
         let file_stream = match self.compress {

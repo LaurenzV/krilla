@@ -1041,7 +1041,7 @@ impl TagTree {
         struct_tree_ref: Ref,
     ) -> KrillaResult<Ref> {
         let root_ref = sc.new_ref();
-        let mut struct_elems = Chunk::new();
+        let mut struct_elems = sc.new_chunk();
 
         // Keeps track of the ID of notes in the IDTree. We currently only write IDs for notes,
         // which is why we use this simple variable, but this should be refactored if we write

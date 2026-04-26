@@ -119,7 +119,7 @@ impl<'a> StreamBuilder<'a> {
         Surface::new(
             self.sc,
             self.chunk_container,
-            ContentBuilder::new(Transform::identity(), true),
+            ContentBuilder::new(Transform::identity(), true, self.sc.chunk_settings()),
             None,
             finish_fn,
         )

@@ -115,7 +115,7 @@ impl Outline {
         chunk_container: &mut ChunkContainer,
         root: Ref,
     ) {
-        let mut chunk = Chunk::new();
+        let mut chunk = sc.new_chunk();
         let children = serialize_children(&self.children, root, &mut chunk, sc);
 
         let mut outline = chunk.outline(root);

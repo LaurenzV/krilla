@@ -23,7 +23,7 @@ flate2 = {version = "1.1.0", default-features = false, features = ["zlib-rs"]}
 float-cmp = "0.9.0"
 fontdb = "0.23.0"
 gif = "0.14.2"
-hayro-write = { version = "0.5.1" }
+hayro-write = { git = "https://github.com/LaurenzV/hayro", rev = "a1a5144" }
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.14.0"
 image-webp = "0.2.1"
@@ -34,7 +34,7 @@ krilla-macros = { path = "crates/krilla-macros" }
 oxipng = "10.1.0"
 parley = "0.8.0"
 paste = "1.0.15"
-pdf-writer = "0.14.0"
+pdf-writer = { git = "https://github.com/typst/pdf-writer", rev = "bc50acaea3c6022ef095a52bb75a273ef656813b" }
 pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.86"
 quote = "1.0.37"

@@ -885,6 +885,7 @@ pub fn default() -> SerializeSettings {
 
 pub fn settings_1() -> SerializeSettings {
     SerializeSettings {
+        pretty: true,
         ascii_compatible: true,
         compress_content_streams: false,
         no_device_cs: false,
@@ -1082,6 +1083,13 @@ pub fn settings_30() -> SerializeSettings {
     SerializeSettings {
         configuration: Configuration::new_with_version(PdfVersion::Pdf20),
         xmp_metadata: true,
+        ..settings_1()
+    }
+}
+
+pub fn settings_31() -> SerializeSettings {
+    SerializeSettings {
+        pretty: false,
         ..settings_1()
     }
 }

@@ -231,7 +231,7 @@ impl Cacheable for ShadingFunction {
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
     ) {
-        let mut stream_chunk = Chunk::new();
+        let mut stream_chunk = sc.new_chunk();
 
         match &self.0.properties {
             GradientProperties::RadialAxialGradient(rag) => {

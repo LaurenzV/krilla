@@ -51,7 +51,7 @@ pub(crate) struct ChunkContainer {
 }
 
 impl ChunkContainer {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(sc: &SerializeContext) -> Self {
         Self {
             page_tree: None,
             outline: None,
@@ -59,17 +59,17 @@ impl ChunkContainer {
             destination_profiles: None,
             struct_tree_root: None,
             struct_elements: None,
-            page_labels: Chunk::new(),
-            annotations: Chunk::new(),
-            color_spaces: Chunk::new(),
-            destinations: Chunk::new(),
-            ext_g_states: Chunk::new(),
-            masks: Chunk::new(),
-            fonts: Chunk::new(),
-            shading_functions: Chunk::new(),
-            patterns: Chunk::new(),
-            pages: Chunk::new(),
-            embedded_files: Chunk::new(),
+            page_labels: sc.new_chunk(),
+            annotations: sc.new_chunk(),
+            color_spaces: sc.new_chunk(),
+            destinations: sc.new_chunk(),
+            ext_g_states: sc.new_chunk(),
+            masks: sc.new_chunk(),
+            fonts: sc.new_chunk(),
+            shading_functions: sc.new_chunk(),
+            patterns: sc.new_chunk(),
+            pages: sc.new_chunk(),
+            embedded_files: sc.new_chunk(),
             embedded_pdfs: vec![],
             font_streams: vec![],
             shading_function_streams: vec![],
@@ -110,7 +110,7 @@ impl ChunkContainer {
         // for the document catalog. This hopefully allows us to avoid re-alloactions in the general
         // case, and thus give us better performance.
         let capacity = (chunks_byte_len as f32 * 1.1 + 200.0) as usize;
-        let mut pdf = Pdf::with_capacity(capacity);
+        let mut pdf = sc.new_pdf_with_capacity(capacity);
         sc.serialize_settings().pdf_version().set_version(&mut pdf);
 
         if sc.serialize_settings().ascii_compatible
