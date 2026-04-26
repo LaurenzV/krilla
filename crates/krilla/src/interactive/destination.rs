@@ -8,9 +8,10 @@
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use pdf_writer::{Chunk, Obj, Ref, Str};
+use pdf_writer::{Obj, Ref, Str};
 use tiny_skia_path::Transform;
 
+use crate::chunk_container::ChunkContainer;
 use crate::geom::Point;
 use crate::serialize::{PageInfo, SerializeContext};
 
@@ -111,8 +112,13 @@ impl XyzDestination {
         Self(Arc::new(XyzDestRepr { page_index, point }))
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
+        let chunk = &mut chunk_container.destinations;
         let destination = chunk.destination(root_ref);
 
         let page_info = sc.page_infos().get(self.0.page_index).unwrap_or_else(|| {
@@ -141,6 +147,5 @@ impl XyzDestination {
         destination
             .page(page_ref)
             .xyz(mapped_point.x, mapped_point.y, None);
-        sc.chunk_container.destinations.push(chunk);
     }
 }

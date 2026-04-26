@@ -31,6 +31,7 @@ use flate2::write::ZlibEncoder;
 use flate2::Compression;
 use pdf_writer::{Array, Dict, Name};
 
+use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::content::ContentBuilder;
 use crate::geom::{Rect, Transform};
@@ -91,13 +92,18 @@ impl Stream {
 /// A builder to create streams.
 pub struct StreamBuilder<'a> {
     sc: &'a mut SerializeContext,
+    chunk_container: &'a mut ChunkContainer,
     stream: Stream,
 }
 
 impl<'a> StreamBuilder<'a> {
-    pub(crate) fn new(sc: &'a mut SerializeContext) -> Self {
+    pub(crate) fn new(
+        sc: &'a mut SerializeContext,
+        chunk_container: &'a mut ChunkContainer,
+    ) -> Self {
         Self {
             sc,
+            chunk_container,
             stream: Stream::empty(),
         }
     }
@@ -112,6 +118,7 @@ impl<'a> StreamBuilder<'a> {
 
         Surface::new(
             self.sc,
+            self.chunk_container,
             ContentBuilder::new(Transform::identity(), true),
             None,
             finish_fn,

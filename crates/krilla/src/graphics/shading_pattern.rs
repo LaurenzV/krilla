@@ -1,8 +1,9 @@
 use std::hash::Hash;
 use std::sync::Arc;
 
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Finish, Name, Ref};
 
+use crate::chunk_container::ChunkContainer;
 use crate::geom::Transform;
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::resource;
@@ -38,16 +39,19 @@ impl ShadingPattern {
 }
 
 impl Cacheable for ShadingPattern {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
-
-        let shading_ref = sc.register_cacheable(self.0.shading_function.clone());
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
+        let shading_ref = sc.register_cacheable(chunk_container, self.0.shading_function.clone());
+        let chunk = &mut chunk_container.patterns;
         let mut shading_pattern = chunk.shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
         shading_pattern.matrix(self.0.shading_transform.to_pdf_transform());
 
         shading_pattern.finish();
-        sc.chunk_container.patterns.push(chunk);
     }
 }
 

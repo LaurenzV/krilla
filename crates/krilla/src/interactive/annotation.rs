@@ -9,8 +9,9 @@
 use core::f32;
 
 use pdf_writer::types::AnnotationFlags;
-use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
+use pdf_writer::{Finish, Name, Ref, TextStr};
 
+use crate::chunk_container::ChunkContainer;
 use crate::color::Color;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::geom::{Quadrilateral, Rect};
@@ -61,8 +62,14 @@ impl From<LinkAnnotation> for Annotation {
 }
 
 impl Annotation {
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref, page_height: f32) {
-        let mut chunk = Chunk::new();
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+        page_height: f32,
+    ) {
+        let chunk = &mut chunk_container.annotations;
         let mut annotation = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::Annotation>();
@@ -99,7 +106,6 @@ impl Annotation {
         }
 
         annotation.finish();
-        sc.chunk_container.annotations.push(chunk);
     }
 }
 

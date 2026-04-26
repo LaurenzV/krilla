@@ -19,6 +19,7 @@ use png::{BitDepth, ColorType, Transformations};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
 
+use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::error::KrillaError;
 use crate::graphics::color::DEVICE_GRAY;
@@ -356,7 +357,12 @@ impl Image {
         self.0.color_space()
     }
 
-    pub(crate) fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
+    pub(crate) fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         let soft_mask_id = self.0.metadata.has_alpha.then(|| {
             sc.register_validation_error(ValidationError::Transparency(sc.location));
             sc.new_ref()
@@ -370,9 +376,15 @@ impl Image {
                 && self.color_space().matches_icc_profile(&ic)
             {
                 let ref_ = match ic {
-                    GenericICCProfile::Luma(l) => sc.register_cacheable(ICCBasedColorSpace(l)),
-                    GenericICCProfile::Rgb(r) => sc.register_cacheable(ICCBasedColorSpace(r)),
-                    GenericICCProfile::Cmyk(c) => sc.register_cacheable(ICCBasedColorSpace(c)),
+                    GenericICCProfile::Luma(l) => {
+                        sc.register_cacheable(chunk_container, ICCBasedColorSpace(l))
+                    }
+                    GenericICCProfile::Rgb(r) => {
+                        sc.register_cacheable(chunk_container, ICCBasedColorSpace(r))
+                    }
+                    GenericICCProfile::Cmyk(c) => {
+                        sc.register_cacheable(chunk_container, ICCBasedColorSpace(c))
+                    }
                 };
 
                 Some(ref_)
@@ -406,7 +418,7 @@ impl Image {
                 },
             };
 
-            sc.register_colorspace(cs)
+            sc.register_colorspace(chunk_container, cs)
         };
 
         let supports_bit_depth = sc
@@ -498,7 +510,7 @@ impl Image {
             Ok(chunk)
         });
 
-        sc.chunk_container.images.push(chunk);
+        chunk_container.images.push(chunk);
     }
 }
 

@@ -6,6 +6,7 @@
 
 use std::num::NonZeroU64;
 
+use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::content::ContentBuilder;
 use crate::geom::Path;
@@ -68,6 +69,7 @@ pub type Location = NonZeroU64;
 /// [`Page::surface`]: crate::page::Page::surface
 pub struct Surface<'a> {
     pub(crate) sc: &'a mut SerializeContext,
+    pub(crate) chunk_container: &'a mut ChunkContainer,
     fill: Option<Fill>,
     stroke: Option<Stroke>,
     bd: Builders,
@@ -79,12 +81,14 @@ pub struct Surface<'a> {
 impl<'a> Surface<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializeContext,
+        chunk_container: &'a mut ChunkContainer,
         root_builder: ContentBuilder,
         page_identifier: Option<PageTagIdentifier>,
         finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
+            chunk_container,
             bd: Builders::new(root_builder),
             page_identifier,
             fill: None,
@@ -96,7 +100,7 @@ impl<'a> Surface<'a> {
 
     /// Return a `StreamBuilder` to allow drawing on a sub-context.
     pub fn stream_builder(&mut self) -> StreamBuilder<'_> {
-        StreamBuilder::new(self.sc)
+        StreamBuilder::new(self.sc, self.chunk_container)
     }
 
     /// Set the fill that should be used for the next drawing operation.
@@ -129,25 +133,38 @@ impl<'a> Surface<'a> {
     pub fn draw_path(&mut self, path: &Path) {
         if self.fill.is_some() || self.stroke.is_some() {
             if self.has_complex_fill_or_stroke() {
-                self.bd
-                    .get_mut()
-                    .draw_path(&path.0, self.fill.as_ref(), None, self.sc);
-                self.bd
-                    .get_mut()
-                    .draw_path(&path.0, None, self.stroke.as_ref(), self.sc);
+                self.bd.get_mut().draw_path(
+                    &path.0,
+                    self.fill.as_ref(),
+                    None,
+                    self.sc,
+                    self.chunk_container,
+                );
+                self.bd.get_mut().draw_path(
+                    &path.0,
+                    None,
+                    self.stroke.as_ref(),
+                    self.sc,
+                    self.chunk_container,
+                );
             } else {
                 self.bd.get_mut().draw_path(
                     &path.0,
                     self.fill.as_ref(),
                     self.stroke.as_ref(),
                     self.sc,
+                    self.chunk_container,
                 );
             }
         } else {
             // Draw with black by default.
-            self.bd
-                .get_mut()
-                .draw_path(&path.0, Some(&Fill::default()), None, self.sc);
+            self.bd.get_mut().draw_path(
+                &path.0,
+                Some(&Fill::default()),
+                None,
+                self.sc,
+                self.chunk_container,
+            );
         }
     }
 
@@ -276,6 +293,7 @@ impl<'a> Surface<'a> {
                         self.bd.get_mut().draw_glyphs(
                             start,
                             self.sc,
+                            self.chunk_container,
                             Some(f),
                             None,
                             context_color,
@@ -290,6 +308,7 @@ impl<'a> Surface<'a> {
                         self.bd.get_mut().draw_glyphs(
                             start,
                             self.sc,
+                            self.chunk_container,
                             Some(f),
                             Some(s),
                             context_color,
@@ -304,6 +323,7 @@ impl<'a> Surface<'a> {
                     self.bd.get_mut().draw_glyphs(
                         start,
                         self.sc,
+                        self.chunk_container,
                         None,
                         Some(s),
                         context_color,
@@ -317,6 +337,7 @@ impl<'a> Surface<'a> {
                     self.bd.get_mut().draw_glyphs(
                         start,
                         self.sc,
+                        self.chunk_container,
                         Some(f),
                         None,
                         context_color,
@@ -331,6 +352,7 @@ impl<'a> Surface<'a> {
                     self.bd.get_mut().draw_glyphs(
                         start,
                         self.sc,
+                        self.chunk_container,
                         Some(&Fill::default()),
                         None,
                         context_color,
@@ -437,6 +459,7 @@ impl<'a> Surface<'a> {
 
         self.bd.get_mut().draw_xobject_by_reference(
             self.sc,
+            self.chunk_container,
             Rect::from_xywh(0.0, 0.0, page_width, page_height).unwrap(),
             obj_ref,
         );
@@ -479,18 +502,24 @@ impl<'a> Surface<'a> {
             PushInstruction::Opacity(o) => {
                 if o != NormalizedF32::ONE {
                     let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
-                    self.bd.get_mut().draw_opacified(self.sc, o, stream);
+                    self.bd
+                        .get_mut()
+                        .draw_opacified(self.sc, self.chunk_container, o, stream);
                 }
             }
             PushInstruction::ClipPath => self.bd.get_mut().pop_clip_path(),
             PushInstruction::BlendMode => self.bd.get_mut().restore_graphics_state(),
             PushInstruction::Mask(mask) => {
                 let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
-                self.bd.get_mut().draw_masked(self.sc, *mask, stream)
+                self.bd
+                    .get_mut()
+                    .draw_masked(self.sc, self.chunk_container, *mask, stream)
             }
             PushInstruction::Isolated => {
                 let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
-                self.bd.get_mut().draw_isolated(self.sc, stream);
+                self.bd
+                    .get_mut()
+                    .draw_isolated(self.sc, self.chunk_container, stream);
             }
         }
     }
@@ -498,7 +527,9 @@ impl<'a> Surface<'a> {
     #[cfg(feature = "raster-images")]
     /// Draw a new bitmap image.
     pub fn draw_image(&mut self, image: Image, size: Size) {
-        self.bd.get_mut().draw_image(image, size, self.sc);
+        self.bd
+            .get_mut()
+            .draw_image(image, size, self.sc, self.chunk_container);
     }
 
     /// Draw a new graphic.
@@ -506,13 +537,18 @@ impl<'a> Surface<'a> {
     /// Drawing the same graphic multiple times is very cheap in terms of
     /// file size.
     pub fn draw_graphic(&mut self, graphic: Graphic) {
-        self.bd
-            .get_mut()
-            .draw_xobject(self.sc, graphic.x_object, &ExtGState::new())
+        self.bd.get_mut().draw_xobject(
+            self.sc,
+            self.chunk_container,
+            graphic.x_object,
+            &ExtGState::new(),
+        )
     }
 
     pub(crate) fn draw_shading(&mut self, shading: &ShadingFunction) {
-        self.bd.get_mut().draw_shading(shading, self.sc);
+        self.bd
+            .get_mut()
+            .draw_shading(shading, self.sc, self.chunk_container);
     }
 
     /// A convenience method for `std::mem::drop`.
@@ -522,7 +558,9 @@ impl<'a> Surface<'a> {
     pub fn finish(self) {}
 
     pub(crate) fn draw_opacified_stream(&mut self, opacity: NormalizedF32, stream: Stream) {
-        self.bd.get_mut().draw_opacified(self.sc, opacity, stream)
+        self.bd
+            .get_mut()
+            .draw_opacified(self.sc, self.chunk_container, opacity, stream)
     }
 
     /// Return the current transformation matrix of the surface.

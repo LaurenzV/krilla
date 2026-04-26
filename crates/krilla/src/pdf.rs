@@ -13,7 +13,7 @@ use pdf_writer::{Name, Ref};
 
 pub use hayro_write::hayro_syntax::Pdf;
 
-use crate::chunk_container::EmbeddedPdfChunk;
+use crate::chunk_container::{ChunkContainer, EmbeddedPdfChunk};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::graphics::color::rgb;
@@ -142,7 +142,11 @@ impl PdfSerializerContext {
         ref_
     }
 
-    pub(crate) fn serialize(self, sc: &mut SerializeContext) -> KrillaResult<()> {
+    pub(crate) fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+    ) -> KrillaResult<()> {
         let page_tree_parent_ref = sc.page_tree_ref();
         let krilla_version = sc.serialize_settings().configuration.version();
 
@@ -160,9 +164,10 @@ impl PdfSerializerContext {
             // but we just always allocate it if we have at least one PDF,
             // regardless of how the files are embedded. We can change this in the
             // future, but it keeps the code simpler.
-            let xobject_group_color_space = sc
-                .register_colorspace(rgb::color_space(sc.serialize_settings().no_device_cs).into());
-            let container = &mut sc.chunk_container;
+            let xobject_group_color_space = sc.register_colorspace(
+                chunk_container,
+                rgb::color_space(sc.serialize_settings().no_device_cs).into(),
+            );
 
             let deferred_chunk = Deferred::new(move || {
                 // We can't share the serializer context between threads, so each PDF has it's own
@@ -250,7 +255,7 @@ impl PdfSerializerContext {
                 })
             });
 
-            container.embedded_pdfs.push(deferred_chunk);
+            chunk_container.embedded_pdfs.push(deferred_chunk);
         }
 
         Ok(())

@@ -1,6 +1,7 @@
 use pdf_writer::writers::ExponentialFunction;
-use pdf_writer::{Chunk, Finish, Name, Ref, Writer};
+use pdf_writer::{Finish, Name, Ref, Writer};
 
+use crate::chunk_container::ChunkContainer;
 use crate::color::separation::SeparationSpace;
 use crate::color::{DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::resource::{self, Resource, Resourceable};
@@ -18,10 +19,15 @@ impl SeparationColorSpace {
 }
 
 impl Cacheable for SeparationColorSpace {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         // Delegate fallback color space registration to existing logic
         let fallback_cs = self.space.fallback.color_space(sc);
-        let fallback_cs_resource = sc.register_colorspace(fallback_cs.into());
+        let fallback_cs_resource = sc.register_colorspace(chunk_container, fallback_cs.into());
 
         // Get fallback color components for tint function
         let fallback_color = crate::color::Color::from(self.space.fallback).to_pdf_color();
@@ -40,7 +46,7 @@ impl Cacheable for SeparationColorSpace {
             sc.register_validation_error(validation_error);
         }
 
-        let mut chunk = Chunk::new();
+        let chunk = &mut chunk_container.color_spaces;
 
         // Write Separation color space array: [/Separation name alternateSpace tintTransform]
         let mut array = chunk.indirect(root_ref).array();
@@ -72,8 +78,6 @@ impl Cacheable for SeparationColorSpace {
             .n(1.0);
 
         array.finish();
-
-        sc.chunk_container.color_spaces.push(chunk);
     }
 }
 

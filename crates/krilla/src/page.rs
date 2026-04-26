@@ -8,6 +8,7 @@ use pdf_writer::types::TabOrder;
 use pdf_writer::writers::NumberTree;
 use pdf_writer::{Chunk, Finish, Ref, TextStr};
 
+use crate::chunk_container::ChunkContainer;
 use crate::configure::PdfVersion;
 use crate::content::ContentBuilder;
 use crate::geom::{Rect, Size, Transform};
@@ -186,6 +187,7 @@ impl Default for PageSettings {
 /// [`Document::start_page`]: crate::Document::start_page
 pub struct Page<'a> {
     sc: &'a mut SerializeContext,
+    chunk_container: &'a mut ChunkContainer,
     page_settings: PageSettings,
     page_index: usize,
     page_stream: Stream,
@@ -196,11 +198,13 @@ pub struct Page<'a> {
 impl<'a> Page<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializeContext,
+        chunk_container: &'a mut ChunkContainer,
         page_index: usize,
         page_settings: PageSettings,
     ) -> Self {
         Self {
             sc,
+            chunk_container,
             page_settings,
             page_index,
             num_mcids: 0,
@@ -251,7 +255,13 @@ impl<'a> Page<'a> {
             None
         };
 
-        Surface::new(self.sc, root_builder, page_identifier, finish_fn)
+        Surface::new(
+            self.sc,
+            self.chunk_container,
+            root_builder,
+            page_identifier,
+            finish_fn,
+        )
     }
 
     /// A shorthand for `std::mem::drop`.
@@ -366,20 +376,29 @@ impl InternalPage {
         }
     }
 
-    pub(crate) fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
-
+    pub(crate) fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         let mut annotation_refs = vec![];
 
         if !self.annotations.is_empty() {
             for annotation in &self.annotations {
                 let annot_ref = sc.new_ref();
 
-                annotation.serialize(sc, annot_ref, self.page_settings.surface_size().height());
+                annotation.serialize(
+                    sc,
+                    chunk_container,
+                    annot_ref,
+                    self.page_settings.surface_size().height(),
+                );
                 annotation_refs.push((annot_ref, OnceCell::new()));
             }
         }
 
+        let chunk = &mut chunk_container.pages;
         let mut page = chunk.page(root_ref);
         self.stream_resources
             .to_pdf_resources(&mut page, sc.serialize_settings().pdf_version());
@@ -442,8 +461,7 @@ impl InternalPage {
         *annotations = annotation_refs;
 
         page.finish();
-        sc.chunk_container.pages.push(chunk);
-        sc.chunk_container.page_streams.push(self.stream_chunk);
+        chunk_container.page_streams.push(self.stream_chunk);
     }
 }
 
@@ -476,8 +494,8 @@ impl PageLabel {
         self.style.is_none() && self.prefix.is_none() && self.offset.is_none()
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
+    pub(crate) fn serialize(&self, chunk_container: &mut ChunkContainer, root_ref: Ref) {
+        let chunk = &mut chunk_container.page_labels;
         let mut label = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::PageLabel>();
@@ -495,7 +513,6 @@ impl PageLabel {
         }
 
         label.finish();
-        sc.chunk_container.page_labels.push(chunk);
     }
 }
 
@@ -513,7 +530,12 @@ impl<'a> PageLabelContainer<'a> {
         }
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) {
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         // Will always contain at least one entry, since we ensured that a PageLabelContainer cannot
         // be empty
         let mut filtered_entries = vec![];
@@ -539,12 +561,12 @@ impl<'a> PageLabelContainer<'a> {
         let mut nums = num_tree.nums();
 
         for (page_num, label) in filtered_entries {
-            let label_ref = sc.register_page_label(label);
+            let label_ref = sc.register_page_label(chunk_container, label);
             nums.insert(page_num as i32, label_ref);
         }
 
         nums.finish();
         num_tree.finish();
-        sc.chunk_container.page_label_tree = Some((root_ref, chunk));
+        chunk_container.page_label_tree = Some((root_ref, chunk));
     }
 }

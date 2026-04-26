@@ -13,6 +13,7 @@ use std::sync::Arc;
 use subsetter::GlyphRemapper;
 
 use super::{CIDIdentifier, FontIdentifier, PDF_UNITS_PER_EM};
+use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::error::{KrillaError, KrillaResult};
 use crate::geom::Rect;
@@ -183,8 +184,13 @@ impl CIDFont {
         FontIdentifier::Cid(CIDIdentifier(self.font.clone()))
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) -> KrillaResult<()> {
-        let mut chunk = Chunk::new();
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) -> KrillaResult<()> {
+        let chunk = &mut chunk_container.fonts;
         let mut stream_chunk = Chunk::new();
 
         let cid_ref = sc.new_ref();
@@ -394,8 +400,7 @@ impl CIDFont {
         }
 
         stream.finish();
-        sc.chunk_container.fonts.push(chunk);
-        sc.chunk_container.font_streams.push(stream_chunk);
+        chunk_container.font_streams.push(stream_chunk);
 
         Ok(())
     }

@@ -136,6 +136,7 @@ use pdf_writer::writers::{PropertyList, StructElement};
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 use smallvec::SmallVec;
 
+use crate::chunk_container::ChunkContainer;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
 use crate::page::page_root_transform;
@@ -1034,6 +1035,7 @@ impl TagTree {
     pub(crate) fn serialize(
         &self,
         sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
         parent_tree_map: &mut HashMap<IdentifierType, Ref>,
         id_tree_map: &mut BTreeMap<TagId, Ref>,
         struct_tree_ref: Ref,
@@ -1080,7 +1082,7 @@ impl TagTree {
         )?;
 
         struct_elem.finish();
-        sc.chunk_container.struct_elements = Some(struct_elems);
+        chunk_container.struct_elements = Some(struct_elems);
 
         Ok(root_ref)
     }

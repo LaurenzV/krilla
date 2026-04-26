@@ -8,6 +8,7 @@ use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
 use rustc_hash::FxHashMap;
 
 use super::{FontIdentifier, Type3Identifier};
+use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::configure::PdfVersion;
 use crate::geom::Path;
@@ -127,8 +128,12 @@ impl Type3Font {
         FontIdentifier::Type3(Type3Identifier(self.font.clone(), self.index))
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         let mut stream_chunk = Chunk::new();
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
@@ -139,7 +144,7 @@ impl Type3Font {
             .iter()
             .enumerate()
             .map(|(index, glyph)| {
-                let mut stream_surface = StreamBuilder::new(sc);
+                let mut stream_surface = StreamBuilder::new(sc, chunk_container);
                 let mut surface = stream_surface.surface();
 
                 // In case this returns `None`, the surface is guaranteed to be empty.
@@ -185,7 +190,8 @@ impl Type3Font {
                 let x_object = XObject::new(stream, false, false, None);
                 if !x_object.is_empty() {
                     font_bbox.expand(&x_object.bbox());
-                    let x_name = rd_builder.register_resource(sc.register_resourceable(x_object));
+                    let x_name = rd_builder
+                        .register_resource(sc.register_resourceable(chunk_container, x_object));
                     content.x_object(x_name.to_pdf_name());
                 }
 
@@ -206,6 +212,7 @@ impl Type3Font {
             .collect::<Vec<Ref>>();
 
         let resource_dictionary = rd_builder.finish();
+        let chunk = &mut chunk_container.fonts;
 
         let descriptor_ref = if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
             Some(sc.new_ref())
@@ -362,8 +369,7 @@ impl Type3Font {
         let mut cmap = stream_chunk.cmap(cmap_ref, &cmap_stream);
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
-        sc.chunk_container.fonts.push(chunk);
-        sc.chunk_container.font_streams.push(stream_chunk);
+        chunk_container.font_streams.push(stream_chunk);
     }
 }
 
