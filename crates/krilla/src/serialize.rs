@@ -46,7 +46,8 @@ const ARRAY_LEN: usize = 8191;
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
 pub struct SerializeSettings {
-    /// Whether to write PDFs in a way that is easier to inspect manually.
+    /// Whether to write PDFs in a way that is easier to inspect manually. This
+    /// will result in larger file sizes.
     pub pretty: bool,
     /// Whether content streams should be compressed. Leads to significantly smaller file sizes,
     /// but also longer running times. It is highly recommended that you set this to `true`.
