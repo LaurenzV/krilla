@@ -282,7 +282,6 @@ impl SerializeContext {
             krilla_ref: cur_ref.bump(),
         };
 
-        // TODO: Set PDF writer compatibility mode to false here once pdf-writer exposes it.
         let chunk_settings = Settings {
             pretty: serialize_settings.pretty,
         };
