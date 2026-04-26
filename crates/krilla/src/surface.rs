@@ -432,11 +432,9 @@ impl<'a> Surface<'a> {
     pub fn push_mask(&mut self, mask: Mask) {
         self.push_instructions
             .push(PushInstruction::Mask(Box::new(mask)));
-        self.bd.sub_builders.push(ContentBuilder::new(
-            Transform::identity(),
-            true,
-            self.sc.chunk_settings(),
-        ));
+        self.bd
+            .sub_builders
+            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
     }
 
     #[cfg(feature = "pdf")]
@@ -480,22 +478,18 @@ impl<'a> Surface<'a> {
             .push(PushInstruction::Opacity(opacity));
 
         if opacity != NormalizedF32::ONE {
-            self.bd.sub_builders.push(ContentBuilder::new(
-                Transform::identity(),
-                true,
-                self.sc.chunk_settings(),
-            ));
+            self.bd
+                .sub_builders
+                .push(ContentBuilder::new(Transform::identity(), true, self.sc));
         }
     }
 
     /// Push a new isolated layer.
     pub fn push_isolated(&mut self) {
         self.push_instructions.push(PushInstruction::Isolated);
-        self.bd.sub_builders.push(ContentBuilder::new(
-            Transform::identity(),
-            true,
-            self.sc.chunk_settings(),
-        ));
+        self.bd
+            .sub_builders
+            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
     }
 
     /// Pop the last `push` instruction.
@@ -618,7 +612,7 @@ impl Drop for Surface<'_> {
     fn drop(&mut self) {
         let root_builder = std::mem::replace(
             &mut self.bd.root_builder,
-            ContentBuilder::new(Transform::identity(), false, self.sc.chunk_settings()),
+            ContentBuilder::new(Transform::identity(), false, self.sc),
         );
         let num_mcids = match self.page_identifier {
             Some(pi) => pi.mcid,

@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use float_cmp::approx_eq;
 use pdf_writer::types::TextRenderingMode;
-use pdf_writer::{Content, Finish, Name, Ref, Settings, Str, TextStr};
+use pdf_writer::{Content, Finish, Name, Ref, Str, TextStr};
 use tiny_skia_path::{Path, PathSegment, PathVerb};
 
 use crate::chunk_container::ChunkContainer;
@@ -67,11 +67,15 @@ enum ContentColorSpace {
 }
 
 impl ContentBuilder {
-    pub(crate) fn new(root_transform: Transform, bbox_important: bool, settings: Settings) -> Self {
+    pub(crate) fn new(
+        root_transform: Transform,
+        bbox_important: bool,
+        sc: &SerializeContext,
+    ) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             validation_errors: HashSet::new(),
-            content: Content::with_settings(settings),
+            content: sc.new_content(),
             root_transform,
             uses_mask: false,
             bbox_important,

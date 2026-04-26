@@ -8,7 +8,7 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 use pdf_writer::types::{StructRole, StructRole2};
 use pdf_writer::writers::{OutputIntent, StructTreeRoot};
-use pdf_writer::{Chunk, Finish, Limits, Name, Pdf, Ref, Settings, Str, TextStr};
+use pdf_writer::{Chunk, Content, Finish, Limits, Name, Pdf, Ref, Settings, Str, TextStr};
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
@@ -371,6 +371,10 @@ impl SerializeContext {
 
     pub(crate) fn new_chunk(&self) -> Chunk {
         Chunk::with_settings(self.chunk_settings)
+    }
+
+    pub(crate) fn new_content(&self) -> Content {
+        Content::with_settings(self.chunk_settings)
     }
 
     pub(crate) fn new_pdf_with_capacity(&self, capacity: usize) -> Pdf {

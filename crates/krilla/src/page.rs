@@ -242,7 +242,7 @@ impl<'a> Page<'a> {
         let root_builder = ContentBuilder::new(
             self.root_transform(),
             self.page_settings.media_box.is_none(),
-            self.sc.chunk_settings(),
+            self.sc,
         );
 
         let finish_fn = Box::new(|stream, num_mcids| {
