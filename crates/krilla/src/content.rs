@@ -67,11 +67,15 @@ enum ContentColorSpace {
 }
 
 impl ContentBuilder {
-    pub(crate) fn new(root_transform: Transform, bbox_important: bool) -> Self {
+    pub(crate) fn new(
+        root_transform: Transform,
+        bbox_important: bool,
+        sc: &SerializeContext,
+    ) -> Self {
         Self {
             rd_builder: ResourceDictionaryBuilder::new(),
             validation_errors: HashSet::new(),
-            content: Content::new(),
+            content: sc.new_content(),
             root_transform,
             uses_mask: false,
             bbox_important,

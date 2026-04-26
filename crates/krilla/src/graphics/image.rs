@@ -14,7 +14,7 @@ use std::io::Cursor;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Finish, Name, Ref};
 use png::{BitDepth, ColorType, Transformations};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
@@ -427,13 +427,12 @@ impl Image {
             .version()
             .supports_bit_depth(self.0.metadata.bits_per_component);
         let location = sc.location;
+        let mut chunk = sc.new_chunk();
 
         let chunk = Deferred::new(move || {
             if !supports_bit_depth {
                 return Err(KrillaError::SixteenBitImage(self.clone(), location));
             }
-
-            let mut chunk = Chunk::new();
 
             let repr = self
                 .0

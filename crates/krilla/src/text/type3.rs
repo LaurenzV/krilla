@@ -4,7 +4,7 @@ use std::ops::DerefMut;
 
 use pdf_writer::types::{FontFlags, UnicodeCmap};
 use pdf_writer::writers::WMode;
-use pdf_writer::{Chunk, Content, Finish, Name, Ref, Str};
+use pdf_writer::{Finish, Name, Ref, Str};
 use rustc_hash::FxHashMap;
 
 use super::{FontIdentifier, Type3Identifier};
@@ -134,7 +134,7 @@ impl Type3Font {
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
     ) {
-        let mut stream_chunk = Chunk::new();
+        let mut stream_chunk = sc.new_chunk();
 
         let mut rd_builder = ResourceDictionaryBuilder::new();
         let mut font_bbox = Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap();
@@ -181,7 +181,7 @@ impl Type3Font {
 
                 surface.finish();
                 let stream = stream_surface.finish();
-                let mut content = Content::new();
+                let mut content = sc.new_content();
 
                 // I considered writing into the stream directly instead of creating an XObject
                 // and showing that, but it seems like many viewers don't like that, and emojis

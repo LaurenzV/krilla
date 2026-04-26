@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use std::ops::DerefMut;
 
 use pdf_writer::types::{PaintType, TilingType};
-use pdf_writer::{Chunk, Finish, Ref};
+use pdf_writer::{Finish, Ref};
 
 use crate::chunk_container::ChunkContainer;
 use crate::geom::Transform;
@@ -79,7 +79,7 @@ impl Cacheable for TilingPattern {
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
     ) {
-        let mut chunk = Chunk::new();
+        let mut chunk = sc.new_chunk();
 
         for validation_error in self.stream.validation_errors {
             sc.register_validation_error(validation_error);

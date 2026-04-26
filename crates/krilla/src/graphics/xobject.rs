@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 use std::sync::Arc;
 
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Finish, Name, Ref};
 
 use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
@@ -67,7 +67,7 @@ impl Cacheable for XObject {
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
     ) {
-        let mut chunk = Chunk::new();
+        let mut chunk = sc.new_chunk();
 
         for validation_error in &self.0.stream.validation_errors {
             sc.register_validation_error(validation_error.clone());

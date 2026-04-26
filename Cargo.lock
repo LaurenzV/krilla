@@ -721,14 +721,12 @@ checksum = "4f467dd6dccf739c208452f8014c75c18bb8301b050ad1cfb27153803edb0f51"
 [[package]]
 name = "hayro-ccitt"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f4d0e94ddd48749f06bbe4e5389fb9799a0c45bcaf00495042076ef05e3241a"
+source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
 
 [[package]]
 name = "hayro-jbig2"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69374b3668dd45aeb3d3145cda68f2c7b4f223aaa2511e67d076f1c7d741388d"
+source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
 dependencies = [
  "fearless_simd",
  "hayro-ccitt",
@@ -737,8 +735,7 @@ dependencies = [
 [[package]]
 name = "hayro-jpeg2000"
 version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c75ab947623ef4ccaa7acf0579edf7cbb5a73838e3839a7be73335e522f433a1"
+source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
 dependencies = [
  "fearless_simd",
 ]
@@ -746,8 +743,7 @@ dependencies = [
 [[package]]
 name = "hayro-syntax"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1099009c2a8e3ab8b65b19e74b37e870251e508e4b528ea549ee19a925f081a9"
+source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
 dependencies = [
  "flate2",
  "hayro-jbig2",
@@ -761,8 +757,7 @@ dependencies = [
 [[package]]
 name = "hayro-write"
 version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6f0346d240e1c7acbec114b72c301d29846cad6c50f56208a82c5a99e1d91ca"
+source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
 dependencies = [
  "flate2",
  "hayro-syntax",
@@ -1357,8 +1352,7 @@ checksum = "487f2ccd1e17ce8c1bfab3a65c89525af41cfad4c8659021a1e9a2aacd73b89b"
 [[package]]
 name = "pdf-writer"
 version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92a79477295a713c2ed425aa82a8b5d20cec3fdee203706cbe6f3854880c1c81"
+source = "git+https://github.com/typst/pdf-writer?rev=bc50acaea3c6022ef095a52bb75a273ef656813b#bc50acaea3c6022ef095a52bb75a273ef656813b"
 dependencies = [
  "bitflags 2.11.1",
  "itoa",

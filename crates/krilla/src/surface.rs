@@ -434,7 +434,7 @@ impl<'a> Surface<'a> {
             .push(PushInstruction::Mask(Box::new(mask)));
         self.bd
             .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true));
+            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
     }
 
     #[cfg(feature = "pdf")]
@@ -480,7 +480,7 @@ impl<'a> Surface<'a> {
         if opacity != NormalizedF32::ONE {
             self.bd
                 .sub_builders
-                .push(ContentBuilder::new(Transform::identity(), true));
+                .push(ContentBuilder::new(Transform::identity(), true, self.sc));
         }
     }
 
@@ -489,7 +489,7 @@ impl<'a> Surface<'a> {
         self.push_instructions.push(PushInstruction::Isolated);
         self.bd
             .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true));
+            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
     }
 
     /// Pop the last `push` instruction.
@@ -612,7 +612,7 @@ impl Drop for Surface<'_> {
     fn drop(&mut self) {
         let root_builder = std::mem::replace(
             &mut self.bd.root_builder,
-            ContentBuilder::new(Transform::identity(), false),
+            ContentBuilder::new(Transform::identity(), false, self.sc),
         );
         let num_mcids = match self.page_identifier {
             Some(pi) => pi.mcid,

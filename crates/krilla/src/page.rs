@@ -242,6 +242,7 @@ impl<'a> Page<'a> {
         let root_builder = ContentBuilder::new(
             self.root_transform(),
             self.page_settings.media_box.is_none(),
+            self.sc,
         );
 
         let finish_fn = Box::new(|stream, num_mcids| {
@@ -350,9 +351,9 @@ impl InternalPage {
         let stream_ref = sc.new_ref();
         let serialize_settings = sc.serialize_settings().clone();
         let stream_resources = std::mem::take(&mut stream.resource_dictionary);
+        let mut chunk = sc.new_chunk();
 
         let stream_chunk = Deferred::new(move || {
-            let mut chunk = Chunk::new();
             let page_stream =
                 FilterStreamBuilder::new_from_content_stream(&stream.content, &serialize_settings)
                     .finish(&serialize_settings.clone());
@@ -556,7 +557,7 @@ impl<'a> PageLabelContainer<'a> {
             }
         }
 
-        let mut chunk = Chunk::new();
+        let mut chunk = sc.new_chunk();
         let mut num_tree = chunk.indirect(root_ref).start::<NumberTree<Ref>>();
         let mut nums = num_tree.nums();
 

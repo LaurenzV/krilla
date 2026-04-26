@@ -8,7 +8,7 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 use pdf_writer::types::{StructRole, StructRole2};
 use pdf_writer::writers::{OutputIntent, StructTreeRoot};
-use pdf_writer::{Chunk, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::{Chunk, Content, Finish, Limits, Name, Pdf, Ref, Settings, Str, TextStr};
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
@@ -46,6 +46,9 @@ const ARRAY_LEN: usize = 8191;
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
 pub struct SerializeSettings {
+    /// Whether to write PDFs in a way that is easier to inspect manually. This
+    /// will result in larger file sizes.
+    pub pretty: bool,
     /// Whether content streams should be compressed. Leads to significantly smaller file sizes,
     /// but also longer running times. It is highly recommended that you set this to `true`.
     pub compress_content_streams: bool,
@@ -130,6 +133,7 @@ impl SerializeSettings {
 impl Default for SerializeSettings {
     fn default() -> Self {
         Self {
+            pretty: false,
             ascii_compatible: false,
             compress_content_streams: true,
             no_device_cs: false,
@@ -249,6 +253,8 @@ pub(crate) struct SerializeContext {
     validation_errors: Vec<ValidationError>,
     /// Settings used for serialization.
     serialize_settings: Arc<SerializeSettings>,
+    /// Settings used for all PDF object chunks.
+    chunk_settings: Settings,
     /// The limits created as part of the serialization process. In principle, we could
     /// just keep track of this in `ChunkContainer`, where all used chunks are stored.
     /// The only reason why `SerializeContext` needs to know about them is that we also
@@ -276,6 +282,10 @@ impl SerializeContext {
             krilla_ref: cur_ref.bump(),
         };
 
+        let chunk_settings = Settings {
+            pretty: serialize_settings.pretty,
+        };
+
         Self {
             cached_mappings: HashMap::new(),
             pdf2_ns,
@@ -286,6 +296,7 @@ impl SerializeContext {
             location: None,
             validation_errors: vec![],
             serialize_settings: Arc::new(serialize_settings),
+            chunk_settings,
             limits: Limits::new(),
             validation_store: ValidationStore::new(),
         }
@@ -352,6 +363,26 @@ impl SerializeContext {
 
     pub(crate) fn serialize_settings(&self) -> Arc<SerializeSettings> {
         self.serialize_settings.clone()
+    }
+
+    // IMPORTANT: DO NEVER CALL `Chunk::new`, `Pdf::new` or `Content::new` directly! Instead,
+    // always make sure to use the methods on `SerializeContext`, to ensure the
+    // flags are applied consistently across all chunks.
+
+    pub(crate) fn new_chunk(&self) -> Chunk {
+        Chunk::with_settings(self.chunk_settings)
+    }
+
+    pub(crate) fn new_content(&self) -> Content {
+        Content::with_settings(self.chunk_settings)
+    }
+
+    pub(crate) fn new_pdf_with_capacity(&self, capacity: usize) -> Pdf {
+        Pdf::with_settings_and_capacity(self.chunk_settings, capacity)
+    }
+
+    pub(crate) fn chunk_settings(&self) -> Settings {
+        self.chunk_settings
     }
 
     #[cfg(feature = "pdf")]
@@ -639,7 +670,7 @@ impl SerializeContext {
         let validator = self.serialize_settings.validator();
         chunk_container.destination_profiles = validator.output_intent().map(|subtype| {
             let root_ref = self.new_ref();
-            let mut chunk = Chunk::new();
+            let mut chunk = self.new_chunk();
 
             let oi_ref = self.new_ref();
             let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
@@ -734,7 +765,7 @@ impl SerializeContext {
     }
 
     fn serialize_page_tree(&mut self, chunk_container: &mut ChunkContainer) {
-        let mut page_tree_chunk = Chunk::new();
+        let mut page_tree_chunk = self.new_chunk();
         page_tree_chunk
             .pages(self.page_tree_ref)
             .count(self.page_infos.len() as i32)
@@ -771,7 +802,7 @@ impl SerializeContext {
 
             root.validate(&id_tree_map)?;
 
-            let mut chunk = Chunk::new();
+            let mut chunk = self.new_chunk();
             let mut tree = chunk
                 .indirect(struct_tree_root_ref)
                 .start::<StructTreeRoot>();
@@ -797,13 +828,13 @@ impl SerializeContext {
 
                 // PDF 2.0 standard structure namespace
                 namespaces.item(self.pdf2_ns.ssn_ref);
-                let mut ns_chunk = Chunk::new();
+                let mut ns_chunk = self.new_chunk();
                 ns_chunk.namespace(self.pdf2_ns.ssn_ref).pdf_2_ns();
                 sub_chunks.push(ns_chunk);
 
                 // Custom krilla namspace
                 namespaces.item(self.pdf2_ns.krilla_ref);
-                let mut ns_chunk = Chunk::new();
+                let mut ns_chunk = self.new_chunk();
                 let mut ns = ns_chunk.namespace(self.pdf2_ns.krilla_ref);
                 ns.ns(TextStr("https://github.com/LaurenzV/krilla"));
 
@@ -824,7 +855,7 @@ impl SerializeContext {
                 for (index, struct_parent) in struct_parents.iter().enumerate() {
                     match *struct_parent {
                         StructParentElement::Page(page_index, num_mcids) => {
-                            let mut list_chunk = Chunk::new();
+                            let mut list_chunk = self.new_chunk();
                             let list_ref = self.new_ref();
 
                             let mut refs = list_chunk.indirect(list_ref).array();

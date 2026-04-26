@@ -4,7 +4,7 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Finish, Name, Ref};
 
 use crate::chunk_container::ChunkContainer;
 use crate::resource;
@@ -48,7 +48,7 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
     ) {
-        let mut chunk = Chunk::new();
+        let mut chunk = sc.new_chunk();
         let icc_stream = FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
             .finish(&sc.serialize_settings());
 

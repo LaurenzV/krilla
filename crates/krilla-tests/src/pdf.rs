@@ -20,6 +20,19 @@ use crate::{
 #[snapshot(document)]
 fn pdf_empty(_: &mut Document) {}
 
+#[snapshot(settings_31)]
+fn pdf_pretty_false(page: &mut Page) {
+    let mut surface = page.surface();
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_path(&rect_to_path(20.0, 20.0, 180.0, 180.0));
+}
+
+#[snapshot(document, settings_31)]
+fn pdf_pretty_false_embedded_pdf(document: &mut Document) {
+    let pdf = load_pdf("xobject_1.pdf");
+    document.embed_pdf_pages(&pdf, &[0]);
+}
+
 #[snapshot(document, settings_16)]
 fn pdf_14(document: &mut Document) {
     metadata_impl(document);
