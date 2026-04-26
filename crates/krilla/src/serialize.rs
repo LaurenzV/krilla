@@ -365,7 +365,7 @@ impl SerializeContext {
         self.serialize_settings.clone()
     }
 
-    // IMPORTANT: DO NEVER CALL `Chunk::new` or `Pdf::new` directly! Instead,
+    // IMPORTANT: DO NEVER CALL `Chunk::new`, `Pdf::new` or `Content::new` directly! Instead,
     // always make sure to use the methods on `SerializeContext`, to ensure the
     // flags are applied consistently across all chunks.
 
