@@ -1024,6 +1024,7 @@ impl ContentBuilder {
         self.restore_graphics_state();
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn content_set_fill_stroke_properties(
         &mut self,
         bounds: Rect,
