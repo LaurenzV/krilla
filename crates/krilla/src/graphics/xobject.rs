@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
+use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::geom::Rect;
 use crate::graphics::color::{rgb, DEVICE_RGB};
@@ -60,7 +61,12 @@ impl XObject {
 }
 
 impl Cacheable for XObject {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         let mut chunk = Chunk::new();
 
         for validation_error in &self.0.stream.validation_errors {
@@ -83,7 +89,10 @@ impl Cacheable for XObject {
         // So while we don't technically always need to write it, let's just play it save
         // and always add a group color space in case we have a transparency group.
         let transparency_group_cs = if use_transparency_group {
-            Some(sc.register_colorspace(rgb::color_space(serialize_settings.no_device_cs).into()))
+            Some(sc.register_colorspace(
+                chunk_container,
+                rgb::color_space(serialize_settings.no_device_cs).into(),
+            ))
         } else {
             None
         };
@@ -131,7 +140,7 @@ impl Cacheable for XObject {
         }
 
         x_object.finish();
-        sc.chunk_container.x_objects.push(chunk);
+        chunk_container.x_objects.push(chunk);
     }
 }
 

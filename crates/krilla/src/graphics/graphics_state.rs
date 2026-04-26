@@ -2,8 +2,9 @@ use std::hash::Hash;
 use std::sync::Arc;
 
 use pdf_writer::types::BlendMode;
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Finish, Name, Ref};
 
+use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::geom::{Rect, Transform};
 use crate::graphics::mask::Mask;
@@ -67,8 +68,13 @@ impl ExtGState {
 
     /// Create a new graphics state with a mask.
     #[must_use]
-    pub(crate) fn mask(mut self, mask: Mask, sc: &mut SerializeContext) -> Self {
-        let mask_ref = sc.register_cacheable(mask);
+    pub(crate) fn mask(
+        mut self,
+        mask: Mask,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+    ) -> Self {
+        let mask_ref = sc.register_cacheable(chunk_container, mask);
         Arc::make_mut(&mut self.0).mask = Some(mask_ref);
         self
     }
@@ -104,8 +110,13 @@ impl ExtGState {
 }
 
 impl Cacheable for ExtGState {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
+        let chunk = &mut chunk_container.ext_g_states;
 
         let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {
@@ -139,7 +150,6 @@ impl Cacheable for ExtGState {
         }
 
         ext_st.finish();
-        sc.chunk_container.ext_g_states.push(chunk);
     }
 }
 

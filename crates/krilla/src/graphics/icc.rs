@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use pdf_writer::{Chunk, Finish, Name, Ref};
 
+use crate::chunk_container::ChunkContainer;
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
@@ -41,7 +42,12 @@ impl<const C: u8> ICCProfile<C> {
 }
 
 impl<const C: u8> Cacheable for ICCProfile<C> {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         let mut chunk = Chunk::new();
         let icc_stream = FilterStreamBuilder::new_from_deflated(&self.0.deref().data)
             .finish(&sc.serialize_settings());
@@ -50,7 +56,7 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
         icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
-        sc.chunk_container.icc_profiles.push(chunk);
+        chunk_container.icc_profiles.push(chunk);
     }
 }
 
@@ -72,11 +78,16 @@ impl GenericICCProfile {
 }
 
 impl Cacheable for GenericICCProfile {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         match self {
-            GenericICCProfile::Luma(l) => l.serialize(sc, root_ref),
-            GenericICCProfile::Rgb(r) => r.serialize(sc, root_ref),
-            GenericICCProfile::Cmyk(c) => c.serialize(sc, root_ref),
+            GenericICCProfile::Luma(l) => l.serialize(sc, chunk_container, root_ref),
+            GenericICCProfile::Rgb(r) => r.serialize(sc, chunk_container, root_ref),
+            GenericICCProfile::Cmyk(c) => c.serialize(sc, chunk_container, root_ref),
         }
     }
 }
@@ -85,16 +96,20 @@ impl Cacheable for GenericICCProfile {
 pub(crate) struct ICCBasedColorSpace<const C: u8>(pub(crate) ICCProfile<C>);
 
 impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
-        let icc_ref = sc.register_cacheable(self.0.clone());
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
+        let icc_ref = sc.register_cacheable(chunk_container, self.0.clone());
 
-        let mut chunk = Chunk::new();
+        let chunk = &mut chunk_container.color_spaces;
 
         let mut array = chunk.indirect(root_ref).array();
         array.item(Name(b"ICCBased"));
         array.item(icc_ref);
         array.finish();
-        sc.chunk_container.color_spaces.push(chunk);
     }
 }
 

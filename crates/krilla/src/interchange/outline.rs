@@ -21,6 +21,7 @@
 use pdf_writer::writers::OutlineItem;
 use pdf_writer::{Chunk, Finish, Name, Ref, TextStr};
 
+use crate::chunk_container::ChunkContainer;
 use crate::interactive::destination::XyzDestination;
 use crate::serialize::SerializeContext;
 
@@ -108,7 +109,12 @@ impl Outline {
         self.children.push(node)
     }
 
-    pub(crate) fn serialize(&self, sc: &mut SerializeContext, root: Ref) {
+    pub(crate) fn serialize(
+        &self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root: Ref,
+    ) {
         let mut chunk = Chunk::new();
         let children = serialize_children(&self.children, root, &mut chunk, sc);
 
@@ -118,7 +124,7 @@ impl Outline {
         }
         outline.finish();
 
-        sc.chunk_container.outline = Some((root, chunk));
+        chunk_container.outline = Some((root, chunk));
     }
 }
 

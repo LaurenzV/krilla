@@ -6,6 +6,7 @@ use std::ops::DerefMut;
 use pdf_writer::types::{PaintType, TilingType};
 use pdf_writer::{Chunk, Finish, Ref};
 
+use crate::chunk_container::ChunkContainer;
 use crate::geom::Transform;
 use crate::num::NormalizedF32;
 use crate::resource;
@@ -43,6 +44,7 @@ impl TilingPattern {
         width: f32,
         height: f32,
         serializer_context: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
     ) -> Self {
         // stroke/fill opacity doesn't work consistently across different viewers for patterns,
         // so instead we simulate it ourselves.
@@ -50,7 +52,7 @@ impl TilingPattern {
             stream
         } else {
             let stream = {
-                let mut builder = StreamBuilder::new(serializer_context);
+                let mut builder = StreamBuilder::new(serializer_context, chunk_container);
                 let mut surface = builder.surface();
                 surface.draw_opacified_stream(base_opacity, stream);
                 surface.finish();
@@ -71,7 +73,12 @@ impl TilingPattern {
 }
 
 impl Cacheable for TilingPattern {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         let mut chunk = Chunk::new();
 
         for validation_error in self.stream.validation_errors {
@@ -101,7 +108,7 @@ impl Cacheable for TilingPattern {
             .y_step(final_bbox.y2 - final_bbox.y1);
 
         tiling_pattern.finish();
-        sc.chunk_container.pattern_streams.push(chunk);
+        chunk_container.pattern_streams.push(chunk);
     }
 }
 

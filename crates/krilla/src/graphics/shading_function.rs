@@ -7,16 +7,17 @@ use pdf_writer::types::{FunctionShadingType, PostScriptOp};
 use pdf_writer::{Chunk, Finish, Ref};
 use tiny_skia_path::Point;
 
+use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::geom::{Rect, Transform};
 use crate::graphics::color::luma;
-use crate::graphics::color::Color;
+use crate::graphics::color::{Color, ColorSpace};
 use crate::graphics::paint::{LinearGradient, RadialGradient, SweepGradient};
 use crate::graphics::paint::{SpreadMethod, Stop};
 use crate::num::NormalizedF32;
 use crate::resource;
 use crate::resource::Resourceable;
-use crate::serialize::{Cacheable, SerializeContext};
+use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
 use crate::util::set_colorspace;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -224,37 +225,62 @@ impl ShadingFunction {
 }
 
 impl Cacheable for ShadingFunction {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         let mut stream_chunk = Chunk::new();
 
         match &self.0.properties {
             GradientProperties::RadialAxialGradient(rag) => {
-                serialize_axial_radial_shading(sc, &mut chunk, root_ref, rag, self.0.use_opacities)
+                let shading_cs =
+                    shading_color_space(sc, rag.stops[0].color.clone(), self.0.use_opacities);
+                let registered_cs = sc.register_colorspace(chunk_container, shading_cs);
+                let chunk = &mut chunk_container.shading_functions;
+                serialize_axial_radial_shading(
+                    sc,
+                    chunk,
+                    root_ref,
+                    rag,
+                    self.0.use_opacities,
+                    registered_cs,
+                )
             }
             GradientProperties::PostScriptGradient(psg) => {
                 sc.register_validation_error(ValidationError::ContainsPostScript(sc.location));
+                let shading_cs =
+                    shading_color_space(sc, psg.stops[0].color.clone(), self.0.use_opacities);
+                let registered_cs = sc.register_colorspace(chunk_container, shading_cs);
+                let chunk = &mut chunk_container.shading_functions;
                 serialize_postscript_shading(
                     sc,
-                    &mut chunk,
+                    chunk,
                     &mut stream_chunk,
                     root_ref,
                     psg,
                     self.0.use_opacities,
+                    registered_cs,
                 )
             }
         }
 
-        sc.chunk_container.shading_functions.push(chunk);
         // Note: The stream chunk might be empty.
-        sc.chunk_container
-            .shading_function_streams
-            .push(stream_chunk);
+        chunk_container.shading_function_streams.push(stream_chunk);
     }
 }
 
 impl Resourceable for ShadingFunction {
     type Resource = resource::Shading;
+}
+
+fn shading_color_space(sc: &mut SerializeContext, color: Color, use_opacities: bool) -> ColorSpace {
+    if use_opacities {
+        luma::color_space(sc.serialize_settings().no_device_cs).into()
+    } else {
+        color.color_space(sc)
+    }
 }
 
 fn serialize_postscript_shading(
@@ -264,22 +290,17 @@ fn serialize_postscript_shading(
     root_ref: Ref,
     post_script_gradient: &PostScriptGradient,
     use_opacities: bool,
+    cs: MaybeDeviceColorSpace,
 ) {
     let domain = post_script_gradient.domain;
 
     let bump = Bump::new();
     let function_ref =
         select_postscript_function(post_script_gradient, stream_chunk, sc, &bump, use_opacities);
-    let cs = if use_opacities {
-        luma::color_space(sc.serialize_settings().no_device_cs).into()
-    } else {
-        post_script_gradient.stops[0].color.color_space(sc)
-    };
-
     let mut shading = chunk.function_shading(root_ref);
     shading.shading_type(FunctionShadingType::Function);
 
-    set_colorspace(sc.register_colorspace(cs), shading.deref_mut());
+    set_colorspace(cs, shading.deref_mut());
 
     // Write the identity matrix, because ghostscript has a bug where
     // it thinks the entry is mandatory.
@@ -297,15 +318,10 @@ fn serialize_axial_radial_shading(
     root_ref: Ref,
     radial_axial_gradient: &RadialAxialGradient,
     use_opacities: bool,
+    cs: MaybeDeviceColorSpace,
 ) {
     let function_ref =
         select_axial_radial_function(radial_axial_gradient, chunk, sc, use_opacities);
-    let cs = if use_opacities {
-        luma::color_space(sc.serialize_settings().no_device_cs).into()
-    } else {
-        radial_axial_gradient.stops[0].color.color_space(sc)
-    };
-
     let mut shading = chunk.function_shading(root_ref);
     if radial_axial_gradient.shading_type == FunctionShadingType::Radial {
         shading.shading_type(FunctionShadingType::Radial);
@@ -313,7 +329,7 @@ fn serialize_axial_radial_shading(
         shading.shading_type(FunctionShadingType::Axial);
     }
 
-    set_colorspace(sc.register_colorspace(cs), shading.deref_mut());
+    set_colorspace(cs, shading.deref_mut());
 
     shading.anti_alias(radial_axial_gradient.anti_alias);
     shading.function(function_ref);

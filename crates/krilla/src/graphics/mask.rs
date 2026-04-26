@@ -1,7 +1,8 @@
 //! Alpha and luminosity masks.
 
-use pdf_writer::{Chunk, Finish, Name, Ref};
+use pdf_writer::{Finish, Name, Ref};
 
+use crate::chunk_container::ChunkContainer;
 use crate::geom::{Rect, Transform};
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
 use crate::graphics::xobject::XObject;
@@ -46,6 +47,7 @@ impl Mask {
         shading_transform: Transform,
         bbox: Rect,
         serializer_context: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
     ) -> Option<Self> {
         match &gradient_properties {
             GradientProperties::RadialAxialGradient(rag) => {
@@ -63,7 +65,7 @@ impl Mask {
         let shading_function = ShadingFunction::new(gradient_properties, true);
 
         let shading_stream = {
-            let mut builder = StreamBuilder::new(serializer_context);
+            let mut builder = StreamBuilder::new(serializer_context, chunk_container);
             let mut surface = builder.surface();
             surface.push_transform(&shading_transform);
             surface.draw_shading(&shading_function);
@@ -100,19 +102,24 @@ impl MaskType {
 }
 
 impl Cacheable for Mask {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
-        let mut chunk = Chunk::new();
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
+        let x_object = sc.register_cacheable(
+            chunk_container,
+            XObject::new(self.stream, false, true, self.custom_bbox),
+        );
 
-        let x_object =
-            sc.register_cacheable(XObject::new(self.stream, false, true, self.custom_bbox));
-
+        let chunk = &mut chunk_container.masks;
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
         dict.pair(Name(b"S"), self.mask_type.to_name());
         dict.pair(Name(b"G"), x_object);
 
         dict.finish();
-        sc.chunk_container.masks.push(chunk);
     }
 }
 

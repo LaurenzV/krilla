@@ -14,7 +14,6 @@ type DChunk = Deferred<Chunk>;
 
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
-#[derive(Default)]
 pub(crate) struct ChunkContainer {
     // Non-stream objects.
     pub(crate) page_tree: Option<(Ref, Chunk)>,
@@ -23,17 +22,17 @@ pub(crate) struct ChunkContainer {
     pub(crate) destination_profiles: Option<(Ref, Chunk)>,
     pub(crate) struct_tree_root: Option<(Ref, Chunk)>,
     pub(crate) struct_elements: Option<Chunk>,
-    pub(crate) page_labels: Vec<Chunk>,
-    pub(crate) annotations: Vec<Chunk>,
-    pub(crate) color_spaces: Vec<Chunk>,
-    pub(crate) destinations: Vec<Chunk>,
-    pub(crate) ext_g_states: Vec<Chunk>,
-    pub(crate) masks: Vec<Chunk>,
-    pub(crate) fonts: Vec<Chunk>,
-    pub(crate) shading_functions: Vec<Chunk>,
-    pub(crate) patterns: Vec<Chunk>,
-    pub(crate) pages: Vec<Chunk>,
-    pub(crate) embedded_files: Vec<Chunk>,
+    pub(crate) page_labels: Chunk,
+    pub(crate) annotations: Chunk,
+    pub(crate) color_spaces: Chunk,
+    pub(crate) destinations: Chunk,
+    pub(crate) ext_g_states: Chunk,
+    pub(crate) masks: Chunk,
+    pub(crate) fonts: Chunk,
+    pub(crate) shading_functions: Chunk,
+    pub(crate) patterns: Chunk,
+    pub(crate) pages: Chunk,
+    pub(crate) embedded_files: Chunk,
 
     // Mixed chunks.
     pub(crate) embedded_pdfs: Vec<Deferred<KrillaResult<EmbeddedPdfChunk>>>,
@@ -53,7 +52,35 @@ pub(crate) struct ChunkContainer {
 
 impl ChunkContainer {
     pub(crate) fn new() -> Self {
-        Self::default()
+        Self {
+            page_tree: None,
+            outline: None,
+            page_label_tree: None,
+            destination_profiles: None,
+            struct_tree_root: None,
+            struct_elements: None,
+            page_labels: Chunk::new(),
+            annotations: Chunk::new(),
+            color_spaces: Chunk::new(),
+            destinations: Chunk::new(),
+            ext_g_states: Chunk::new(),
+            masks: Chunk::new(),
+            fonts: Chunk::new(),
+            shading_functions: Chunk::new(),
+            patterns: Chunk::new(),
+            pages: Chunk::new(),
+            embedded_files: Chunk::new(),
+            embedded_pdfs: vec![],
+            font_streams: vec![],
+            shading_function_streams: vec![],
+            pattern_streams: vec![],
+            page_streams: vec![],
+            embedded_file_streams: vec![],
+            icc_profiles: vec![],
+            x_objects: vec![],
+            images: vec![],
+            metadata: None,
+        }
     }
 
     pub(crate) fn finish(self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
@@ -137,7 +164,7 @@ impl ChunkContainer {
 
         sc.serialize_settings().validator().write_xmp(&mut xmp);
 
-        xmp.num_pages(self.pages.len() as u32);
+        xmp.num_pages(sc.page_infos().len() as u32);
         xmp.format("application/pdf");
         xmp.instance_id(&instance_id);
         xmp.document_id(&document_id);
@@ -246,7 +273,7 @@ impl ChunkContainer {
             let write_embedded_files = sc
                 .serialize_settings()
                 .validator()
-                .write_embedded_files(self.embedded_files.is_empty());
+                .write_embedded_files(self.embedded_files.len() == 0);
 
             if !named_destinations.is_empty() || write_embedded_files {
                 // Cannot use pdf-writer API here because it requires Ref's, while

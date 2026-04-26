@@ -4,6 +4,7 @@ use std::ops::DerefMut;
 
 use pdf_writer::{Chunk, Finish, Name, Ref, Str, TextStr};
 
+use crate::chunk_container::ChunkContainer;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::interchange::metadata::pdf_date;
 use crate::metadata::DateTime;
@@ -51,13 +52,18 @@ pub struct EmbeddedFile {
 }
 
 impl Cacheable for EmbeddedFile {
-    fn serialize(self, sc: &mut SerializeContext, root_ref: Ref) {
+    fn serialize(
+        self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        root_ref: Ref,
+    ) {
         sc.register_validation_error(ValidationError::EmbeddedFile(
             EmbedError::Existence,
             self.location,
         ));
 
-        let mut chunk = Chunk::new();
+        let chunk = &mut chunk_container.embedded_files;
         let mut stream_chunk = Chunk::new();
         let stream_ref = sc.new_ref();
 
@@ -131,8 +137,7 @@ impl Cacheable for EmbeddedFile {
         }
 
         file_spec.finish();
-        sc.chunk_container.embedded_files.push(chunk);
-        sc.chunk_container.embedded_file_streams.push(stream_chunk);
+        chunk_container.embedded_file_streams.push(stream_chunk);
     }
 }
 
