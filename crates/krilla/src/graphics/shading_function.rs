@@ -18,6 +18,7 @@ use crate::num::NormalizedF32;
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
+use crate::stream::FilterStreamBuilder;
 use crate::util::set_colorspace;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
@@ -485,7 +486,10 @@ fn serialize_sweep_postscript(
 
     let encoded = PostScriptOp::encode(&code);
     sc.register_limits(encoded.limits());
-    let mut postscript_function = chunk.post_script_function(root_ref, &encoded);
+    let encoded = FilterStreamBuilder::new_from_content_stream(&encoded, &sc.serialize_settings())
+        .finish(&sc.serialize_settings());
+    let mut postscript_function = chunk.post_script_function(root_ref, encoded.encoded_data());
+    encoded.write_filters(postscript_function.deref_mut().deref_mut());
     postscript_function.domain([
         properties.domain.left(),
         properties.domain.right(),
@@ -548,7 +552,10 @@ fn serialize_linear_postscript(
 
     let encoded = PostScriptOp::encode(&code);
     sc.register_limits(encoded.limits());
-    let mut postscript_function = chunk.post_script_function(root_ref, &encoded);
+    let encoded = FilterStreamBuilder::new_from_content_stream(&encoded, &sc.serialize_settings())
+        .finish(&sc.serialize_settings());
+    let mut postscript_function = chunk.post_script_function(root_ref, encoded.encoded_data());
+    encoded.write_filters(postscript_function.deref_mut().deref_mut());
     postscript_function.domain([
         properties.domain.left(),
         properties.domain.right(),
