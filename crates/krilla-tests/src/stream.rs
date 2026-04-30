@@ -1,9 +1,10 @@
 use krilla::blend::BlendMode;
-use krilla::geom::{Size, Transform};
+use krilla::geom::{Point, Size, Transform};
 use krilla::page::Page;
+use krilla::text::{Font, TextDirection};
 use krilla_macros::snapshot;
 
-use crate::{blue_fill, load_png_image, red_fill};
+use crate::{blue_fill, load_png_image, red_fill, NOTO_SANS};
 use crate::{green_fill, rect_to_path};
 
 #[snapshot(settings_2)]
@@ -51,7 +52,7 @@ fn stream_reused_graphics_state(page: &mut Page) {
     surface.draw_path(&path1);
 }
 
-// Make sure page streams and images are flate encoded with default settings.
+// Make sure page streams, images, etc. are flate encoded with default settings.
 #[snapshot(settings_29)]
 fn stream_compress_by_default(page: &mut Page) {
     let mut surface = page.surface();
@@ -60,6 +61,17 @@ fn stream_compress_by_default(page: &mut Page) {
     surface.draw_path(&path1);
 
     let image = load_png_image("luma8.png");
-    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    let size = Size::from_wh(100.0, 100.0).unwrap();
     surface.draw_image(image, size);
+
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+    surface.set_fill(Some(red_fill(1.0)));
+    surface.draw_text(
+        Point::from_xy(0.0, 50.0),
+        font,
+        20.0,
+        "Hello World",
+        false,
+        TextDirection::Auto,
+    );
 }
