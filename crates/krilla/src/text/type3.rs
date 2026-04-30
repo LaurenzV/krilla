@@ -366,7 +366,11 @@ impl Type3Font {
         };
 
         let cmap_stream = cmap.finish();
-        let mut cmap = stream_chunk.cmap(cmap_ref, &cmap_stream);
+        let cmap_stream =
+            FilterStreamBuilder::new_from_content_stream(&cmap_stream, &sc.serialize_settings())
+                .finish(&sc.serialize_settings());
+        let mut cmap = stream_chunk.cmap(cmap_ref, cmap_stream.encoded_data());
+        cmap_stream.write_filters(cmap.deref_mut().deref_mut());
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
         chunk_container.font_streams.push(stream_chunk);
