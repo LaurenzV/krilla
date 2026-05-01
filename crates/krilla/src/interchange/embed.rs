@@ -63,7 +63,7 @@ impl Cacheable for EmbeddedFile {
             self.location,
         ));
 
-        let chunk = &mut chunk_container.embedded_files;
+        let chunk = &mut chunk_container.non_stream.embedded_files;
         let mut stream_chunk = sc.new_chunk();
         let stream_ref = sc.new_ref();
 
@@ -137,7 +137,10 @@ impl Cacheable for EmbeddedFile {
         }
 
         file_spec.finish();
-        chunk_container.embedded_file_streams.push(stream_chunk);
+        chunk_container
+            .streams
+            .embedded_file_streams
+            .push(stream_chunk);
     }
 }
 

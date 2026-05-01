@@ -69,7 +69,7 @@ impl Annotation {
         root_ref: Ref,
         page_height: f32,
     ) {
-        let chunk = &mut chunk_container.annotations;
+        let chunk = &mut chunk_container.non_stream.annotations;
         let mut annotation = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::Annotation>();

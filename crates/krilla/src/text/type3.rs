@@ -212,7 +212,7 @@ impl Type3Font {
             .collect::<Vec<Ref>>();
 
         let resource_dictionary = rd_builder.finish();
-        let chunk = &mut chunk_container.fonts;
+        let chunk = &mut chunk_container.non_stream.fonts;
 
         let descriptor_ref = if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
             Some(sc.new_ref())
@@ -318,7 +318,7 @@ impl Type3Font {
         resource_dictionary.to_pdf_resources(
             &mut type3_font,
             sc,
-            &mut chunk_container.resource_dictionaries,
+            &mut chunk_container.non_stream.resource_dictionaries,
         );
 
         // See https://github.com/typst/typst/issues/5067 as to why we write this.
@@ -376,7 +376,7 @@ impl Type3Font {
         cmap_stream.write_filters(cmap.deref_mut().deref_mut());
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
-        chunk_container.font_streams.push(stream_chunk);
+        chunk_container.streams.font_streams.push(stream_chunk);
     }
 }
 

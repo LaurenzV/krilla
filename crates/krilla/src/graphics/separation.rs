@@ -46,7 +46,7 @@ impl Cacheable for SeparationColorSpace {
             sc.register_validation_error(validation_error);
         }
 
-        let chunk = &mut chunk_container.color_spaces;
+        let chunk = &mut chunk_container.non_stream.color_spaces;
 
         // Write Separation color space array: [/Separation name alternateSpace tintTransform]
         let mut array = chunk.indirect(root_ref).array();

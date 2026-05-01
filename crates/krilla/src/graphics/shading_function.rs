@@ -239,7 +239,7 @@ impl Cacheable for ShadingFunction {
                 let shading_cs =
                     shading_color_space(sc, rag.stops[0].color.clone(), self.0.use_opacities);
                 let registered_cs = sc.register_colorspace(chunk_container, shading_cs);
-                let chunk = &mut chunk_container.shading_functions;
+                let chunk = &mut chunk_container.non_stream.shading_functions;
                 serialize_axial_radial_shading(
                     sc,
                     chunk,
@@ -254,7 +254,7 @@ impl Cacheable for ShadingFunction {
                 let shading_cs =
                     shading_color_space(sc, psg.stops[0].color.clone(), self.0.use_opacities);
                 let registered_cs = sc.register_colorspace(chunk_container, shading_cs);
-                let chunk = &mut chunk_container.shading_functions;
+                let chunk = &mut chunk_container.non_stream.shading_functions;
                 serialize_postscript_shading(
                     sc,
                     chunk,
@@ -268,7 +268,10 @@ impl Cacheable for ShadingFunction {
         }
 
         // Note: The stream chunk might be empty.
-        chunk_container.shading_function_streams.push(stream_chunk);
+        chunk_container
+            .streams
+            .shading_function_streams
+            .push(stream_chunk);
     }
 }
 

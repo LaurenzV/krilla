@@ -56,7 +56,7 @@ impl<const C: u8> Cacheable for ICCProfile<C> {
         icc_profile.n(C as i32).range([0.0, 1.0].repeat(C as usize));
         icc_stream.write_filters(icc_profile.deref_mut().deref_mut());
         icc_profile.finish();
-        chunk_container.icc_profiles.push(chunk);
+        chunk_container.streams.icc_profiles.push(chunk);
     }
 }
 
@@ -104,7 +104,7 @@ impl<const C: u8> Cacheable for ICCBasedColorSpace<C> {
     ) {
         let icc_ref = sc.register_cacheable(chunk_container, self.0.clone());
 
-        let chunk = &mut chunk_container.color_spaces;
+        let chunk = &mut chunk_container.non_stream.color_spaces;
 
         let mut array = chunk.indirect(root_ref).array();
         array.item(Name(b"ICCBased"));

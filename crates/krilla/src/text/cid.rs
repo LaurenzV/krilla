@@ -190,7 +190,7 @@ impl CIDFont {
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
     ) -> KrillaResult<()> {
-        let chunk = &mut chunk_container.fonts;
+        let chunk = &mut chunk_container.non_stream.fonts;
         let mut stream_chunk = sc.new_chunk();
 
         let cid_ref = sc.new_ref();
@@ -404,7 +404,7 @@ impl CIDFont {
         }
 
         stream.finish();
-        chunk_container.font_streams.push(stream_chunk);
+        chunk_container.streams.font_streams.push(stream_chunk);
 
         Ok(())
     }

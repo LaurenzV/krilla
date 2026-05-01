@@ -257,7 +257,7 @@ impl PdfSerializerContext {
                 })
             });
 
-            chunk_container.embedded_pdfs.push(deferred_chunk);
+            chunk_container.mixed.embedded_pdfs.push(deferred_chunk);
         }
 
         Ok(())

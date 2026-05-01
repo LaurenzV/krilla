@@ -113,7 +113,7 @@ impl Cacheable for Mask {
             XObject::new(self.stream, false, true, self.custom_bbox),
         );
 
-        let chunk = &mut chunk_container.masks;
+        let chunk = &mut chunk_container.non_stream.masks;
         let mut dict = chunk.indirect(root_ref).dict();
         dict.pair(Name(b"Type"), Name(b"Mask"));
         dict.pair(Name(b"S"), self.mask_type.to_name());
