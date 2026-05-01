@@ -268,10 +268,7 @@ impl Cacheable for ShadingFunction {
         }
 
         // Note: The stream chunk might be empty.
-        chunk_container
-            .streams
-            .shading_function_streams
-            .push(stream_chunk);
+        chunk_container.streams.shading_functions.push(stream_chunk);
     }
 }
 

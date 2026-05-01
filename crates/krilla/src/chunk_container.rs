@@ -22,11 +22,11 @@ pub(crate) struct ChunkContainer {
 }
 
 pub(crate) struct StreamChunks {
-    pub(crate) font_streams: Vec<Chunk>,
-    pub(crate) shading_function_streams: Vec<Chunk>,
-    pub(crate) pattern_streams: Vec<Chunk>,
-    pub(crate) page_streams: Vec<DChunk>,
-    pub(crate) embedded_file_streams: Vec<Chunk>,
+    pub(crate) fonts: Vec<Chunk>,
+    pub(crate) shading_functions: Vec<Chunk>,
+    pub(crate) patterns: Vec<Chunk>,
+    pub(crate) pages: Vec<DChunk>,
+    pub(crate) embedded_files: Vec<Chunk>,
     pub(crate) icc_profiles: Vec<Chunk>,
     pub(crate) x_objects: Vec<Chunk>,
     pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
@@ -61,11 +61,11 @@ impl ChunkContainer {
     pub(crate) fn new(sc: &SerializeContext) -> Self {
         Self {
             streams: StreamChunks {
-                font_streams: vec![],
-                shading_function_streams: vec![],
-                pattern_streams: vec![],
-                page_streams: vec![],
-                embedded_file_streams: vec![],
+                fonts: vec![],
+                shading_functions: vec![],
+                patterns: vec![],
+                pages: vec![],
+                embedded_files: vec![],
                 icc_profiles: vec![],
                 x_objects: vec![],
                 images: vec![],
@@ -394,11 +394,11 @@ impl Visit for ChunkContainer {
 
 impl Visit for StreamChunks {
     fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
-        self.font_streams.visit(sc, f)?;
-        self.shading_function_streams.visit(sc, f)?;
-        self.pattern_streams.visit(sc, f)?;
-        self.page_streams.visit(sc, f)?;
-        self.embedded_file_streams.visit(sc, f)?;
+        self.fonts.visit(sc, f)?;
+        self.shading_functions.visit(sc, f)?;
+        self.patterns.visit(sc, f)?;
+        self.pages.visit(sc, f)?;
+        self.embedded_files.visit(sc, f)?;
         self.icc_profiles.visit(sc, f)?;
         self.x_objects.visit(sc, f)?;
         self.images.visit(sc, f)?;

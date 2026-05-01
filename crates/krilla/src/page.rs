@@ -465,7 +465,7 @@ impl InternalPage {
         *annotations = annotation_refs;
 
         page.finish();
-        chunk_container.streams.page_streams.push(self.stream_chunk);
+        chunk_container.streams.pages.push(self.stream_chunk);
     }
 }
 

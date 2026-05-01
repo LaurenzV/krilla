@@ -137,10 +137,7 @@ impl Cacheable for EmbeddedFile {
         }
 
         file_spec.finish();
-        chunk_container
-            .streams
-            .embedded_file_streams
-            .push(stream_chunk);
+        chunk_container.streams.embedded_files.push(stream_chunk);
     }
 }
 

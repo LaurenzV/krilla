@@ -376,7 +376,7 @@ impl Type3Font {
         cmap_stream.write_filters(cmap.deref_mut().deref_mut());
         cmap.writing_mode(WMode::Horizontal);
         cmap.finish();
-        chunk_container.streams.font_streams.push(stream_chunk);
+        chunk_container.streams.fonts.push(stream_chunk);
     }
 }
 

@@ -404,7 +404,7 @@ impl CIDFont {
         }
 
         stream.finish();
-        chunk_container.streams.font_streams.push(stream_chunk);
+        chunk_container.streams.fonts.push(stream_chunk);
 
         Ok(())
     }
