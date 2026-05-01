@@ -5,22 +5,31 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [5 0 R]
+  /Kids [6 0 R]
 >>
 endobj
 
 2 0 obj
 <<
-  /Type /Font
-  /Subtype /Type0
-  /BaseFont /EFVHQE+NotoSansDevanagari-Regular
-  /Encoding /Identity-H
-  /DescendantFonts [3 0 R]
-  /ToUnicode 7 0 R
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /Font <<
+    /f0 3 0 R
+  >>
 >>
 endobj
 
 3 0 obj
+<<
+  /Type /Font
+  /Subtype /Type0
+  /BaseFont /EFVHQE+NotoSansDevanagari-Regular
+  /Encoding /Identity-H
+  /DescendantFonts [4 0 R]
+  /ToUnicode 8 0 R
+>>
+endobj
+
+4 0 obj
 <<
   /Type /Font
   /Subtype /CIDFontType2
@@ -30,14 +39,14 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 4 0 R
+  /FontDescriptor 5 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 580 4 4 615 5 5 259 6 6 260 7 7 555 8 8 409 10 10 853 12 12 376 13 13 556]
 >>
 endobj
 
-4 0 obj
+5 0 obj
 <<
   /Type /FontDescriptor
   /FontName /EFVHQE+NotoSansDevanagari-Regular
@@ -48,27 +57,22 @@ endobj
   /Descent -408
   /CapHeight 622
   /StemV 95.4
-  /CIDSet 6 0 R
-  /FontFile2 8 0 R
->>
-endobj
-
-5 0 obj
-<<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /Font <<
-      /f0 2 0 R
-    >>
-  >>
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 9 0 R
+  /CIDSet 7 0 R
+  /FontFile2 9 0 R
 >>
 endobj
 
 6 0 obj
+<<
+  /Type /Page
+  /Resources 2 0 R
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 10 0 R
+>>
+endobj
+
+7 0 obj
 <<
   /Length 20
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -78,7 +82,7 @@ stream
 endstream
 endobj
 
-7 0 obj
+8 0 obj
 <<
   /Length 745
   /Type /CMap
@@ -126,7 +130,7 @@ end
 endstream
 endobj
 
-8 0 obj
+9 0 obj
 <<
   /Length 3748
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -188,7 +192,7 @@ B6ADE24A6C409EA8EE89FE066357E44876B51CEB376FD5EA1ECF98E794798E5577C5D4
 endstream
 endobj
 
-9 0 obj
+10 0 obj
 <<
   /Length 760
 >>
@@ -254,7 +258,7 @@ Q
 endstream
 endobj
 
-10 0 obj
+11 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -262,24 +266,25 @@ endobj
 endobj
 
 xref
-0 11
+0 12
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000251 00000 n
-0000000599 00000 n
-0000000853 00000 n
-0000001048 00000 n
-0000001162 00000 n
-0000001986 00000 n
-0000005830 00000 n
-0000006644 00000 n
+0000000172 00000 n
+0000000343 00000 n
+0000000691 00000 n
+0000000945 00000 n
+0000001061 00000 n
+0000001175 00000 n
+0000001999 00000 n
+0000005843 00000 n
+0000006658 00000 n
 trailer
 <<
-  /Size 11
-  /Root 10 0 R
-  /ID [(tyXTTfTguOsYr670u0pabQ==) (tyXTTfTguOsYr670u0pabQ==)]
+  /Size 12
+  /Root 11 0 R
+  /ID [(MdCI0FIMYnFiedKB9ow+qg==) (MdCI0FIMYnFiedKB9ow+qg==)]
 >>
 startxref
-6699
+6713
 %%EOF

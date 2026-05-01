@@ -5,7 +5,7 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [6 0 R]
+  /Kids [7 0 R]
 >>
 endobj
 
@@ -38,7 +38,7 @@ endobj
   /P 5 0 R
   /Alt (This is the alternate text.)
   /K [0]
-  /Pg 6 0 R
+  /Pg 7 0 R
 >>
 endobj
 
@@ -53,18 +53,22 @@ endobj
 
 6 0 obj
 <<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-  >>
-  /MediaBox [0 0 595 842]
-  /StructParents 0
-  /Parent 1 0 R
-  /Contents 7 0 R
+  /ProcSet [/PDF /Text /ImageC /ImageB]
 >>
 endobj
 
 7 0 obj
+<<
+  /Type /Page
+  /Resources 6 0 R
+  /MediaBox [0 0 595 842]
+  /StructParents 0
+  /Parent 1 0 R
+  /Contents 8 0 R
+>>
+endobj
+
+8 0 obj
 <<
   /Length 286
 >>
@@ -115,7 +119,7 @@ EMC
 endstream
 endobj
 
-8 0 obj
+9 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -128,7 +132,7 @@ endobj
 endobj
 
 xref
-0 9
+0 10
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
@@ -136,14 +140,15 @@ xref
 0000000330 00000 n
 0000000454 00000 n
 0000000535 00000 n
-0000000713 00000 n
-0000001053 00000 n
+0000000597 00000 n
+0000000731 00000 n
+0000001071 00000 n
 trailer
 <<
-  /Size 9
-  /Root 8 0 R
-  /ID [(0K/+PjSEmJIsiA6maibLuA==) (0K/+PjSEmJIsiA6maibLuA==)]
+  /Size 10
+  /Root 9 0 R
+  /ID [(2dcUKWA8GjdlT9EdA5kAjw==) (2dcUKWA8GjdlT9EdA5kAjw==)]
 >>
 startxref
-1188
+1206
 %%EOF

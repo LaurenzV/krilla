@@ -105,10 +105,11 @@ impl Cacheable for XObject {
         let mut x_object = chunk.form_xobject(root_ref, x_object_stream.encoded_data());
         x_object_stream.write_filters(x_object.deref_mut().deref_mut());
 
-        self.0
-            .stream
-            .resource_dictionary
-            .to_pdf_resources(&mut x_object, serialize_settings.pdf_version());
+        self.0.stream.resource_dictionary.to_pdf_resources(
+            &mut x_object,
+            sc,
+            &mut chunk_container.resource_dictionaries,
+        );
         x_object.bbox(
             self.0
                 .custom_bbox

@@ -5,10 +5,9 @@ use std::marker::PhantomData;
 
 use pdf_writer::types::ProcSet;
 use pdf_writer::writers;
-use pdf_writer::{Dict, Finish, Ref};
+use pdf_writer::{Chunk, Dict, Finish, Name, Ref};
 
-use crate::configure::PdfVersion;
-use crate::serialize::Cacheable;
+use crate::serialize::{Cacheable, SerializeContext};
 use crate::util::NameExt;
 
 pub(crate) trait Resource {
@@ -240,12 +239,19 @@ impl Default for ResourceDictionary {
 pub(crate) type ResourceNumber = u32;
 
 impl ResourceDictionary {
-    pub fn to_pdf_resources<T>(&self, parent: &mut T, version: PdfVersion)
-    where
+    pub fn to_pdf_resources<T>(
+        &self,
+        parent: &mut T,
+        sc: &mut SerializeContext,
+        resources_chunk: &mut Chunk,
+    ) where
         T: ResourcesExt,
     {
-        let resources = &mut parent.resources();
-        if !version.deprecates_proc_sets() {
+        let resources_ref = sc.new_ref();
+        let mut resources = resources_chunk
+            .indirect(resources_ref)
+            .start::<writers::Resources>();
+        if !sc.serialize_settings().pdf_version().deprecates_proc_sets() {
             resources.proc_sets([
                 ProcSet::Pdf,
                 ProcSet::Text,
@@ -253,12 +259,13 @@ impl ResourceDictionary {
                 ProcSet::ImageGrayscale,
             ]);
         }
-        write_resource_type::<ColorSpace>(resources, &self.color_spaces);
-        write_resource_type::<ExtGState>(resources, &self.ext_g_states);
-        write_resource_type::<Pattern>(resources, &self.patterns);
-        write_resource_type::<XObject>(resources, &self.x_objects);
-        write_resource_type::<Shading>(resources, &self.shadings);
-        write_resource_type::<Font>(resources, &self.fonts);
+        write_resource_type::<ColorSpace>(&mut resources, &self.color_spaces);
+        write_resource_type::<ExtGState>(&mut resources, &self.ext_g_states);
+        write_resource_type::<Pattern>(&mut resources, &self.patterns);
+        write_resource_type::<XObject>(&mut resources, &self.x_objects);
+        write_resource_type::<Shading>(&mut resources, &self.shadings);
+        write_resource_type::<Font>(&mut resources, &self.fonts);
+        parent.set_resources(resources_ref);
     }
 }
 
@@ -357,35 +364,35 @@ where
 }
 
 pub(crate) trait ResourcesExt {
-    fn resources(&mut self) -> writers::Resources<'_>;
+    fn set_resources(&mut self, resources_ref: Ref);
 }
 
 impl ResourcesExt for writers::FormXObject<'_> {
-    fn resources(&mut self) -> writers::Resources<'_> {
-        self.resources()
+    fn set_resources(&mut self, resources_ref: Ref) {
+        self.pair(Name(b"Resources"), resources_ref);
     }
 }
 
 impl ResourcesExt for writers::TilingPattern<'_> {
-    fn resources(&mut self) -> writers::Resources<'_> {
-        self.resources()
+    fn set_resources(&mut self, resources_ref: Ref) {
+        self.pair(Name(b"Resources"), resources_ref);
     }
 }
 
 impl ResourcesExt for writers::Type3Font<'_> {
-    fn resources(&mut self) -> writers::Resources<'_> {
-        self.resources()
+    fn set_resources(&mut self, resources_ref: Ref) {
+        self.pair(Name(b"Resources"), resources_ref);
     }
 }
 
 impl ResourcesExt for writers::Pages<'_> {
-    fn resources(&mut self) -> writers::Resources<'_> {
-        self.resources()
+    fn set_resources(&mut self, resources_ref: Ref) {
+        self.pair(Name(b"Resources"), resources_ref);
     }
 }
 
 impl ResourcesExt for writers::Page<'_> {
-    fn resources(&mut self) -> writers::Resources<'_> {
-        self.resources()
+    fn set_resources(&mut self, resources_ref: Ref) {
+        self.pair(Name(b"Resources"), resources_ref);
     }
 }
