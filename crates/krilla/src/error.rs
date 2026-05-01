@@ -3,6 +3,8 @@
 //! There are a lot of things that can go wrong when writing a PDF, like for example when
 //! invalid fonts are provided. This module provides the basic error types krilla uses.
 
+use std::sync::Arc;
+
 use crate::configure::ValidationError;
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
@@ -27,6 +29,9 @@ pub enum KrillaError {
     Validation(Vec<ValidationError>),
     /// A hard limit of the selected PDF version was exceeded.
     Limit(LimitError),
+    /// The same destination name has been associated with two different destinations,
+    /// which is prohibited.
+    DuplicateNamedDestination(Arc<String>),
     /// A duplicate [`Tag::id`] was provided.
     ///
     /// [`Tag::id`]: crate::interchange::tagging::Tag::id

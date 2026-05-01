@@ -129,8 +129,14 @@ impl Document {
     ///
     /// Named destinations used in link annotations are automatically registered, so you don't need
     /// to call this function for them.
-    pub fn register_named_destination(&mut self, dest: NamedDestination) {
-        self.serializer_context.register_named_destination(dest);
+    ///
+    /// Returns `None` if a named destination with the same name and a different destination has
+    /// already been registered, and therefore could not be registered again.
+    #[must_use]
+    pub fn register_named_destination(&mut self, dest: NamedDestination) -> Option<()> {
+        self.serializer_context
+            .register_named_destination(dest)
+            .map(|_| ())
     }
 
     /// Attempt to export the document to a PDF file.
