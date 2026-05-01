@@ -1,5 +1,5 @@
 # Description
-PDF/A-1 requires PDF a version <= 1.4 and defines three conformance levels, 
+PDF/A-1 requires PDF version <= 1.4 and defines two conformance levels,
 in the following order from less strict to more strict:
 - Level B
 - Level A
@@ -145,7 +145,8 @@ when a PostScript function is used. 🟢
 ## 6.6 Action
 
 6.6.1:
-- krilla does not support the `Launch`, `Sound`, `Movie`, `ResetForm`, `ImportData`, `JavaScript` actions. 🔵
+- krilla does not support the `Launch`, `Sound`, `Movie`, `ResetForm`, `ImportData`, `Hide`,
+  `JavaScript` actions. 🔵
 - krilla does not use the `set-state` and `no-op` actions. 🔵
 - krilla does not support named actions. 🔵
 - krilla does not support interactive forms. 🔵
@@ -175,7 +176,8 @@ when a PostScript function is used. 🟢
 
 6.7.6: krilla writes pdfaid:conformance and pdfaid:part as specified. 🟢
 
-6.7.7: krilla is the original creator, and thus no history is necessary. 🟢
+6.7.7: krilla writes a minimal `xmpMM:History` entry when a creation date is
+provided. 🟢
 
 6.7.8: krilla writes the extension schemas. 🟢
 
@@ -207,7 +209,7 @@ when a PostScript function is used. 🟢
 
 6.8.4:
 - krilla requires the user to set the document language in that export mode. 🟢
-- krilla forces the user to specify the language on each span. 🟢
+- krilla allows users to specify the language on spans. 🟢
 - The need for correctness of language tags is documented. 🟣
 
 6.8.5: The fact that an alternate text should be provided to figures and formulas is checked. 🟢
@@ -223,5 +225,3 @@ leaf `SpanTag` struct passed to `Surface::start_tagged` method instead of the
 
 # 6.9 Interactive Forms
 krilla does not support interactive forms. 🔵
-
-

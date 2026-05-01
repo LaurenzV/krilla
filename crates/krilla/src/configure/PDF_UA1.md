@@ -5,7 +5,7 @@ See `README.md` for the meaning of each color.
 
 # 6.1 General
 
-- krilla only uses PDF 1.7.
+- krilla defaults to PDF 1.7 for this mode, but allows any PDF version up to PDF 1.7. 🟢
 
 # 6.2 Conforming files
 
@@ -14,11 +14,11 @@ See `README.md` for the meaning of each color.
 
 # 6.3 Conforming reader
 
-- 
+- Not applicable to krilla as a writer. -
 
-# 6.4 Conforming reader
+# 6.4 Conforming assistive technology
 
--
+- Not applicable to krilla as a writer. -
 
 # 7.1 General
 
@@ -40,7 +40,7 @@ See `README.md` for the meaning of each color.
 - krilla checks that every character is mapped to a codepoint. 🟢
 - The fact that the user should make use of the natural language attributes is documented. 🟣
 - The fact that stretchable characters should be marked with `ActualText` is documented. 🟣
-- krilla does not provide a way to set the language of text strings. 🔴
+- krilla allows setting the language of spans. 🟢
 
 # 7.3 Graphics
 - The fact that figures should be tagged (as a figure or an artifact) is documented. 🟣
@@ -53,7 +53,7 @@ See `README.md` for the meaning of each color.
 
 7.4.1:
 - The fact that headings should be tagged is documented. 🟣
-- krilla does not support the T key yet. 🟢
+- krilla supports the `T` key for headings. 🟢
 
 7.4.2:
 - The information there is hardly enforceable in an automated way, so not documented yet. 🟠
@@ -90,7 +90,8 @@ See `README.md` for the meaning of each color.
 - krilla does currently not support optional content. 🔵
 
 # 7.11 Embedded files
-- krilla does currently not support embedded files. 🔵
+- krilla supports embedded files, and requires a description in this export mode. 🟢
+- The fact that embedded files should be accessible in their own right is documented. 🟣
 
 # 7.12 Article threads
 - The fact that the logical reading order should be preserved is documented. 🟣
@@ -136,7 +137,13 @@ See `README.md` for the meaning of each color.
 - krilla never writes the `IMap` key for URIs. 🔵
 
 7.18.6
-- krilla does not have any support for media and file attachments. 🔵
+- krilla does not support media annotations. 🔵
+
+7.18.7
+- krilla does not support file attachment annotations. 🔵
+
+7.18.8
+- krilla does not support printer mark annotations. 🔵
 
 # 7.19 Actions
 - krilla does not support adding (JavaScript) scripts. 🔵
@@ -181,7 +188,15 @@ See `README.md` for the meaning of each color.
 
 7.21.7
 - krilla always includes the `ToUnicode` entry with corresponding mappings. 🟢
-- krilla will fail export if 0, U+FEFF or U+FFEE is included. 🟢
+- krilla will fail export if 0, U+FEFF or U+FFFE is included. 🟢
 
 7.21.8
 - krilla will fail export if the .notdef glyph is included. 🟢
+
+# 8 Reader Requirements
+
+- Not applicable to krilla as a writer. -
+
+# 9 Assistive Technology Requirements
+
+- Not applicable to krilla as a writer. -

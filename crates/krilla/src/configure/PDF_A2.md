@@ -1,5 +1,5 @@
 # Description
-PDF/A-2 requires PDF a version <= 1.7 and defines three conformance levels, 
+PDF/A-2 requires PDF version <= 1.7 and defines three conformance levels,
 in the following order from less strict to more strict:
 - Level B
 - Level U
@@ -137,7 +137,7 @@ always required. 🟢
 - krilla does not write TrueType fonts directly. 🔵
 - krilla only writes CIDFonts instead of TrueType fonts directly, so cmap is not needed. 🟢
 
-6.2.11.8:
+6.2.11.8: krilla fails export when the .notdef glyph is referenced. 🟢
 
 ## 6.3 Annotations
 
@@ -198,9 +198,10 @@ always required. 🟢
 
 6.6.5: 
 - krilla writes a document and instance ID. 🟢
-- krilla does not write the `xmpMM:History` attribute. 🔵
+- krilla writes a minimal `xmpMM:History` entry when a creation date is provided. 🟢
 
-6.6.6: krilla does not write the `xmpMM:History` attribute. 🔵
+6.6.6: krilla writes a minimal `xmpMM:History` entry when a creation date is
+provided. 🟢
 
 # 6.8 Embedding files
 
@@ -253,7 +254,7 @@ krilla never writes the `Requirements` key in the document dictionary. 🔵
 
 6.7.4:
 - krilla requires the user to set the document language in that export mode. 🟢
-- krilla forces the user to specify the language on each span. 🟢
+- krilla allows users to specify the language on spans. 🟢
 - The need for correctness of language tags is documented. 🟣
 
 6.7.5: The fact that an alternate text should be provided to figures and formulas is checked. 🟢

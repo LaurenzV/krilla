@@ -1,11 +1,5 @@
 # Description
-PDF/A-4 requires PDF a version 2.0 and defines three conformance levels,
-in the following order from less strict to more strict:
-- Level B
-- Level U
-- Level A
-
-Level U is a subset of level A, and level B is a subset of level U.
+PDF/A-4 requires PDF version 2.0.
 
 See `README.md` for the meaning of each color.
 
@@ -52,7 +46,8 @@ See `README.md` for the meaning of each color.
 - krilla does not support permissions. 🟢
 
 ### 6.1.12 Document catalog dictionary
-- krilla always writes the Version entry as 2.0. 🟢
+- krilla writes the PDF file header version as 2.0 and does not write a conflicting catalog
+  `Version` entry. 🟢
 
 ## 6.2 Graphics
 
@@ -174,10 +169,10 @@ See `README.md` for the meaning of each color.
 
 ### 6.7.4 File identifiers
 - krilla always adds a document identifier to the metadata. 🟢
-- krilla does not use the history entry. 🟢
+- krilla writes a minimal `xmpMM:History` entry when a creation date is provided. 🟢
 
 ### 6.7.5 File provenance information
-- krilla does not need to write file provenance information. 🟢
+- krilla writes a minimal `xmpMM:History` entry when a creation date is provided. 🟢
 
 ## 6.8 Logical structure
 - Logical structure is only optional, so krilla does not make any enforcements here, but the
