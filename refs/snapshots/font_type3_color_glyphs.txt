@@ -5,11 +5,42 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [4 0 R]
+  /Kids [8 0 R]
 >>
 endobj
 
 2 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+3 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+4 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /XObject <<
+    /x0 13 0 R
+    /x1 14 0 R
+  >>
+>>
+endobj
+
+5 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /Font <<
+    /f0 7 0 R
+  >>
+>>
+endobj
+
+6 0 obj
 <<
   /Type /FontDescriptor
   /FontName /TwitterColorEmojiSVGinOT
@@ -24,28 +55,22 @@ endobj
 >>
 endobj
 
-3 0 obj
+7 0 obj
 <<
   /Type /Font
   /Subtype /Type3
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /XObject <<
-      /x0 9 0 R
-      /x1 10 0 R
-    >>
-  >>
+  /Resources 4 0 R
   /Name /TwitterColorEmojiSVGinOT
   /FontBBox [-0.00000000000020210994 -402.84998 2048 1645.15]
-  /ToUnicode 7 0 R
+  /ToUnicode 11 0 R
   /FontMatrix [0.00048828125 0 0 0.00048828125 0 0]
   /FirstChar 0
   /LastChar 1
   /Widths [2048 2048]
-  /FontDescriptor 2 0 R
+  /FontDescriptor 6 0 R
   /CharProcs <<
-    /g0 5 0 R
-    /g1 6 0 R
+    /g0 9 0 R
+    /g1 10 0 R
   >>
   /Encoding <<
     /Type /Encoding
@@ -54,22 +79,17 @@ endobj
 >>
 endobj
 
-4 0 obj
+8 0 obj
 <<
   /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /Font <<
-      /f0 3 0 R
-    >>
-  >>
+  /Resources 5 0 R
   /MediaBox [0 0 200 200]
   /Parent 1 0 R
-  /Contents 8 0 R
+  /Contents 12 0 R
 >>
 endobj
 
-5 0 obj
+9 0 obj
 <<
   /Length 16
 >>
@@ -79,7 +99,7 @@ stream
 endstream
 endobj
 
-6 0 obj
+10 0 obj
 <<
   /Length 16
 >>
@@ -89,7 +109,7 @@ stream
 endstream
 endobj
 
-7 0 obj
+11 0 obj
 <<
   /Length 633
   /Type /CMap
@@ -131,7 +151,7 @@ end
 endstream
 endobj
 
-8 0 obj
+12 0 obj
 <<
   /Length 79
 >>
@@ -149,14 +169,12 @@ Q
 endstream
 endobj
 
-9 0 obj
+13 0 obj
 <<
   /Length 1086
   /Type /XObject
   /Subtype /Form
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-  >>
+  /Resources 2 0 R
   /BBox [-0.00000000000020210994 -402.84998 2048 1645.15]
 >>
 stream
@@ -220,14 +238,12 @@ Q
 endstream
 endobj
 
-10 0 obj
+14 0 obj
 <<
   /Length 956
   /Type /XObject
   /Subtype /Form
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-  >>
+  /Resources 3 0 R
   /BBox [0 -402.84998 2048 1645.15]
 >>
 stream
@@ -290,7 +306,7 @@ Q
 endstream
 endobj
 
-11 0 obj
+15 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -298,25 +314,29 @@ endobj
 endobj
 
 xref
-0 12
+0 16
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000381 00000 n
-0000000914 00000 n
-0000001109 00000 n
-0000001178 00000 n
-0000001247 00000 n
-0000001959 00000 n
-0000002091 00000 n
-0000003387 00000 n
-0000004531 00000 n
+0000000142 00000 n
+0000000204 00000 n
+0000000315 00000 n
+0000000407 00000 n
+0000000708 00000 n
+0000001143 00000 n
+0000001259 00000 n
+0000001328 00000 n
+0000001398 00000 n
+0000002111 00000 n
+0000002244 00000 n
+0000003497 00000 n
+0000004597 00000 n
 trailer
 <<
-  /Size 12
-  /Root 11 0 R
-  /ID [(xU4vG9wee7DPJwhvqzRpNA==) (xU4vG9wee7DPJwhvqzRpNA==)]
+  /Size 16
+  /Root 15 0 R
+  /ID [(legjXiwjeHOWBG2bByKHOw==) (legjXiwjeHOWBG2bByKHOw==)]
 >>
 startxref
-4586
+4652
 %%EOF

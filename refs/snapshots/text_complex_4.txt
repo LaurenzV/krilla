@@ -5,22 +5,31 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [5 0 R]
+  /Kids [6 0 R]
 >>
 endobj
 
 2 0 obj
 <<
-  /Type /Font
-  /Subtype /Type0
-  /BaseFont /HQGATO+NotoSansDevanagari-Regular
-  /Encoding /Identity-H
-  /DescendantFonts [3 0 R]
-  /ToUnicode 7 0 R
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /Font <<
+    /f0 3 0 R
+  >>
 >>
 endobj
 
 3 0 obj
+<<
+  /Type /Font
+  /Subtype /Type0
+  /BaseFont /HQGATO+NotoSansDevanagari-Regular
+  /Encoding /Identity-H
+  /DescendantFonts [4 0 R]
+  /ToUnicode 8 0 R
+>>
+endobj
+
+4 0 obj
 <<
   /Type /Font
   /Subtype /CIDFontType2
@@ -30,14 +39,14 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 4 0 R
+  /FontDescriptor 5 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 764 2 2 358 3 3 556 6 6 555 7 7 259 10 10 260 11 11 531 12 12 259 13 13 630 15 15 570 16 16 259 17 18 598 19 19 742 20 20 572 21 21 756 22 22 259 23 23 409 24 24 703 26 26 349 27 27 259 28 28 531 29 29 202 30 30 599]
 >>
 endobj
 
-4 0 obj
+5 0 obj
 <<
   /Type /FontDescriptor
   /FontName /HQGATO+NotoSansDevanagari-Regular
@@ -48,27 +57,22 @@ endobj
   /Descent -408
   /CapHeight 622
   /StemV 95.4
-  /CIDSet 6 0 R
-  /FontFile2 8 0 R
->>
-endobj
-
-5 0 obj
-<<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /Font <<
-      /f0 2 0 R
-    >>
-  >>
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 9 0 R
+  /CIDSet 7 0 R
+  /FontFile2 9 0 R
 >>
 endobj
 
 6 0 obj
+<<
+  /Type /Page
+  /Resources 2 0 R
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 10 0 R
+>>
+endobj
+
+7 0 obj
 <<
   /Length 24
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -78,7 +82,7 @@ stream
 endstream
 endobj
 
-7 0 obj
+8 0 obj
 <<
   /Length 956
   /Type /CMap
@@ -137,7 +141,7 @@ end
 endstream
 endobj
 
-8 0 obj
+9 0 obj
 <<
   /Length 6177
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -234,7 +238,7 @@ E493539ACA5D5569EDFDA8F63EA9BA914AECAF1928AA7303C57DD706B4319DD04C6A63
 endstream
 endobj
 
-9 0 obj
+10 0 obj
 <<
   /Length 2791
 >>
@@ -440,7 +444,7 @@ Q
 endstream
 endobj
 
-10 0 obj
+11 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -448,24 +452,25 @@ endobj
 endobj
 
 xref
-0 11
+0 12
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000251 00000 n
-0000000741 00000 n
-0000000995 00000 n
-0000001190 00000 n
-0000001308 00000 n
-0000002343 00000 n
-0000008616 00000 n
-0000011462 00000 n
+0000000172 00000 n
+0000000343 00000 n
+0000000833 00000 n
+0000001087 00000 n
+0000001203 00000 n
+0000001321 00000 n
+0000002356 00000 n
+0000008629 00000 n
+0000011476 00000 n
 trailer
 <<
-  /Size 11
-  /Root 10 0 R
-  /ID [(VdtKf2qKG51cTfXqq31XFA==) (VdtKf2qKG51cTfXqq31XFA==)]
+  /Size 12
+  /Root 11 0 R
+  /ID [(EB7PDpTSBvS7c3xTVU4Iug==) (EB7PDpTSBvS7c3xTVU4Iug==)]
 >>
 startxref
-11517
+11531
 %%EOF

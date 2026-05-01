@@ -5,29 +5,48 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [3 0 R]
+  /Kids [6 0 R]
 >>
 endobj
 
 2 0 obj
 <<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+3 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /XObject <<
+    /x0 10 0 R
+  >>
+>>
+endobj
+
+4 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /Font <<
+    /f0 5 0 R
+  >>
+>>
+endobj
+
+5 0 obj
+<<
   /Type /Font
   /Subtype /Type3
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /XObject <<
-      /x0 7 0 R
-    >>
-  >>
+  /Resources 3 0 R
   /Name /TwitterColorEmojiSVGinOT
   /FontBBox [-0.00000000000020210994 -402.84998 2048 1645.15]
-  /ToUnicode 5 0 R
+  /ToUnicode 8 0 R
   /FontMatrix [0.00048828125 0 0 0.00048828125 0 0]
   /FirstChar 0
   /LastChar 0
   /Widths [2048]
   /CharProcs <<
-    /g0 4 0 R
+    /g0 7 0 R
   >>
   /Encoding <<
     /Type /Encoding
@@ -36,22 +55,17 @@ endobj
 >>
 endobj
 
-3 0 obj
+6 0 obj
 <<
   /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-    /Font <<
-      /f0 2 0 R
-    >>
-  >>
+  /Resources 4 0 R
   /MediaBox [0 0 200 200]
   /Parent 1 0 R
-  /Contents 6 0 R
+  /Contents 9 0 R
 >>
 endobj
 
-4 0 obj
+7 0 obj
 <<
   /Length 16
 >>
@@ -61,7 +75,7 @@ stream
 endstream
 endobj
 
-5 0 obj
+8 0 obj
 <<
   /Length 617
   /Type /CMap
@@ -102,7 +116,7 @@ end
 endstream
 endobj
 
-6 0 obj
+9 0 obj
 <<
   /Length 73
 >>
@@ -120,14 +134,12 @@ Q
 endstream
 endobj
 
-7 0 obj
+10 0 obj
 <<
   /Length 1086
   /Type /XObject
   /Subtype /Form
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-  >>
+  /Resources 2 0 R
   /BBox [-0.00000000000020210994 -402.84998 2048 1645.15]
 >>
 stream
@@ -191,7 +203,7 @@ Q
 endstream
 endobj
 
-8 0 obj
+11 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -199,22 +211,25 @@ endobj
 endobj
 
 xref
-0 9
+0 12
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000549 00000 n
-0000000744 00000 n
-0000000813 00000 n
-0000001509 00000 n
-0000001635 00000 n
-0000002931 00000 n
+0000000142 00000 n
+0000000238 00000 n
+0000000330 00000 n
+0000000716 00000 n
+0000000831 00000 n
+0000000900 00000 n
+0000001596 00000 n
+0000001722 00000 n
+0000002975 00000 n
 trailer
 <<
-  /Size 9
-  /Root 8 0 R
-  /ID [(jgGY2RLyntty5g1J+DE9NQ==) (jgGY2RLyntty5g1J+DE9NQ==)]
+  /Size 12
+  /Root 11 0 R
+  /ID [(iCpr9kR5nzV87iYROR1OOQ==) (iCpr9kR5nzV87iYROR1OOQ==)]
 >>
 startxref
-2985
+3030
 %%EOF

@@ -5,36 +5,40 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [2 0 R]
+  /Kids [3 0 R]
 >>
 endobj
 
 2 0 obj
 <<
-  /Type /Page
-  /Resources <<
-    /ProcSet [/PDF /Text /ImageC /ImageB]
-  >>
-  /MediaBox [0 0 595 842]
-  /Parent 1 0 R
-  /Contents 4 0 R
+  /ProcSet [/PDF /Text /ImageC /ImageB]
 >>
 endobj
 
 3 0 obj
 <<
+  /Type /Page
+  /Resources 2 0 R
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 5 0 R
+>>
+endobj
+
+4 0 obj
+<<
   /Type /Filespec
   /F (emojis.txt)
   /UF (emojis.txt)
   /EF <<
-    /F 5 0 R
-    /UF 5 0 R
+    /F 6 0 R
+    /UF 6 0 R
   >>
   /Desc (The description of the file.)
 >>
 endobj
 
-4 0 obj
+5 0 obj
 <<
   /Length 0
 >>
@@ -43,7 +47,7 @@ stream
 endstream
 endobj
 
-5 0 obj
+6 0 obj
 <<
   /Length 209
   /Type /EmbeddedFile
@@ -58,33 +62,34 @@ stream
 endstream
 endobj
 
-6 0 obj
+7 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
   /Names <<
     /EmbeddedFiles <<
-      /Names [(emojis.txt) 3 0 R]
+      /Names [(emojis.txt) 4 0 R]
     >>
   >>
 >>
 endobj
 
 xref
-0 7
+0 8
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000239 00000 n
-0000000396 00000 n
-0000000448 00000 n
-0000000821 00000 n
+0000000142 00000 n
+0000000257 00000 n
+0000000414 00000 n
+0000000466 00000 n
+0000000839 00000 n
 trailer
 <<
-  /Size 7
-  /Root 6 0 R
-  /ID [(IdKaKwSeOcnCXOwQlXADWQ==) (IdKaKwSeOcnCXOwQlXADWQ==)]
+  /Size 8
+  /Root 7 0 R
+  /ID [(7QdfFUJ4OR+8jzrM2xD90g==) (7QdfFUJ4OR+8jzrM2xD90g==)]
 >>
 startxref
-955
+973
 %%EOF
