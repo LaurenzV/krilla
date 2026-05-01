@@ -124,7 +124,7 @@ impl Outline {
         }
         outline.finish();
 
-        chunk_container.outline = Some((root, chunk));
+        chunk_container.non_stream.outline = Some((root, chunk));
     }
 }
 

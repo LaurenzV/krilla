@@ -46,7 +46,7 @@ impl Cacheable for ShadingPattern {
         root_ref: Ref,
     ) {
         let shading_ref = sc.register_cacheable(chunk_container, self.0.shading_function.clone());
-        let chunk = &mut chunk_container.patterns;
+        let chunk = &mut chunk_container.non_stream.patterns;
         let mut shading_pattern = chunk.shading_pattern(root_ref);
         shading_pattern.pair(Name(b"Shading"), shading_ref);
         shading_pattern.matrix(self.0.shading_transform.to_pdf_transform());

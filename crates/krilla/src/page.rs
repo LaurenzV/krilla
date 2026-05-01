@@ -399,12 +399,12 @@ impl InternalPage {
             }
         }
 
-        let chunk = &mut chunk_container.pages;
+        let chunk = &mut chunk_container.non_stream.pages;
         let mut page = chunk.page(root_ref);
         self.stream_resources.to_pdf_resources(
             &mut page,
             sc,
-            &mut chunk_container.resource_dictionaries,
+            &mut chunk_container.non_stream.resource_dictionaries,
         );
 
         let transform_rect = |rect: Rect| {
@@ -465,7 +465,7 @@ impl InternalPage {
         *annotations = annotation_refs;
 
         page.finish();
-        chunk_container.page_streams.push(self.stream_chunk);
+        chunk_container.streams.pages.push(self.stream_chunk);
     }
 }
 
@@ -499,7 +499,7 @@ impl PageLabel {
     }
 
     pub(crate) fn serialize(&self, chunk_container: &mut ChunkContainer, root_ref: Ref) {
-        let chunk = &mut chunk_container.page_labels;
+        let chunk = &mut chunk_container.non_stream.page_labels;
         let mut label = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::PageLabel>();
@@ -571,6 +571,6 @@ impl<'a> PageLabelContainer<'a> {
 
         nums.finish();
         num_tree.finish();
-        chunk_container.page_label_tree = Some((root_ref, chunk));
+        chunk_container.non_stream.page_label_tree = Some((root_ref, chunk));
     }
 }

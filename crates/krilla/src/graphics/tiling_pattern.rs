@@ -96,7 +96,7 @@ impl Cacheable for TilingPattern {
         self.stream.resource_dictionary.to_pdf_resources(
             &mut tiling_pattern,
             sc,
-            &mut chunk_container.resource_dictionaries,
+            &mut chunk_container.non_stream.resource_dictionaries,
         );
 
         let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width, self.height);
@@ -110,7 +110,7 @@ impl Cacheable for TilingPattern {
             .y_step(final_bbox.y2 - final_bbox.y1);
 
         tiling_pattern.finish();
-        chunk_container.pattern_streams.push(chunk);
+        chunk_container.streams.patterns.push(chunk);
     }
 }
 

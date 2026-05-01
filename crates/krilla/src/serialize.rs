@@ -668,15 +668,18 @@ impl SerializeContext {
 impl SerializeContext {
     fn serialize_destination_profiles(&mut self, chunk_container: &mut ChunkContainer) {
         let validator = self.serialize_settings.validator();
-        chunk_container.destination_profiles = validator.output_intent().map(|subtype| {
-            let root_ref = self.new_ref();
-            let mut chunk = self.new_chunk();
+        chunk_container.non_stream.destination_profiles =
+            validator.output_intent().map(|subtype| {
+                let root_ref = self.new_ref();
+                let mut chunk = self.new_chunk();
 
-            let oi_ref = self.new_ref();
-            let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-            let icc_profile = self.serialize_settings.pdf_version().rgb_icc();
+                let oi_ref = self.new_ref();
+                let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
+                let icc_profile = self.serialize_settings.pdf_version().rgb_icc();
 
-            oi.dest_output_profile(self.register_cacheable(chunk_container, icc_profile.clone()))
+                oi.dest_output_profile(
+                    self.register_cacheable(chunk_container, icc_profile.clone()),
+                )
                 .subtype(subtype)
                 .output_condition_identifier(TextStr("Custom"))
                 .output_condition(TextStr("sRGB"))
@@ -689,14 +692,14 @@ impl SerializeContext {
                     )
                     .as_str(),
                 ));
-            oi.finish();
+                oi.finish();
 
-            let mut array = chunk.indirect(root_ref).array();
-            array.item(oi_ref);
-            array.finish();
+                let mut array = chunk.indirect(root_ref).array();
+                array.item(oi_ref);
+                array.finish();
 
-            (root_ref, chunk)
-        });
+                (root_ref, chunk)
+            });
     }
 
     fn serialize_page_label_tree(&mut self, chunk_container: &mut ChunkContainer) {
@@ -770,7 +773,7 @@ impl SerializeContext {
             .pages(self.page_tree_ref)
             .count(self.page_infos.len() as i32)
             .kids(self.page_infos.iter().map(|i| i.ref_()));
-        chunk_container.page_tree = Some((self.page_tree_ref, page_tree_chunk));
+        chunk_container.non_stream.page_tree = Some((self.page_tree_ref, page_tree_chunk));
     }
 
     fn serialize_xyz_destinations(
@@ -912,7 +915,7 @@ impl SerializeContext {
                 chunk.extend(&sub_chunk);
             }
 
-            chunk_container.struct_tree_root = Some((struct_tree_root_ref, chunk));
+            chunk_container.non_stream.struct_tree_root = Some((struct_tree_root_ref, chunk));
         } else {
             self.register_validation_error(ValidationError::MissingTagging);
         }

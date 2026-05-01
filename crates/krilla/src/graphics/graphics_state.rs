@@ -116,7 +116,7 @@ impl Cacheable for ExtGState {
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
     ) {
-        let chunk = &mut chunk_container.ext_g_states;
+        let chunk = &mut chunk_container.non_stream.ext_g_states;
 
         let mut ext_st = chunk.ext_graphics(root_ref);
         if let Some(nsa) = self.0.non_stroking_alpha {

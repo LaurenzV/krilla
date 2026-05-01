@@ -1082,7 +1082,7 @@ impl TagTree {
         )?;
 
         struct_elem.finish();
-        chunk_container.struct_elements = Some(struct_elems);
+        chunk_container.non_stream.struct_elements = Some(struct_elems);
 
         Ok(root_ref)
     }

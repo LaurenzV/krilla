@@ -15,7 +15,28 @@ type DChunk = Deferred<Chunk>;
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
 pub(crate) struct ChunkContainer {
-    // Non-stream objects.
+    pub(crate) streams: StreamChunks,
+    pub(crate) mixed: MixedChunks,
+    pub(crate) metadata: Option<Metadata>,
+    pub(crate) non_stream: NonStreamChunks,
+}
+
+pub(crate) struct StreamChunks {
+    pub(crate) fonts: Vec<Chunk>,
+    pub(crate) shading_functions: Vec<Chunk>,
+    pub(crate) patterns: Vec<Chunk>,
+    pub(crate) pages: Vec<DChunk>,
+    pub(crate) embedded_files: Vec<Chunk>,
+    pub(crate) icc_profiles: Vec<Chunk>,
+    pub(crate) x_objects: Vec<Chunk>,
+    pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
+}
+
+pub(crate) struct MixedChunks {
+    pub(crate) embedded_pdfs: Vec<Deferred<KrillaResult<EmbeddedPdfChunk>>>,
+}
+
+pub(crate) struct NonStreamChunks {
     pub(crate) page_tree: Option<(Ref, Chunk)>,
     pub(crate) outline: Option<(Ref, Chunk)>,
     pub(crate) page_label_tree: Option<(Ref, Chunk)>,
@@ -34,54 +55,45 @@ pub(crate) struct ChunkContainer {
     pub(crate) patterns: Chunk,
     pub(crate) pages: Chunk,
     pub(crate) embedded_files: Chunk,
-
-    // Mixed chunks.
-    pub(crate) embedded_pdfs: Vec<Deferred<KrillaResult<EmbeddedPdfChunk>>>,
-
-    // Stream objects.
-    pub(crate) font_streams: Vec<Chunk>,
-    pub(crate) shading_function_streams: Vec<Chunk>,
-    pub(crate) pattern_streams: Vec<Chunk>,
-    pub(crate) page_streams: Vec<DChunk>,
-    pub(crate) embedded_file_streams: Vec<Chunk>,
-    pub(crate) icc_profiles: Vec<Chunk>,
-    pub(crate) x_objects: Vec<Chunk>,
-    pub(crate) images: Vec<Deferred<KrillaResult<Chunk>>>,
-
-    pub(crate) metadata: Option<Metadata>,
 }
 
 impl ChunkContainer {
     pub(crate) fn new(sc: &SerializeContext) -> Self {
         Self {
-            page_tree: None,
-            outline: None,
-            page_label_tree: None,
-            destination_profiles: None,
-            struct_tree_root: None,
-            struct_elements: None,
-            page_labels: sc.new_chunk(),
-            annotations: sc.new_chunk(),
-            color_spaces: sc.new_chunk(),
-            destinations: sc.new_chunk(),
-            ext_g_states: sc.new_chunk(),
-            resource_dictionaries: sc.new_chunk(),
-            masks: sc.new_chunk(),
-            fonts: sc.new_chunk(),
-            shading_functions: sc.new_chunk(),
-            patterns: sc.new_chunk(),
-            pages: sc.new_chunk(),
-            embedded_files: sc.new_chunk(),
-            embedded_pdfs: vec![],
-            font_streams: vec![],
-            shading_function_streams: vec![],
-            pattern_streams: vec![],
-            page_streams: vec![],
-            embedded_file_streams: vec![],
-            icc_profiles: vec![],
-            x_objects: vec![],
-            images: vec![],
+            streams: StreamChunks {
+                fonts: vec![],
+                shading_functions: vec![],
+                patterns: vec![],
+                pages: vec![],
+                embedded_files: vec![],
+                icc_profiles: vec![],
+                x_objects: vec![],
+                images: vec![],
+            },
+            mixed: MixedChunks {
+                embedded_pdfs: vec![],
+            },
             metadata: None,
+            non_stream: NonStreamChunks {
+                page_tree: None,
+                outline: None,
+                page_label_tree: None,
+                destination_profiles: None,
+                struct_tree_root: None,
+                struct_elements: None,
+                page_labels: sc.new_chunk(),
+                annotations: sc.new_chunk(),
+                color_spaces: sc.new_chunk(),
+                destinations: sc.new_chunk(),
+                ext_g_states: sc.new_chunk(),
+                resource_dictionaries: sc.new_chunk(),
+                masks: sc.new_chunk(),
+                fonts: sc.new_chunk(),
+                shading_functions: sc.new_chunk(),
+                patterns: sc.new_chunk(),
+                pages: sc.new_chunk(),
+                embedded_files: sc.new_chunk(),
+            },
         }
     }
 
@@ -184,11 +196,11 @@ impl ChunkContainer {
         // We only write a catalog if a page tree exists. Every valid PDF must have one
         // and krilla ensures that there always is one, but for snapshot tests, it can be
         // useful to not write a document catalog if we don't actually need it for the test.
-        if self.page_tree.is_some()
-            || self.outline.is_some()
-            || self.page_label_tree.is_some()
-            || self.destination_profiles.is_some()
-            || self.struct_tree_root.is_some()
+        if self.non_stream.page_tree.is_some()
+            || self.non_stream.outline.is_some()
+            || self.non_stream.page_label_tree.is_some()
+            || self.non_stream.destination_profiles.is_some()
+            || self.non_stream.struct_tree_root.is_some()
         {
             let meta_ref = if sc.serialize_settings().xmp_metadata {
                 let meta_ref = remapped_ref.bump();
@@ -205,7 +217,7 @@ impl ChunkContainer {
 
             let mut catalog = pdf.catalog(catalog_ref);
 
-            if let Some(pt) = &self.page_tree {
+            if let Some(pt) = &self.non_stream.page_tree {
                 catalog.pages(remapper[&pt.0]);
             }
 
@@ -213,11 +225,11 @@ impl ChunkContainer {
                 catalog.metadata(meta_ref);
             }
 
-            if let Some(pl) = &self.page_label_tree {
+            if let Some(pl) = &self.non_stream.page_label_tree {
                 catalog.pair(Name(b"PageLabels"), remapper[&pl.0]);
             }
 
-            if let Some(oi) = &self.destination_profiles {
+            if let Some(oi) = &self.non_stream.destination_profiles {
                 catalog.pair(Name(b"OutputIntents"), remapper[&oi.0]);
             }
 
@@ -227,7 +239,7 @@ impl ChunkContainer {
                 sc.register_validation_error(ValidationError::NoDocumentLanguage);
             }
 
-            if let Some(st) = &self.struct_tree_root {
+            if let Some(st) = &self.non_stream.struct_tree_root {
                 catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
                 let mut mark_info = catalog.mark_info();
                 mark_info.marked(true);
@@ -268,14 +280,14 @@ impl ChunkContainer {
                 }
             }
 
-            if let Some(ol) = &self.outline {
+            if let Some(ol) = &self.non_stream.outline {
                 catalog.outlines(remapper[&ol.0]);
             }
 
             let write_embedded_files = sc
                 .serialize_settings()
                 .validator()
-                .write_embedded_files(self.embedded_files.len() == 0);
+                .write_embedded_files(self.non_stream.embedded_files.len() == 0);
 
             if !named_destinations.is_empty() || write_embedded_files {
                 // Cannot use pdf-writer API here because it requires Ref's, while
@@ -373,6 +385,38 @@ impl Visit for EmbeddedPdfChunk {
 
 impl Visit for ChunkContainer {
     fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        self.non_stream.visit(sc, f)?;
+        self.mixed.visit(sc, f)?;
+        self.streams.visit(sc, f)?;
+        Ok(())
+    }
+}
+
+impl Visit for StreamChunks {
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        self.fonts.visit(sc, f)?;
+        self.shading_functions.visit(sc, f)?;
+        self.patterns.visit(sc, f)?;
+        self.pages.visit(sc, f)?;
+        self.embedded_files.visit(sc, f)?;
+        self.icc_profiles.visit(sc, f)?;
+        self.x_objects.visit(sc, f)?;
+        self.images.visit(sc, f)?;
+
+        Ok(())
+    }
+}
+
+impl Visit for MixedChunks {
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        self.embedded_pdfs.visit(sc, f)?;
+
+        Ok(())
+    }
+}
+
+impl Visit for NonStreamChunks {
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
         self.page_tree.visit(sc, f)?;
         self.outline.visit(sc, f)?;
         self.page_label_tree.visit(sc, f)?;
@@ -391,17 +435,6 @@ impl Visit for ChunkContainer {
         self.patterns.visit(sc, f)?;
         self.pages.visit(sc, f)?;
         self.embedded_files.visit(sc, f)?;
-
-        self.embedded_pdfs.visit(sc, f)?;
-
-        self.font_streams.visit(sc, f)?;
-        self.shading_function_streams.visit(sc, f)?;
-        self.pattern_streams.visit(sc, f)?;
-        self.page_streams.visit(sc, f)?;
-        self.embedded_file_streams.visit(sc, f)?;
-        self.icc_profiles.visit(sc, f)?;
-        self.x_objects.visit(sc, f)?;
-        self.images.visit(sc, f)?;
 
         Ok(())
     }

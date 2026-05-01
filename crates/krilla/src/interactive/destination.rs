@@ -118,7 +118,7 @@ impl XyzDestination {
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
     ) {
-        let chunk = &mut chunk_container.destinations;
+        let chunk = &mut chunk_container.non_stream.destinations;
         let destination = chunk.destination(root_ref);
 
         let page_info = sc.page_infos().get(self.0.page_index).unwrap_or_else(|| {

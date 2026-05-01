@@ -509,7 +509,7 @@ impl Image {
             Ok(chunk)
         });
 
-        chunk_container.images.push(chunk);
+        chunk_container.streams.images.push(chunk);
     }
 }
 

@@ -108,7 +108,7 @@ impl Cacheable for XObject {
         self.0.stream.resource_dictionary.to_pdf_resources(
             &mut x_object,
             sc,
-            &mut chunk_container.resource_dictionaries,
+            &mut chunk_container.non_stream.resource_dictionaries,
         );
         x_object.bbox(
             self.0
@@ -141,7 +141,7 @@ impl Cacheable for XObject {
         }
 
         x_object.finish();
-        chunk_container.x_objects.push(chunk);
+        chunk_container.streams.x_objects.push(chunk);
     }
 }
 
