@@ -467,7 +467,7 @@ impl InternalPage {
 
         page.finish();
         chunk_container.streams.pages.push(self.stream_chunk);
-        
+
         Ok(())
     }
 }

@@ -14,6 +14,7 @@ use pdf_writer::{Finish, Name, Ref, TextStr};
 use crate::chunk_container::ChunkContainer;
 use crate::color::Color;
 use crate::configure::{PdfVersion, ValidationError};
+use crate::error::KrillaResult;
 use crate::geom::{Quadrilateral, Rect};
 use crate::interactive::action::Action;
 use crate::interactive::destination::Destination;
@@ -68,14 +69,14 @@ impl Annotation {
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
         page_height: f32,
-    ) {
+    ) -> KrillaResult<()> {
         let chunk = &mut chunk_container.non_stream.annotations;
         let mut annotation = chunk
             .indirect(root_ref)
             .start::<pdf_writer::writers::Annotation>();
 
         self.annotation_type
-            .serialize_type(sc, &mut annotation, page_height);
+            .serialize_type(sc, &mut annotation, page_height)?;
 
         let AnnotationType::Link(l) = &self.annotation_type;
         // Only set the print flag when really necessary (only PDF/A). Don't
@@ -106,6 +107,8 @@ impl Annotation {
         }
 
         annotation.finish();
+        
+        Ok(())
     }
 }
 
@@ -121,7 +124,7 @@ impl AnnotationType {
         sc: &mut SerializeContext,
         annotation: &mut pdf_writer::writers::Annotation,
         page_height: f32,
-    ) {
+    ) -> KrillaResult<()> {
         match self {
             AnnotationType::Link(l) => l.serialize_type(sc, annotation, page_height),
         }
@@ -229,7 +232,7 @@ impl LinkAnnotation {
         sc: &mut SerializeContext,
         annotation: &mut pdf_writer::writers::Annotation,
         page_height: f32,
-    ) {
+    ) -> KrillaResult<()> {
         annotation.subtype(pdf_writer::types::AnnotationType::Link);
 
         let actual_rect = self
