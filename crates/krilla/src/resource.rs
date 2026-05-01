@@ -247,11 +247,28 @@ impl ResourceDictionary {
     ) where
         T: ResourcesExt,
     {
+        let write_proc_sets = !sc.serialize_settings().pdf_version().deprecates_proc_sets();
+        let has_resource_entries = self.color_spaces.len() > 0
+            || self.ext_g_states.len() > 0
+            || self.patterns.len() > 0
+            || self.x_objects.len() > 0
+            || self.shadings.len() > 0
+            || self.fonts.len() > 0;
+
+        if !write_proc_sets && !has_resource_entries {
+            // `Resources` dictionary is mandatory (or rather, it's mandatory if
+            // there isn't a parent resource dictionary to inherit from, but we just
+            // assume it is always mandatory), so just write an empty one as a direct
+            // object instead of an indirect object, for aesthetic reasons.
+            parent.resources().finish();
+            return;
+        }
+
         let resources_ref = sc.new_ref();
         let mut resources = resources_chunk
             .indirect(resources_ref)
             .start::<writers::Resources>();
-        if !sc.serialize_settings().pdf_version().deprecates_proc_sets() {
+        if write_proc_sets {
             resources.proc_sets([
                 ProcSet::Pdf,
                 ProcSet::Text,
@@ -364,34 +381,55 @@ where
 }
 
 pub(crate) trait ResourcesExt {
+    fn resources(&mut self) -> writers::Resources<'_>;
     fn set_resources(&mut self, resources_ref: Ref);
 }
 
 impl ResourcesExt for writers::FormXObject<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
+        self.resources()
+    }
+
     fn set_resources(&mut self, resources_ref: Ref) {
         self.pair(Name(b"Resources"), resources_ref);
     }
 }
 
 impl ResourcesExt for writers::TilingPattern<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
+        self.resources()
+    }
+
     fn set_resources(&mut self, resources_ref: Ref) {
         self.pair(Name(b"Resources"), resources_ref);
     }
 }
 
 impl ResourcesExt for writers::Type3Font<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
+        self.resources()
+    }
+
     fn set_resources(&mut self, resources_ref: Ref) {
         self.pair(Name(b"Resources"), resources_ref);
     }
 }
 
 impl ResourcesExt for writers::Pages<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
+        self.resources()
+    }
+
     fn set_resources(&mut self, resources_ref: Ref) {
         self.pair(Name(b"Resources"), resources_ref);
     }
 }
 
 impl ResourcesExt for writers::Page<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
+        self.resources()
+    }
+
     fn set_resources(&mut self, resources_ref: Ref) {
         self.pair(Name(b"Resources"), resources_ref);
     }
