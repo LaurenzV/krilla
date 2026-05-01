@@ -487,6 +487,11 @@ impl TagKind {
                     struct_elem.kind_2(StructRole2::Em, sc.pdf2_ns.ssn_ref);
                 }
             }
+            // Arbitrary custom role-mapped tags.
+            Self::Custom(ct) => {
+                write_kind_custom(sc, struct_elem, Name(ct.name.as_bytes()));
+                sc.register_custom_role(&ct.name, ct.maps_to.into());
+            }
         };
     }
 
@@ -534,6 +539,7 @@ impl TagKind {
             Self::Title(_) => PdfVersion::Pdf14,
             Self::Strong(_) => PdfVersion::Pdf14,
             Self::Em(_) => PdfVersion::Pdf14,
+            Self::Custom(_) => PdfVersion::Pdf14,
         }
     }
 
