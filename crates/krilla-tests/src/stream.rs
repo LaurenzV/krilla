@@ -4,8 +4,9 @@ use krilla::page::Page;
 use krilla::text::{Font, TextDirection};
 use krilla_macros::snapshot;
 
+use crate::embed::file_1;
 use crate::{blue_fill, load_png_image, red_fill, NOTO_SANS};
-use crate::{green_fill, rect_to_path};
+use crate::{green_fill, rect_to_path, Document};
 
 #[snapshot(settings_2)]
 fn stream_resource_cache(page: &mut Page) {
@@ -53,8 +54,11 @@ fn stream_reused_graphics_state(page: &mut Page) {
 }
 
 // Make sure page streams, images, etc. are flate encoded with default settings.
-#[snapshot(settings_29)]
-fn stream_compress_by_default(page: &mut Page) {
+#[snapshot(document, settings_29)]
+fn stream_compress_by_default(document: &mut Document) {
+    document.embed_file(file_1());
+
+    let mut page = document.start_page();
     let mut surface = page.surface();
     let path1 = rect_to_path(0.0, 0.0, 100.0, 100.0);
     surface.set_fill(Some(green_fill(0.5)));

@@ -207,6 +207,7 @@ impl StreamFilters {
 pub(crate) struct FilterStreamBuilder<'a> {
     content: Cow<'a, [u8]>,
     filters: StreamFilters,
+    is_binary: bool,
 }
 
 impl<'a> FilterStreamBuilder<'a> {
@@ -214,6 +215,14 @@ impl<'a> FilterStreamBuilder<'a> {
         Self {
             content: Cow::Borrowed(content),
             filters: StreamFilters::None,
+            is_binary: false,
+        }
+    }
+
+    fn binary(content: &'a [u8]) -> Self {
+        Self {
+            is_binary: true,
+            ..Self::empty(content)
         }
     }
 
@@ -238,7 +247,7 @@ impl<'a> FilterStreamBuilder<'a> {
     }
 
     pub(crate) fn new_from_binary_data(content: &'a [u8]) -> Self {
-        let mut filter_stream = Self::empty(content);
+        let mut filter_stream = Self::binary(content);
         filter_stream.add_filter(StreamFilter::Flate);
 
         filter_stream
@@ -251,14 +260,14 @@ impl<'a> FilterStreamBuilder<'a> {
         if content.is_empty()
             || 100 * filter_stream.content.len() / content.len() > MAX_COMPRESSED_SIZE
         {
-            return Self::empty(content);
+            return Self::binary(content);
         }
 
         filter_stream
     }
 
     pub(crate) fn new_from_uncompressed(content: &'a [u8]) -> Self {
-        Self::empty(content)
+        Self::binary(content)
     }
 
     pub(crate) fn new_from_jpeg_data(content: &'a [u8]) -> Self {
@@ -270,7 +279,11 @@ impl<'a> FilterStreamBuilder<'a> {
     }
 
     pub(crate) fn finish(mut self, serialize_settings: &SerializeSettings) -> FilterStream<'a> {
-        if serialize_settings.ascii_compatible && self.filters.is_binary() {
+        if serialize_settings.ascii_compatible
+            && !self.content.is_empty()
+            && (self.filters.is_binary()
+                || (self.is_binary && self.content.iter().any(|byte| !byte.is_ascii())))
+        {
             self.add_filter(StreamFilter::AsciiHex);
         }
 
