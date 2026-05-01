@@ -191,6 +191,27 @@ mod tests {
     }
 
     #[test]
+    fn named_duplicate_same_location_allowed() {
+        let mut document = Document::new();
+        assert_eq!(
+            document.register_named_destination(NamedDestination::new(
+                "same".to_string(),
+                XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
+            )),
+            Some(())
+        );
+        assert_eq!(
+            document.register_named_destination(NamedDestination::new(
+                "same".to_string(),
+                XyzDestination::new(0, Point::from_xy(0.0, 0.0)),
+            )),
+            Some(())
+        );
+
+        assert!(document.finish().is_ok());
+    }
+
+    #[test]
     fn named_duplicate_annotation_rejected() {
         let mut document = Document::new();
         let mut page = document.start_page();
