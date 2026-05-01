@@ -30,7 +30,7 @@ impl Action {
         match self {
             Action::Link(link) => {
                 link.serialize(action);
-                
+
                 Ok(())
             }
             Action::Goto(dest) => {

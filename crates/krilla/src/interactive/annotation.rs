@@ -107,7 +107,7 @@ impl Annotation {
         }
 
         annotation.finish();
-        
+
         Ok(())
     }
 }
