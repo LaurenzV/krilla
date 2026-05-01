@@ -27,6 +27,7 @@ pub(crate) struct ChunkContainer {
     pub(crate) color_spaces: Chunk,
     pub(crate) destinations: Chunk,
     pub(crate) ext_g_states: Chunk,
+    pub(crate) resource_dictionaries: Chunk,
     pub(crate) masks: Chunk,
     pub(crate) fonts: Chunk,
     pub(crate) shading_functions: Chunk,
@@ -64,6 +65,7 @@ impl ChunkContainer {
             color_spaces: sc.new_chunk(),
             destinations: sc.new_chunk(),
             ext_g_states: sc.new_chunk(),
+            resource_dictionaries: sc.new_chunk(),
             masks: sc.new_chunk(),
             fonts: sc.new_chunk(),
             shading_functions: sc.new_chunk(),
@@ -382,6 +384,7 @@ impl Visit for ChunkContainer {
         self.color_spaces.visit(sc, f)?;
         self.destinations.visit(sc, f)?;
         self.ext_g_states.visit(sc, f)?;
+        self.resource_dictionaries.visit(sc, f)?;
         self.masks.visit(sc, f)?;
         self.fonts.visit(sc, f)?;
         self.shading_functions.visit(sc, f)?;

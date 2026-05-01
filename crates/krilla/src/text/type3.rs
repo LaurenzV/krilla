@@ -315,8 +315,11 @@ impl Type3Font {
         }
 
         let mut type3_font = chunk.type3_font(root_ref);
-        resource_dictionary
-            .to_pdf_resources(&mut type3_font, sc.serialize_settings().pdf_version());
+        resource_dictionary.to_pdf_resources(
+            &mut type3_font,
+            sc,
+            &mut chunk_container.resource_dictionaries,
+        );
 
         // See https://github.com/typst/typst/issues/5067 as to why we write this.
         type3_font.name(Name(base_font.as_bytes()));

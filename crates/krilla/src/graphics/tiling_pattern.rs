@@ -93,9 +93,11 @@ impl Cacheable for TilingPattern {
         let mut tiling_pattern = chunk.tiling_pattern(root_ref, pattern_stream.encoded_data());
         pattern_stream.write_filters(tiling_pattern.deref_mut().deref_mut());
 
-        self.stream
-            .resource_dictionary
-            .to_pdf_resources(&mut tiling_pattern, sc.serialize_settings().pdf_version());
+        self.stream.resource_dictionary.to_pdf_resources(
+            &mut tiling_pattern,
+            sc,
+            &mut chunk_container.resource_dictionaries,
+        );
 
         let final_bbox = pdf_writer::Rect::new(0.0, 0.0, self.width, self.height);
 
