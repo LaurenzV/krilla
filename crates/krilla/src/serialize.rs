@@ -535,9 +535,18 @@ impl SerializeContext {
         }
     }
 
-    pub(crate) fn register_named_destination(&mut self, nd: NamedDestination) {
+    pub(crate) fn register_named_destination(&mut self, nd: NamedDestination) -> Option<Ref> {
+        if let Some((dest_ref, existing)) =
+            self.global_objects.named_destinations.get(nd.name.as_ref())
+        {
+            return (existing == nd.xyz_dest.as_ref()).then_some(*dest_ref);
+        }
+
         let dest_ref = self.register_xyz_destination((*nd.xyz_dest).clone());
-        self.global_objects.named_destinations.insert(nd, dest_ref);
+        self.global_objects
+            .named_destinations
+            .insert(nd.name.clone(), (dest_ref, (*nd.xyz_dest).clone()));
+        Some(dest_ref)
     }
 
     pub(crate) fn register_page(&mut self, page: InternalPage) {
@@ -761,7 +770,7 @@ impl SerializeContext {
     fn serialize_pages(&mut self, chunk_container: &mut ChunkContainer) -> KrillaResult<()> {
         let pages = self.global_objects.pages.take();
         for (ref_, page) in pages {
-            page.serialize(self, chunk_container, ref_);
+            page.serialize(self, chunk_container, ref_)?;
         }
 
         Ok(())
@@ -1027,9 +1036,10 @@ pub(crate) struct Pdf2Namespaces {
 
 #[derive(Default)]
 pub(crate) struct GlobalObjects {
-    /// All named destinations that have been registered, including a Ref to their destination.
+    /// All named destinations that have been registered, including a Ref to their destination and
+    /// the destination itself.
     // Needs to be pub(crate) because writing of named destinations happens in `ChunkContainer`.
-    pub(crate) named_destinations: MaybeTaken<HashMap<NamedDestination, Ref>>,
+    pub(crate) named_destinations: MaybeTaken<HashMap<Arc<String>, (Ref, XyzDestination)>>,
     /// A map from fonts to font container.
     font_map: MaybeTaken<IndexMap<Font, Rc<RefCell<FontContainer>>>>,
     /// All XYZ destinations used in the document. The reason we need to store them
