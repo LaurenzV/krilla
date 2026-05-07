@@ -487,6 +487,36 @@ impl ContentBuilder {
         self.graphics_states.restore_state();
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn draw_invisible_glyphs(
+        &mut self,
+        start: Point,
+        sc: &mut SerializeContext,
+        context_color: rgb::Color,
+        glyphs: &[impl Glyph],
+        font: Font,
+        text: &str,
+        font_size: f32,
+    ) {
+        let (x, y) = (start.x, start.y);
+        self.graphics_states.save_state();
+
+        self.fill_stroke_glyph_run(
+            x,
+            y,
+            sc,
+            TextRenderingMode::Invisible,
+            |_, _| {},
+            glyphs,
+            font,
+            context_color,
+            text,
+            font_size,
+        );
+
+        self.graphics_states.restore_state();
+    }
+
     /// Encode a successive sequence of glyphs that share the same properties and
     /// can be encoded with one text showing operator.
     #[allow(clippy::too_many_arguments)]
@@ -787,7 +817,10 @@ impl ContentBuilder {
             .get_from_identifier(glyph_group.font_identifier.clone())
             .unwrap();
 
-        if fill_render_mode == TextRenderingMode::Fill || pdf_font.force_fill() {
+        if fill_render_mode == TextRenderingMode::Invisible {
+            self.content
+                .set_text_rendering_mode(TextRenderingMode::Invisible);
+        } else if fill_render_mode == TextRenderingMode::Fill || pdf_font.force_fill() {
             self.content
                 .set_text_rendering_mode(TextRenderingMode::Fill);
         } else if fill_render_mode == TextRenderingMode::FillStroke {

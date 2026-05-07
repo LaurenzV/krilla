@@ -344,6 +344,28 @@ impl<'a> Surface<'a> {
         }
     }
 
+    /// Emit an invisible native PDF text layer for glyphs drawn through another path.
+    #[doc(hidden)]
+    pub fn draw_glyph_text_layer(
+        &mut self,
+        start: Point,
+        glyphs: &[impl Glyph],
+        font: Font,
+        text: &str,
+        font_size: f32,
+    ) {
+        let context_color = self.context_color();
+        self.bd.get_mut().draw_invisible_glyphs(
+            start,
+            self.sc,
+            context_color,
+            glyphs,
+            font,
+            text,
+            font_size,
+        );
+    }
+
     /// Draw some text using the currently active fill and/or stroke.
     ///
     /// This is a high-level method which allows you to just provide some text, which will
