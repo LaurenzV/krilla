@@ -389,13 +389,6 @@ pub enum Validator {
 }
 
 impl Validator {
-    pub(crate) fn prohibits(self, error: &ValidationError) -> bool {
-        match self {
-            Self::A(a) => a.prohibits(error),
-            Self::Ua(ua) => ua.prohibits(error),
-        }
-    }
-
     fn requires_codepoint_mappings(self) -> bool {
         match self {
             Self::A(a) => a.requires_codepoint_mappings(),
