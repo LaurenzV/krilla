@@ -972,10 +972,8 @@ fn no_validators_embedded_file_no_af(d: &mut Document) {
 
 // A-3b + UA-1: Even though neither PDF 1.7 nor PDF/UA-1 specify associated
 // files, A-3b adds them, so the AF entry should be written.
-#[test]
-fn validate_multi_validator_embedded_file_af() {
-    let mut d = Document::new_with(settings_32());
-
+#[snapshot(document, settings_32)]
+fn validate_multi_validator_embedded_file_af(d: &mut Document) {
     let metadata = Metadata::new()
         .language("en".to_string())
         .title("a nice title".to_string())
@@ -985,14 +983,6 @@ fn validate_multi_validator_embedded_file_af() {
     d.set_outline(Outline::new());
 
     d.embed_file(file_1());
-
-    let pdf_bytes = d.finish().expect("expected valid PDF");
-    // /AF is the associated files key; it must be absent since UA-1 does not
-    // allow it.
-    assert!(
-        pdf_bytes.windows(3).any(|w| w == b"/AF"),
-        "unexpected lack of /AF entry in PDF output"
-    );
 }
 
 // A-3b + UA-1: UA-1 requires an outline; A-3b does not.
