@@ -324,8 +324,8 @@ impl SerializeContext {
             || self
                 .serialize_settings
                 .validators()
-                .into_iter()
-                .any(|v| v.prohibits(&ValidationError::MissingDocumentOutline))
+                .prohibits(&ValidationError::MissingDocumentOutline)
+                .is_some()
         {
             self.global_objects.outline = MaybeTaken::new(Some(outline));
         }

@@ -995,7 +995,7 @@ fn validate_multi_validator_ua1_prohibits_missing_outline() {
         .creation_date(DateTime::new(2001));
     document.set_metadata(metadata);
     document.set_tag_tree(TagTree::new());
-    
+
     let mut page = document.start_page();
     page.surface().finish();
     page.finish();
