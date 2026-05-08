@@ -286,13 +286,9 @@ impl Validators {
 
     /// Returns the minimum PDF version required by all active validators, if any.
     pub fn min(self) -> Option<PdfVersion> {
-        match self.a.and_then(|v| v.min()) {
-            Some(min_a) => match self.ua.and_then(|v| v.min()) {
-                Some(min_ua) => Some(min_a.max(min_ua)),
-                None => Some(min_a),
-            },
-            None => self.ua.and_then(|v| v.min()),
-        }
+        self.a
+            .and_then(|v| v.min())
+            .max(self.ua.and_then(|v| v.min()))
     }
 }
 
