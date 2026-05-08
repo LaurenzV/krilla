@@ -970,11 +970,10 @@ fn no_validators_embedded_file_no_af(d: &mut Document) {
     embedded_file_impl(d);
 }
 
-// A-3b + UA-1: UA-1 does not allow associated files, so even though A-3b does,
-// the AF entry must not be written (all(allows_associated_files) is false when
-// UA1 is present).
+// A-3b + UA-1: Even though neither PDF 1.7 nor PDF/UA-1 specify associated
+// files, A-3b adds them, so the AF entry should be written.
 #[test]
-fn validate_multi_validator_embedded_file_no_af() {
+fn validate_multi_validator_embedded_file_af() {
     let mut d = Document::new_with(settings_32());
 
     let metadata = Metadata::new()
@@ -991,8 +990,8 @@ fn validate_multi_validator_embedded_file_no_af() {
     // /AF is the associated files key; it must be absent since UA-1 does not
     // allow it.
     assert!(
-        !pdf_bytes.windows(3).any(|w| w == b"/AF"),
-        "unexpected /AF entry in PDF output"
+        pdf_bytes.windows(3).any(|w| w == b"/AF"),
+        "unexpected lack of /AF entry in PDF output"
     );
 }
 

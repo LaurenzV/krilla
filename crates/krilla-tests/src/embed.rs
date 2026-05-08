@@ -136,7 +136,7 @@ pub(crate) fn embedded_file_impl(d: &mut Document) {
 
 #[snapshot(document, settings_25)]
 fn embedded_file_pdf_20(d: &mut Document) {
-    // Technically PDF 2.0 supports associated files, but we only use them for PDF/A-3.
+    // PDF 2.0 supports associated files, so we expect them to appear.
     embedded_file_impl(d)
 }
 
