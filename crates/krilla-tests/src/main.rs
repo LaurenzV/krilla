@@ -1159,7 +1159,6 @@ pub fn settings_31() -> SerializeSettings {
     }
 }
 
-// PDF/A-3b + PDF/UA-1 combined.
 pub fn settings_32() -> SerializeSettings {
     SerializeSettings {
         configuration: ConfigurationBuilder::new()
