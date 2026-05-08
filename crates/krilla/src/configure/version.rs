@@ -7,7 +7,7 @@ use crate::graphics::icc::{ICCMetadata, ICCProfile};
 use crate::image::BitsPerComponent;
 
 /// The version of a PDF document.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum PdfVersion {
     /// PDF 1.4.
     Pdf14,
@@ -16,12 +16,18 @@ pub enum PdfVersion {
     /// PDF 1.6.
     Pdf16,
     /// PDF 1.7.
+    #[default]
     Pdf17,
     /// PDF 2.0.
     Pdf20,
 }
 
 impl PdfVersion {
+    /// The minimum supported PDF version.
+    pub const MIN: Self = Self::Pdf14;
+    /// The maximum supported PDF version.
+    pub const MAX: Self = Self::Pdf20;
+
     pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter) {
         match self {
             PdfVersion::Pdf14 => xmp.pdf_version("1.4"),
@@ -78,6 +84,17 @@ impl PdfVersion {
         match bits_per_component {
             BitsPerComponent::Eight => true,
             BitsPerComponent::Sixteen => *self >= PdfVersion::Pdf15,
+        }
+    }
+
+    /// Whether the version supports the `/AF` key.
+    ///
+    /// Note that support for the `/AF` key may instead be provided by the
+    /// PDF/A-3 standard for 1.x series files.
+    pub(crate) fn specifies_associated_files(&self) -> bool {
+        match self {
+            PdfVersion::Pdf14 | PdfVersion::Pdf15 | PdfVersion::Pdf16 | PdfVersion::Pdf17 => false,
+            PdfVersion::Pdf20 => true,
         }
     }
 

@@ -12,7 +12,7 @@ use tiny_skia_path::{Path, PathSegment, PathVerb};
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
-use crate::configure::{ValidationError, Validator};
+use crate::configure::ValidationError;
 #[cfg(feature = "raster-images")]
 use crate::geom::Size;
 use crate::geom::{Point, Rect, Transform};
@@ -709,8 +709,7 @@ impl ContentBuilder {
                         reversed,
                         sc.serialize_settings()
                             .validators()
-                            .iter()
-                            .any(Validator::requires_codepoint_mappings),
+                            .requires_codepoint_mappings(),
                         context_color,
                         font_container.clone(),
                     );

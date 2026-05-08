@@ -5,7 +5,7 @@ use krilla::metadata::{DateTime, Metadata};
 use krilla::tagging::TagTree;
 use krilla_macros::snapshot;
 
-use crate::{metadata_1, settings_10, Document};
+use crate::{metadata_1, settings_10, validation_errors, Document};
 use crate::{settings_13, settings_23, ASSETS_PATH};
 
 pub(crate) fn file_1() -> EmbeddedFile {
@@ -163,10 +163,8 @@ fn embedded_file_pdf_a2() {
     d.embed_file(f1);
 
     assert_eq!(
-        d.finish(),
-        Err(KrillaError::Validation(vec![
-            ValidationError::EmbeddedFile(EmbedError::Existence, None),
-        ]))
+        validation_errors(d.finish()),
+        vec![ValidationError::EmbeddedFile(EmbedError::Existence, None),]
     )
 }
 
@@ -197,9 +195,7 @@ fn embedded_file_pdf_a3b_missing_date() {
     d.embed_file(f1);
 
     assert_eq!(
-        d.finish(),
-        Err(KrillaError::Validation(vec![
-            ValidationError::EmbeddedFile(EmbedError::MissingDate, None),
-        ]))
+        validation_errors(d.finish()),
+        vec![ValidationError::EmbeddedFile(EmbedError::MissingDate, None),]
     )
 }

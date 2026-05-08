@@ -27,7 +27,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use pdf_writer::types::OutputIntentSubtype;
-use pdf_writer::Finish;
+use xmp_writer::pdfa::PdfAExtSchemasWriter;
 use xmp_writer::XmpWriter;
 
 use crate::color::separation::SeparationColorant;
@@ -142,10 +142,298 @@ pub enum ValidationError {
     EmbeddedPDF(Option<Location>),
 }
 
-/// A validator for exporting PDF documents to a specific subset of PDF.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[allow(non_camel_case_types)]
+/// Collection of validators with at most one validator for each standard.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Hash)]
+pub struct Validators {
+    a: Option<Archival>,
+    ua: Option<Accessibility>,
+}
+
+impl Validators {
+    /// Returns a filtered `Validators` containing only validators that prohibit the given error,
+    /// or `None` if no validator prohibits it.
+    pub fn prohibits(self, error: &ValidationError) -> Option<Self> {
+        let a = self.a.filter(|v| v.prohibits(error));
+        let ua = self.ua.filter(|v| v.prohibits(error));
+
+        let any = a.is_some() || ua.is_some();
+        any.then_some(Self { a, ua })
+    }
+
+    /// Returns `true` if no validators are set.
+    pub fn is_empty(self) -> bool {
+        self.a.is_none() && self.ua.is_none()
+    }
+
+    /// Returns the PDF/A validator, if set.
+    pub fn archival(self) -> Option<Archival> {
+        self.a
+    }
+
+    /// Returns the PDF/UA accessibility validator, if set.
+    pub fn accessibility(self) -> Option<Accessibility> {
+        self.ua
+    }
+
+    /// Whether the font must supply valid Unicode code points for each of the
+    /// drawn glyphs.
+    pub(crate) fn requires_codepoint_mappings(self) -> bool {
+        self.into_iter().any(Validator::requires_codepoint_mappings)
+    }
+
+    /// Force the `DisplayDocTitle` flag set.
+    pub(crate) fn requires_display_doc_title(self) -> bool {
+        self.ua
+            .is_some_and(Accessibility::requires_display_doc_title)
+    }
+
+    /// Force sRGB profiles for `DeviceGray` and `DeviceRgb` colorspaces.
+    pub(crate) fn requires_no_device_cs(self) -> bool {
+        self.a.is_some_and(Archival::requires_no_device_cs)
+    }
+
+    /// Force the `Print` flag set and the `Hidden`, `Invisible`,
+    /// `ToggleNoView`, and `NoView` flags unset.
+    pub(crate) fn requires_annotation_flags(self) -> bool {
+        self.a.is_some_and(Archival::requires_annotation_flags)
+    }
+
+    /// Whether Tagged PDF must be enabled.
+    pub(crate) fn requires_tagging(self) -> bool {
+        self.into_iter().any(Validator::requires_tagging)
+    }
+
+    /// Whether XMP metadata must be written.
+    pub(crate) fn requires_xmp_metadata(self) -> bool {
+        self.into_iter().any(Validator::requires_xmp_metadata)
+    }
+
+    /// Whether any extension schemata should be descibed using the "pdfaSchema"
+    /// namespace.
+    pub(crate) fn requires_xmp_metadata_extension_schema(self) -> bool {
+        self.a
+            .is_some_and(Archival::requires_xmp_metadata_extension_schema)
+    }
+
+    /// Whether the `instanceID` field is allowed in XMP.
+    pub(crate) fn prohibits_instance_id_in_xmp_metadata(self) -> bool {
+        self.a
+            .is_some_and(Archival::prohibits_instance_id_in_xmp_metadata)
+    }
+
+    /// Whether the xmpMM:History entry is required.
+    pub(crate) fn requires_file_provenance_information(self) -> bool {
+        self.a
+            .is_some_and(Archival::requires_file_provenance_information)
+    }
+
+    /// Whether the `/Info` dictionary is allowed in the file trailer.
+    pub(crate) fn prohibits_info_dict(self) -> bool {
+        self.a.is_some_and(Archival::prohibits_info_dict)
+    }
+
+    /// Whether a non-printable file header is mandatory.
+    pub(crate) fn requires_binary_header(self) -> bool {
+        self.a.is_some_and(Archival::requires_binary_header)
+    }
+
+    /// Whether the `EmbeddedFiles` key in the name dictionary of the document
+    /// catalog dictionary should be written even if empty.
+    pub(crate) fn requires_embedded_files_when_empty(self) -> bool {
+        self.a
+            .is_some_and(Archival::requires_embedded_files_when_empty)
+    }
+
+    /// Whether any of these standards explicitly specifies the `/AF` key.
+    ///
+    /// The `/AF` key may be supported by the underlying PDF version instead:
+    /// Starting at PDF 2.0, the key is specified by ISO 32000 and does not need
+    /// to be added by PDF/A.
+    pub(crate) fn specifies_associated_files(self) -> bool {
+        self.a.is_some_and(Archival::specifies_associated_files)
+    }
+
+    pub(crate) fn output_intent(self) -> Option<OutputIntentSubtype<'static>> {
+        self.a.map(Archival::output_intent)
+    }
+
+    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter) {
+        if self.requires_xmp_metadata_extension_schema() {
+            let mut extension_schemas = xmp.extension_schemas();
+            if let Some(a) = self.a {
+                a.write_xmp_extension_schema_description(&mut extension_schemas);
+            }
+            if let Some(ua) = self.ua {
+                ua.write_xmp_extension_schema_description(&mut extension_schemas);
+            }
+        }
+
+        if let Some(a) = self.a {
+            a.write_xmp(xmp);
+        }
+
+        if let Some(ua) = self.ua {
+            ua.write_xmp(xmp);
+        }
+    }
+
+    /// Returns the maximum PDF version allowed by all active validators.
+    pub fn max(self) -> PdfVersion {
+        self.a
+            .map_or(PdfVersion::MAX, |v| v.max())
+            .min(self.ua.map_or(PdfVersion::MAX, |v| v.max()))
+    }
+
+    /// Returns the minimum PDF version required by all active validators, if any.
+    pub fn min(self) -> Option<PdfVersion> {
+        match self.a.and_then(|v| v.min()) {
+            Some(min_a) => match self.ua.and_then(|v| v.min()) {
+                Some(min_ua) => Some(min_a.max(min_ua)),
+                None => Some(min_a),
+            },
+            None => self.ua.and_then(|v| v.min()),
+        }
+    }
+}
+
+impl IntoIterator for Validators {
+    type Item = Validator;
+    type IntoIter = std::iter::Flatten<std::array::IntoIter<Option<Validator>, 2>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        [self.a.map(Validator::A), self.ua.map(Validator::Ua)]
+            .into_iter()
+            .flatten()
+    }
+}
+
+/// A builder for constructing a [`Validators`] collection.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Hash)]
+pub struct ValidatorsBuilder(Validators);
+
+impl ValidatorsBuilder {
+    /// Set a validator (overwrites if same standard family already set).
+    pub fn set_validator(self, validator: Validator) -> Self {
+        match validator {
+            Validator::A(a) => self.with_archival_validator(a),
+            Validator::Ua(ua) => self.with_accessibility_validator(ua),
+        }
+    }
+
+    /// Set a validator, returning `Err` with the existing value if that standard family is already set.
+    pub fn set_validator_once(self, validator: Validator) -> Result<Self, Validator> {
+        match validator {
+            Validator::A(a) => self.try_with_archival_validator(a).map_err(Into::into),
+            Validator::Ua(ua) => self
+                .try_with_accessibility_validator(ua)
+                .map_err(Into::into),
+        }
+    }
+
+    /// Set the PDF/A validator (overwrites if already set).
+    pub fn with_archival_validator(mut self, archival: Archival) -> Self {
+        self.0.a = Some(archival);
+        self
+    }
+
+    /// Set the PDF/A validator, returning `Err` with the existing value if one is already set.
+    pub fn try_with_archival_validator(mut self, archival: Archival) -> Result<Self, Archival> {
+        match self.0.a {
+            Some(a) => Err(a),
+            None => {
+                self.0.a = Some(archival);
+                Ok(self)
+            }
+        }
+    }
+
+    /// Set the PDF/UA accessibility validator (overwrites if already set).
+    pub fn with_accessibility_validator(mut self, accessibility: Accessibility) -> Self {
+        self.0.ua = Some(accessibility);
+        self
+    }
+
+    /// Set the PDF/UA accessibility validator, returning `Err` with the existing value if one is already set.
+    pub fn try_with_accessibility_validator(
+        mut self,
+        accessibility: Accessibility,
+    ) -> Result<Self, Accessibility> {
+        match self.0.ua {
+            Some(ua) => Err(ua),
+            None => {
+                self.0.ua = Some(accessibility);
+                Ok(self)
+            }
+        }
+    }
+
+    pub(crate) fn finish(self) -> Result<Validators, Validators> {
+        let min = self.0.min().unwrap_or(PdfVersion::MIN);
+        let max = self.0.max();
+
+        if min > max {
+            Err(self.0)
+        } else {
+            Ok(self.0)
+        }
+    }
+}
+
+/// A PDF validator for a specific conformance standard.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Validator {
+    /// A PDF/A validator.
+    A(Archival),
+    /// A PDF/UA accessibility validator.
+    Ua(Accessibility),
+}
+
+impl Validator {
+    pub(crate) fn prohibits(self, error: &ValidationError) -> bool {
+        match self {
+            Self::A(a) => a.prohibits(error),
+            Self::Ua(ua) => ua.prohibits(error),
+        }
+    }
+
+    fn requires_codepoint_mappings(self) -> bool {
+        match self {
+            Self::A(a) => a.requires_codepoint_mappings(),
+            Self::Ua(ua) => ua.requires_codepoint_mappings(),
+        }
+    }
+
+    fn requires_tagging(self) -> bool {
+        match self {
+            Self::A(a) => a.requires_tagging(),
+            Self::Ua(ua) => ua.requires_tagging(),
+        }
+    }
+
+    fn requires_xmp_metadata(self) -> bool {
+        match self {
+            Self::A(a) => a.requires_xmp_metadata(),
+            Self::Ua(ua) => ua.requires_xmp_metadata(),
+        }
+    }
+}
+
+impl From<Archival> for Validator {
+    fn from(a: Archival) -> Self {
+        Self::A(a)
+    }
+}
+
+impl From<Accessibility> for Validator {
+    fn from(ua: Accessibility) -> Self {
+        Self::Ua(ua)
+    }
+}
+
+/// A PDF/A conformance level.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[allow(non_camel_case_types)]
+pub enum Archival {
     /// The validator for the PDF/A-1a standard.
     ///
     /// **Requirements**:
@@ -216,6 +504,492 @@ pub enum Validator {
     /// **Requirements**:
     /// - All requirements of PDF/A-2b
     A3_U,
+    /// The validator for the PDF/A-4 standard.
+    ///
+    /// **Requirements**:
+    /// - While not required, it's recommended to enable tagging.
+    A4,
+    /// The validator for the PDF/A-4f standard.
+    ///
+    /// **Requirements**:
+    /// - All requirements of PDF/A-4
+    A4F,
+    /// The validator for the PDF/A-4e standard.
+    ///
+    /// **Requirements**:
+    /// - All requirements of PDF/A-4
+    A4E,
+}
+
+impl Archival {
+    fn prohibits(self, error: &ValidationError) -> bool {
+        match (self, error) {
+            // Forbidden under all PDF/A-1 profiles.
+            (
+                Self::A1_A | Self::A1_B,
+                ValidationError::TooLongString
+                | ValidationError::TooLongName
+                | ValidationError::TooLongArray
+                | ValidationError::TooLongDictionary
+                | ValidationError::TooLargeFloat
+                | ValidationError::TooManyIndirectObjects
+                | ValidationError::TooHighQNestingLevel
+                | ValidationError::ContainsPostScript(_)
+                | ValidationError::MissingCMYKProfile
+                | ValidationError::RestrictedLicense(_)
+                | ValidationError::MissingDocumentDate
+                | ValidationError::Transparency(_)
+                | ValidationError::ImageInterpolation(_)
+                | ValidationError::EmbeddedFile(EmbedError::Existence, _)
+                | ValidationError::EmbeddedPDF(_),
+            ) => true,
+            // Allowed under all PDF/A-1 profiles.
+            (
+                Self::A1_A | Self::A1_B,
+                ValidationError::InconsistentSeparationFallback(_)
+                | ValidationError::InvalidCodepointMapping(_, _, _, _)
+                | ValidationError::UnicodePrivateArea(_, _, _, _)
+                | ValidationError::NoDocumentTitle
+                | ValidationError::MissingHeadingTitle
+                | ValidationError::MissingDocumentOutline
+                | ValidationError::EmbeddedFile(_, _),
+            ) => false,
+            // Forbidden under PDF/A-1a but allowed under PDF/A-1b.
+            (
+                Self::A1_A | Self::A1_B,
+                ValidationError::ContainsNotDefGlyph(_, _, _)
+                | ValidationError::NoCodepointMapping(_, _, _)
+                | ValidationError::NoDocumentLanguage
+                | ValidationError::MissingAltText(_)
+                | ValidationError::MissingAnnotationAltText(_)
+                | ValidationError::MissingTagging,
+            ) => self == Self::A1_A,
+
+            // Forbidden under all PDF/A-2 and PDF/A-3 profiles.
+            (
+                Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U,
+                ValidationError::TooLongString
+                | ValidationError::TooLongName
+                | ValidationError::TooManyIndirectObjects
+                | ValidationError::TooHighQNestingLevel
+                | ValidationError::ContainsPostScript(_)
+                | ValidationError::MissingCMYKProfile
+                | ValidationError::InconsistentSeparationFallback(_)
+                | ValidationError::ContainsNotDefGlyph(_, _, _)
+                | ValidationError::RestrictedLicense(_)
+                | ValidationError::MissingDocumentDate
+                | ValidationError::ImageInterpolation(_)
+                | ValidationError::EmbeddedPDF(_),
+            ) => true,
+            // Allowed under all PDF/A-2 and PDF/A-3 profiles.
+            (
+                Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U,
+                ValidationError::TooLongArray
+                | ValidationError::TooLongDictionary
+                | ValidationError::TooLargeFloat
+                | ValidationError::NoDocumentTitle
+                | ValidationError::Transparency(_)
+                | ValidationError::MissingHeadingTitle
+                | ValidationError::MissingDocumentOutline,
+            ) => false,
+            // Forbidden under PDF/A-2 but allowed under PDF/A-3.
+            (
+                Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U,
+                ValidationError::EmbeddedFile(EmbedError::Existence, _),
+            ) => self == Self::A2_A || self == Self::A2_B || self == Self::A2_U,
+            // Forbidden under PDF/A-3 but allowed under PDF/A-2.
+            (
+                Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U,
+                ValidationError::EmbeddedFile(
+                    EmbedError::MissingDate
+                    | EmbedError::MissingDescription
+                    | EmbedError::MissingMimeType,
+                    _,
+                ),
+            ) => self == Self::A3_A || self == Self::A3_B || self == Self::A3_U,
+            // Forbidden under PDF/A-2 and PDF/A-3 accessible profiles.
+            (
+                Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U,
+                ValidationError::UnicodePrivateArea(_, _, _, _)
+                | ValidationError::NoDocumentLanguage
+                | ValidationError::MissingAltText(_)
+                | ValidationError::MissingAnnotationAltText(_)
+                | ValidationError::MissingTagging,
+            ) => self == Self::A2_A || self == Self::A3_A,
+            // Forbidden under PDF/A-2 and PDF/A-3 accessible and Unicode profiles.
+            (
+                Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U,
+                ValidationError::NoCodepointMapping(_, _, _)
+                | ValidationError::InvalidCodepointMapping(_, _, _, _),
+            ) => {
+                self == Self::A2_A || self == Self::A2_U || self == Self::A3_A || self == Self::A3_U
+            }
+
+            // Forbidden under all PDF/A-4 profiles.
+            (
+                Self::A4 | Self::A4F | Self::A4E,
+                ValidationError::MissingCMYKProfile
+                | ValidationError::InconsistentSeparationFallback(_)
+                | ValidationError::ContainsNotDefGlyph(_, _, _)
+                | ValidationError::NoCodepointMapping(_, _, _)
+                | ValidationError::InvalidCodepointMapping(_, _, _, _)
+                | ValidationError::UnicodePrivateArea(_, _, _, _)
+                | ValidationError::RestrictedLicense(_)
+                | ValidationError::MissingDocumentDate
+                | ValidationError::ImageInterpolation(_)
+                | ValidationError::EmbeddedPDF(_),
+            ) => true,
+            // Allowed under all PDF/A-4 profiles.
+            (
+                Self::A4 | Self::A4F | Self::A4E,
+                ValidationError::TooLongString
+                | ValidationError::TooLongName
+                | ValidationError::TooLongArray
+                | ValidationError::TooLongDictionary
+                | ValidationError::TooLargeFloat
+                | ValidationError::TooManyIndirectObjects
+                | ValidationError::TooHighQNestingLevel
+                | ValidationError::ContainsPostScript(_)
+                | ValidationError::NoDocumentLanguage
+                | ValidationError::NoDocumentTitle
+                | ValidationError::MissingAltText(_)
+                | ValidationError::MissingHeadingTitle
+                | ValidationError::MissingDocumentOutline
+                | ValidationError::MissingAnnotationAltText(_)
+                | ValidationError::Transparency(_)
+                | ValidationError::EmbeddedFile(
+                    EmbedError::MissingDate | EmbedError::MissingMimeType,
+                    _,
+                )
+                | ValidationError::MissingTagging,
+            ) => false,
+            // Forbidden under PDF/A-4 but allowed under other PDF/A-4 profiles.
+            (
+                Self::A4 | Self::A4F | Self::A4E,
+                ValidationError::EmbeddedFile(EmbedError::Existence, _),
+            ) => self == Self::A4,
+            // Allowed under PDF/A-4 but forbidden under other profiles.
+            (
+                Self::A4 | Self::A4F | Self::A4E,
+                ValidationError::EmbeddedFile(EmbedError::MissingDescription, _),
+            ) => self == Self::A4,
+        }
+    }
+
+    fn requires_codepoint_mappings(self) -> bool {
+        match self {
+            Self::A1_A
+            | Self::A2_A
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => true,
+            Self::A1_B | Self::A2_B | Self::A3_B => false,
+        }
+    }
+
+    fn requires_no_device_cs(self) -> bool {
+        match self {
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => true,
+        }
+    }
+
+    fn requires_annotation_flags(self) -> bool {
+        match self {
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => true,
+        }
+    }
+
+    fn requires_tagging(self) -> bool {
+        match self {
+            Self::A1_A | Self::A2_A | Self::A3_A => true,
+            Self::A1_B
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => false,
+        }
+    }
+
+    fn requires_xmp_metadata(self) -> bool {
+        match self {
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => true,
+        }
+    }
+
+    fn requires_xmp_metadata_extension_schema(self) -> bool {
+        match self {
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U => true,
+            // Clause 6.7.2.3 of PDF/A-4 recommends ("should") a RELAX NG
+            // definition of its metadata contents to be embedded as an
+            // associated file. It no longer uses the inline schema definition
+            // using the "pdfaSchema" namespaces for extension schemata.
+            Self::A4 | Self::A4F | Self::A4E => false,
+        }
+    }
+
+    fn prohibits_instance_id_in_xmp_metadata(self) -> bool {
+        match self {
+            Self::A1_A | Self::A1_B => true,
+            Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => false,
+        }
+    }
+
+    fn requires_file_provenance_information(self) -> bool {
+        match self {
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => true,
+        }
+    }
+
+    fn prohibits_info_dict(self) -> bool {
+        match self {
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U => false,
+            Self::A4 | Self::A4F | Self::A4E => true,
+        }
+    }
+
+    fn requires_binary_header(self) -> bool {
+        match self {
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => true,
+        }
+    }
+
+    fn requires_embedded_files_when_empty(self) -> bool {
+        match self {
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4
+            | Self::A4E => false,
+            Self::A4F => true,
+        }
+    }
+
+    /// Whether this standard explicitly specifies the `/AF` key.
+    ///
+    /// The `/AF` key may be supported by the underlying PDF version instead:
+    /// Starting at PDF 2.0, the key is specified by ISO 32000 and does not need
+    /// to be added by PDF/A.
+    fn specifies_associated_files(self) -> bool {
+        match self {
+            Self::A3_A | Self::A3_B | Self::A3_U => true,
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => false,
+        }
+    }
+
+    fn output_intent(self) -> OutputIntentSubtype<'static> {
+        match self {
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4
+            | Self::A4F
+            | Self::A4E => OutputIntentSubtype::PDFA,
+        }
+    }
+
+    fn write_xmp(self, xmp: &mut XmpWriter) {
+        match self {
+            Self::A1_A => {
+                xmp.pdfa_part(1);
+                xmp.pdfa_conformance("A");
+            }
+            Self::A1_B => {
+                xmp.pdfa_part(1);
+                xmp.pdfa_conformance("B");
+            }
+            Self::A2_A => {
+                xmp.pdfa_part(2);
+                xmp.pdfa_conformance("A");
+            }
+            Self::A2_B => {
+                xmp.pdfa_part(2);
+                xmp.pdfa_conformance("B");
+            }
+            Self::A2_U => {
+                xmp.pdfa_part(2);
+                xmp.pdfa_conformance("U");
+            }
+            Self::A3_A => {
+                xmp.pdfa_part(3);
+                xmp.pdfa_conformance("A");
+            }
+            Self::A3_B => {
+                xmp.pdfa_part(3);
+                xmp.pdfa_conformance("B");
+            }
+            Self::A3_U => {
+                xmp.pdfa_part(3);
+                xmp.pdfa_conformance("U");
+            }
+            Self::A4 => {
+                xmp.pdfa_part(4);
+                xmp.pdfa_rev(2020);
+            }
+            Self::A4F => {
+                xmp.pdfa_part(4);
+                xmp.pdfa_rev(2020);
+                xmp.pdfa_conformance("F");
+            }
+            Self::A4E => {
+                xmp.pdfa_part(4);
+                xmp.pdfa_rev(2020);
+                xmp.pdfa_conformance("E");
+            }
+        }
+    }
+
+    fn write_xmp_extension_schema_description(
+        self,
+        extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>,
+    ) {
+        if !self.requires_xmp_metadata_extension_schema() {
+            return;
+        }
+
+        extension_schemas
+            .xmp_media_management()
+            .properties()
+            .describe_instance_id();
+        extension_schemas.pdf().properties().describe_all();
+    }
+
+    /// Returns a human-readable string representation of the conformance level.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::A1_A => "PDF/A-1a",
+            Self::A1_B => "PDF/A-1b",
+            Self::A2_A => "PDF/A-2a",
+            Self::A2_B => "PDF/A-2b",
+            Self::A2_U => "PDF/A-2u",
+            Self::A3_A => "PDF/A-3a",
+            Self::A3_B => "PDF/A-3b",
+            Self::A3_U => "PDF/A-3u",
+            Self::A4 => "PDF/A-4",
+            Self::A4F => "PDF/A-4f",
+            Self::A4E => "PDF/A-4e",
+        }
+    }
+
+    const fn min(self) -> Option<PdfVersion> {
+        match self {
+            // PDF/A-1 through 3 require XMP `/Metadata` streams, which require PDF 1.4.
+            Self::A1_A | Self::A1_B => Some(PdfVersion::Pdf14),
+            Self::A2_A | Self::A2_B | Self::A2_U => Some(PdfVersion::Pdf14),
+            Self::A3_A | Self::A3_B | Self::A3_U => Some(PdfVersion::Pdf14),
+            Self::A4 | Self::A4F | Self::A4E => Some(PdfVersion::Pdf20),
+        }
+    }
+
+    const fn max(self) -> PdfVersion {
+        match self {
+            Self::A1_A | Self::A1_B => PdfVersion::Pdf14,
+            Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U => {
+                PdfVersion::Pdf17
+            }
+            Self::A4 | Self::A4F | Self::A4E => PdfVersion::Pdf20,
+        }
+    }
+}
+
+/// A validator for exporting PDF documents to a specific subset of PDF.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[allow(non_camel_case_types)]
+pub enum Accessibility {
     /// The validator for the PDF/UA-1 standard.
     ///
     /// **Requirements**:
@@ -287,561 +1061,109 @@ pub enum Validator {
     ///
     /// [`TagKind`]: crate::interchange::tagging::TagKind
     UA1,
-    /// The validator for the PDF/A-4 standard.
-    ///
-    /// **Requirements**:
-    /// - While not required, it's recommended to enable tagging.
-    A4,
-    /// The validator for the PDF/A-4f standard.
-    ///
-    /// **Requirements**:
-    /// - All requirements of PDF/A-4
-    A4F,
-    /// The validator for the PDF/A-4e standard.
-    ///
-    /// **Requirements**:
-    /// - All requirements of PDF/A-4
-    A4E,
 }
 
-impl Validator {
-    pub(crate) fn prohibits(&self, validation_error: &ValidationError) -> bool {
-        match self {
-            Validator::A1_A | Validator::A1_B => match validation_error {
-                ValidationError::TooLongString => true,
-                ValidationError::TooLongName => true,
-                ValidationError::TooLongArray => true,
-                ValidationError::TooLargeFloat => true,
-                ValidationError::TooLongDictionary => true,
-                ValidationError::TooManyIndirectObjects => true,
-                ValidationError::TooHighQNestingLevel => true,
-                ValidationError::ContainsPostScript(_) => true,
-                ValidationError::MissingCMYKProfile => true,
-                ValidationError::InconsistentSeparationFallback(_) => false,
-                ValidationError::ContainsNotDefGlyph(_, _, _) => self.requires_codepoint_mappings(),
-                ValidationError::NoCodepointMapping(_, _, _) => self.requires_codepoint_mappings(),
-                ValidationError::InvalidCodepointMapping(_, _, _, _) => false,
-                ValidationError::UnicodePrivateArea(_, _, _, _) => false,
-                ValidationError::RestrictedLicense(_) => true,
-                ValidationError::NoDocumentLanguage => *self == Validator::A1_A,
-                ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => *self == Validator::A1_A,
-                ValidationError::MissingHeadingTitle => false,
-                ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => *self == Validator::A1_A,
-                ValidationError::Transparency(_) => true,
-                ValidationError::ImageInterpolation(_) => true,
-                // PDF/A-1 doesn't strictly forbid, but it disallows the EF key,
-                // which we always insert. So we just forbid it overall.
-                ValidationError::EmbeddedFile(e, _) => match e {
-                    EmbedError::Existence => true,
-                    // Since existence is forbidden in the first place,
-                    // we can just set the others to `false` to prevent unnecessary
-                    // validation errors.
-                    EmbedError::MissingDate => false,
-                    EmbedError::MissingDescription => false,
-                    EmbedError::MissingMimeType => false,
-                },
-                ValidationError::MissingTagging => *self == Validator::A1_A,
-                ValidationError::MissingDocumentDate => true,
-                ValidationError::EmbeddedPDF(_) => true,
-            },
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => match validation_error {
-                ValidationError::TooLongString => true,
-                ValidationError::TooLongName => true,
-                ValidationError::TooLargeFloat => false,
-                ValidationError::TooLongArray => false,
-                ValidationError::TooLongDictionary => false,
-                ValidationError::TooManyIndirectObjects => true,
-                ValidationError::TooHighQNestingLevel => true,
-                ValidationError::ContainsPostScript(_) => true,
-                ValidationError::MissingCMYKProfile => true,
-                ValidationError::InconsistentSeparationFallback(_) => true,
-                ValidationError::ContainsNotDefGlyph(_, _, _) => true,
-                ValidationError::NoCodepointMapping(_, _, _)
-                | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
-                    self.requires_codepoint_mappings()
-                }
-                ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A2_A,
-                ValidationError::RestrictedLicense(_) => true,
-                ValidationError::NoDocumentLanguage => *self == Validator::A2_A,
-                ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => *self == Validator::A2_A,
-                ValidationError::MissingHeadingTitle => false,
-                ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => *self == Validator::A2_A,
-                ValidationError::Transparency(_) => false,
-                ValidationError::ImageInterpolation(_) => true,
-                // Also not strictly forbidden, but we can't ensure that it is PDF/A-2 compliant,
-                // so we just forbid it completely.
-                ValidationError::EmbeddedFile(e, _) => match e {
-                    EmbedError::Existence => true,
-                    // Since existence is forbidden in the first place,
-                    // we can just set the others to `false` to prevent unnecessary
-                    // validation errors.
-                    EmbedError::MissingDate => false,
-                    EmbedError::MissingDescription => false,
-                    EmbedError::MissingMimeType => false,
-                },
-                ValidationError::MissingTagging => *self == Validator::A2_A,
-                ValidationError::MissingDocumentDate => true,
-                ValidationError::EmbeddedPDF(_) => true,
-            },
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => match validation_error {
-                ValidationError::TooLongString => true,
-                ValidationError::TooLongName => true,
-                ValidationError::TooLargeFloat => false,
-                ValidationError::TooLongArray => false,
-                ValidationError::TooLongDictionary => false,
-                ValidationError::TooManyIndirectObjects => true,
-                ValidationError::TooHighQNestingLevel => true,
-                ValidationError::ContainsPostScript(_) => true,
-                ValidationError::MissingCMYKProfile => true,
-                ValidationError::InconsistentSeparationFallback(_) => true,
-                ValidationError::ContainsNotDefGlyph(_, _, _) => true,
-                ValidationError::NoCodepointMapping(_, _, _)
-                | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
-                    self.requires_codepoint_mappings()
-                }
-                ValidationError::UnicodePrivateArea(_, _, _, _) => *self == Validator::A3_A,
-                ValidationError::RestrictedLicense(_) => true,
-                ValidationError::NoDocumentLanguage => *self == Validator::A3_A,
-                ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => *self == Validator::A3_A,
-                ValidationError::MissingHeadingTitle => false,
-                ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => *self == Validator::A3_A,
-                ValidationError::Transparency(_) => false,
-                ValidationError::ImageInterpolation(_) => true,
-                ValidationError::EmbeddedFile(er, _) => match er {
-                    EmbedError::Existence => false,
-                    EmbedError::MissingDate => true,
-                    EmbedError::MissingDescription => true,
-                    EmbedError::MissingMimeType => true,
-                },
-                ValidationError::MissingTagging => *self == Validator::A3_A,
-                ValidationError::MissingDocumentDate => true,
-                ValidationError::EmbeddedPDF(_) => true,
-            },
-            Validator::A4 | Validator::A4F | Validator::A4E => match validation_error {
-                ValidationError::TooLongString => false,
-                ValidationError::TooLongName => false,
-                ValidationError::TooLongArray => false,
-                ValidationError::TooLongDictionary => false,
-                ValidationError::TooLargeFloat => false,
-                ValidationError::TooManyIndirectObjects => false,
-                ValidationError::TooHighQNestingLevel => false,
-                ValidationError::ContainsPostScript(_) => false,
-                ValidationError::MissingCMYKProfile => true,
-                ValidationError::InconsistentSeparationFallback(_) => true,
-                ValidationError::ContainsNotDefGlyph(_, _, _) => true,
-                ValidationError::NoCodepointMapping(_, _, _)
-                | ValidationError::InvalidCodepointMapping(_, _, _, _) => true,
-                // Not strictly forbidden if we surround with actual text, but
-                // easier to just forbid it.
-                ValidationError::UnicodePrivateArea(_, _, _, _) => true,
-                ValidationError::RestrictedLicense(_) => true,
-                ValidationError::NoDocumentLanguage => false,
-                ValidationError::NoDocumentTitle => false,
-                ValidationError::MissingAltText(_) => false,
-                ValidationError::MissingHeadingTitle => false,
-                ValidationError::MissingDocumentOutline => false,
-                ValidationError::MissingAnnotationAltText(_) => false,
-                ValidationError::Transparency(_) => false,
-                ValidationError::ImageInterpolation(_) => true,
-                ValidationError::EmbeddedFile(e, _) => match e {
-                    EmbedError::Existence => matches!(self, Validator::A4),
-                    // Since existence is forbidden in the first place for A4,
-                    // we can just set the others to `false` to prevent
-                    // unnecessary validation errors.
-                    EmbedError::MissingDate => false,
-                    EmbedError::MissingDescription => {
-                        matches!(self, Validator::A4E | Validator::A4F)
-                    }
-                    EmbedError::MissingMimeType => false,
-                },
-                // Only recommended, not required.
-                ValidationError::MissingTagging => false,
-                ValidationError::MissingDocumentDate => true,
-                ValidationError::EmbeddedPDF(_) => true,
-            },
-            Validator::UA1 => match validation_error {
-                ValidationError::TooLongString => false,
-                ValidationError::TooLargeFloat => false,
-                ValidationError::TooLongName => false,
-                ValidationError::TooLongArray => false,
-                ValidationError::TooLongDictionary => false,
-                ValidationError::TooManyIndirectObjects => false,
-                ValidationError::TooHighQNestingLevel => false,
-                ValidationError::ContainsPostScript(_) => false,
-                ValidationError::MissingCMYKProfile => false,
-                ValidationError::InconsistentSeparationFallback(_) => false,
-                ValidationError::ContainsNotDefGlyph(_, _, _) => true,
-                ValidationError::NoCodepointMapping(_, _, _)
-                | ValidationError::InvalidCodepointMapping(_, _, _, _) => {
-                    self.requires_codepoint_mappings()
-                }
-                ValidationError::UnicodePrivateArea(_, _, _, _) => false,
-                ValidationError::RestrictedLicense(_) => true,
-                ValidationError::NoDocumentLanguage => false,
-                ValidationError::NoDocumentTitle => true,
-                ValidationError::MissingAltText(_) => true,
-                ValidationError::MissingHeadingTitle => true,
-                ValidationError::MissingDocumentOutline => true,
-                ValidationError::MissingAnnotationAltText(_) => true,
-                ValidationError::Transparency(_) => false,
-                ValidationError::ImageInterpolation(_) => false,
-                ValidationError::EmbeddedFile(er, _) => match er {
-                    EmbedError::Existence => false,
-                    EmbedError::MissingDate => false,
-                    EmbedError::MissingDescription => true,
-                    EmbedError::MissingMimeType => false,
-                },
-                ValidationError::MissingTagging => true,
-                ValidationError::MissingDocumentDate => false,
-                ValidationError::EmbeddedPDF(_) => true,
-            },
+impl Accessibility {
+    fn prohibits(self, error: &ValidationError) -> bool {
+        match (self, error) {
+            (
+                Self::UA1,
+                ValidationError::ContainsNotDefGlyph(_, _, _)
+                | ValidationError::NoCodepointMapping(_, _, _)
+                | ValidationError::InvalidCodepointMapping(_, _, _, _)
+                | ValidationError::RestrictedLicense(_)
+                | ValidationError::NoDocumentTitle
+                | ValidationError::MissingAltText(_)
+                | ValidationError::MissingHeadingTitle
+                | ValidationError::MissingDocumentOutline
+                | ValidationError::MissingAnnotationAltText(_)
+                | ValidationError::EmbeddedFile(EmbedError::MissingDescription, _)
+                | ValidationError::MissingTagging
+                | ValidationError::EmbeddedPDF(_),
+            ) => true,
+            (
+                Self::UA1,
+                ValidationError::TooLongString
+                | ValidationError::TooLongName
+                | ValidationError::TooLongArray
+                | ValidationError::TooLongDictionary
+                | ValidationError::TooLargeFloat
+                | ValidationError::TooManyIndirectObjects
+                | ValidationError::TooHighQNestingLevel
+                | ValidationError::ContainsPostScript(_)
+                | ValidationError::MissingCMYKProfile
+                | ValidationError::InconsistentSeparationFallback(_)
+                | ValidationError::UnicodePrivateArea(_, _, _, _)
+                | ValidationError::NoDocumentLanguage
+                | ValidationError::Transparency(_)
+                | ValidationError::ImageInterpolation(_)
+                | ValidationError::EmbeddedFile(
+                    EmbedError::Existence | EmbedError::MissingDate | EmbedError::MissingMimeType,
+                    _,
+                )
+                | ValidationError::MissingDocumentDate,
+            ) => false,
         }
     }
 
-    /// Returns the minimum PDF version required by this validator, if any.
-    pub fn minimum_pdf_version(&self) -> Option<PdfVersion> {
+    fn requires_codepoint_mappings(self) -> bool {
         match self {
-            Validator::A1_A | Validator::A1_B => None,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => None,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => None,
-            Validator::A4 | Validator::A4F | Validator::A4E => Some(PdfVersion::Pdf20),
-            Validator::UA1 => Some(PdfVersion::Pdf14),
+            Self::UA1 => true,
         }
     }
 
-    /// Returns the maximum PDF version allowed by this validator, if any.
-    pub fn maximum_pdf_version(&self) -> Option<PdfVersion> {
+    fn requires_display_doc_title(self) -> bool {
         match self {
-            Validator::A1_A | Validator::A1_B => Some(PdfVersion::Pdf14),
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(PdfVersion::Pdf17),
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(PdfVersion::Pdf17),
-            Validator::A4 | Validator::A4F | Validator::A4E => None,
-            Validator::UA1 => Some(PdfVersion::Pdf17),
+            Self::UA1 => true,
         }
     }
 
-    /// Check whether the validator is compatible with a specific pdf version.
-    pub fn compatible_with_version(&self, pdf_version: PdfVersion) -> bool {
-        if let Some(min_version) = self.minimum_pdf_version() {
-            if pdf_version < min_version {
-                return false;
-            }
-        }
-
-        if let Some(max_version) = self.maximum_pdf_version() {
-            if pdf_version > max_version {
-                return false;
-            }
-        }
-
+    const fn requires_tagging(self) -> bool {
         true
     }
 
-    /// Get the recommended PDF version of a validator.
-    pub fn recommended_version(&self) -> PdfVersion {
+    fn requires_xmp_metadata(self) -> bool {
         match self {
-            Validator::A4 | Validator::A4F | Validator::A4E => PdfVersion::Pdf20,
-            _ => self.maximum_pdf_version().unwrap_or(PdfVersion::Pdf17),
+            Self::UA1 => true,
         }
     }
 
-    pub(crate) fn write_xmp(&self, xmp: &mut XmpWriter, all_validators: &[Validator]) {
-        if matches!(self.standard_family(), StandardFamily::PdfA) {
-            let combined_with_ua1 = all_validators.contains(&Validator::UA1);
-            let mut extension_schemas = xmp.extension_schemas();
-            extension_schemas
-                .xmp_media_management()
-                .properties()
-                .describe_instance_id();
-            extension_schemas.pdf().properties().describe_all();
-
-            if combined_with_ua1 {
-                // The pdfuaid namespace written by the UA-1 validator is not
-                // part of the predefined XMP schemas allowed by PDF/A-1/2/3.
-                // When combining PDF/A with PDF/UA-1, it must be declared as a
-                // PDF/A extension schema so that PDF/A validators accept it.
-                extension_schemas.pdfua_id().properties().describe_part();
-            }
-            extension_schemas.finish();
-        }
-
+    fn write_xmp(self, xmp: &mut XmpWriter) {
         match self {
-            Validator::A1_A => {
-                xmp.pdfa_part(1);
-                xmp.pdfa_conformance("A");
-            }
-            Validator::A1_B => {
-                xmp.pdfa_part(1);
-                xmp.pdfa_conformance("B");
-            }
-            Validator::A2_A => {
-                xmp.pdfa_part(2);
-                xmp.pdfa_conformance("A");
-            }
-            Validator::A2_B => {
-                xmp.pdfa_part(2);
-                xmp.pdfa_conformance("B");
-            }
-            Validator::A2_U => {
-                xmp.pdfa_part(2);
-                xmp.pdfa_conformance("U");
-            }
-            Validator::A3_A => {
-                xmp.pdfa_part(3);
-                xmp.pdfa_conformance("A");
-            }
-            Validator::A3_B => {
-                xmp.pdfa_part(3);
-                xmp.pdfa_conformance("B");
-            }
-            Validator::A3_U => {
-                xmp.pdfa_part(3);
-                xmp.pdfa_conformance("U");
-            }
-            Validator::A4 => {
-                xmp.pdfa_part(4);
-                xmp.pdfa_rev(2020);
-            }
-            Validator::A4F => {
-                xmp.pdfa_part(4);
-                xmp.pdfa_rev(2020);
-                xmp.pdfa_conformance("F");
-            }
-            Validator::A4E => {
-                xmp.pdfa_part(4);
-                xmp.pdfa_rev(2020);
-                xmp.pdfa_conformance("E");
-            }
-            Validator::UA1 => {
-                // Should we write more properties from this schema in the
-                // future, the branch `combined_with_ua1` above will need an
-                // update.
+            Self::UA1 => {
                 xmp.pdfua_part(1);
             }
         }
     }
 
-    pub(crate) fn requires_codepoint_mappings(&self) -> bool {
-        match self {
-            Validator::A1_A | Validator::A1_B => *self != Validator::A1_B,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => *self != Validator::A2_B,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => *self != Validator::A3_B,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => true,
-        }
+    fn write_xmp_extension_schema_description(
+        self,
+        extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>,
+    ) {
+        // Needs to be updated if [`Self::write_xmp`] gains more properties.
+        extension_schemas.pdfua_id().properties().describe_part();
     }
 
-    pub(crate) fn requires_display_doc_title(&self) -> bool {
-        match self {
-            Validator::A1_A | Validator::A1_B => false,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
-            Validator::A4 | Validator::A4F | Validator::A4E => false,
-            Validator::UA1 => true,
-        }
-    }
-
-    pub(crate) fn requires_no_device_cs(&self) -> bool {
-        match self {
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => false,
-        }
-    }
-
-    pub(crate) fn requires_annotation_flags(&self) -> bool {
-        match self {
-            Validator::UA1 => false,
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-        }
-    }
-
-    pub(crate) fn requires_tagging(&self) -> bool {
-        match self {
-            Validator::A1_A => true,
-            Validator::A1_B => false,
-            Validator::A2_A => true,
-            Validator::A2_B | Validator::A2_U => false,
-            Validator::A3_A => true,
-            Validator::A3_B | Validator::A3_U => false,
-            Validator::A4 | Validator::A4F | Validator::A4E => false,
-            Validator::UA1 => true,
-        }
-    }
-
-    pub(crate) fn xmp_metadata(&self) -> bool {
-        match self {
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => true,
-        }
-    }
-
-    pub(crate) fn requires_binary_header(&self) -> bool {
-        match self {
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => false,
-        }
-    }
-
-    pub(crate) fn requires_file_provenance_information(&self) -> bool {
-        match self {
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => true,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::UA1 => false,
-        }
-    }
-
-    pub(crate) fn prohibits_instance_id_in_xmp_metadata(&self) -> bool {
-        match self {
-            Validator::A1_A | Validator::A1_B => true,
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => false,
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => false,
-            Validator::A4 | Validator::A4F | Validator::A4E => false,
-            Validator::UA1 => false,
-        }
-    }
-
-    pub(crate) fn output_intent(&self) -> Option<OutputIntentSubtype<'_>> {
-        match self {
-            Validator::A1_A | Validator::A1_B => Some(OutputIntentSubtype::PDFA),
-            Validator::A2_A | Validator::A2_B | Validator::A2_U => Some(OutputIntentSubtype::PDFA),
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => Some(OutputIntentSubtype::PDFA),
-            Validator::A4 | Validator::A4F | Validator::A4E => Some(OutputIntentSubtype::PDFA),
-            Validator::UA1 => None,
-        }
-    }
-
-    pub(crate) fn allows_info_dict(&self) -> bool {
-        match self {
-            Validator::A1_A
-            | Validator::A1_B
-            | Validator::A2_A
-            | Validator::A2_B
-            | Validator::A2_U
-            | Validator::A3_A
-            | Validator::A3_B
-            | Validator::A3_U
-            | Validator::UA1 => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => false,
-        }
-    }
-
-    pub(crate) fn write_embedded_files(&self, is_empty: bool) -> bool {
-        match self {
-            Validator::A1_A
-            | Validator::A1_B
-            | Validator::A2_A
-            | Validator::A2_B
-            | Validator::A2_U
-            | Validator::A3_A
-            | Validator::A3_B
-            | Validator::A3_U
-            | Validator::A4
-            | Validator::A4E
-            | Validator::UA1 => !is_empty,
-            // For this one we always need to write an `EmbeddedFiles` entry,
-            // even if empty.
-            Validator::A4F => true,
-        }
-    }
-
-    pub(crate) fn allows_associated_files(&self) -> bool {
-        match self {
-            Validator::A3_A | Validator::A3_B | Validator::A3_U => true,
-            Validator::A4 | Validator::A4F | Validator::A4E => true,
-            Validator::A1_A
-            | Validator::A1_B
-            | Validator::A2_A
-            | Validator::A2_B
-            | Validator::A2_U
-            | Validator::UA1 => false,
-        }
-    }
-
-    /// The string representation of the validator.
+    /// Returns a human-readable string representation of the accessibility level.
     pub fn as_str(self) -> &'static str {
         match self {
-            Validator::A1_A => "PDF/A-1a",
-            Validator::A1_B => "PDF/A-1b",
-            Validator::A2_A => "PDF/A-2a",
-            Validator::A2_B => "PDF/A-2b",
-            Validator::A2_U => "PDF/A-2u",
-            Validator::A3_A => "PDF/A-3a",
-            Validator::A3_B => "PDF/A-3b",
-            Validator::A3_U => "PDF/A-3u",
-            Validator::A4 => "PDF/A-4",
-            Validator::A4F => "PDF/A-4f",
-            Validator::A4E => "PDF/A-4e",
-            Validator::UA1 => "PDF/UA-1",
+            Self::UA1 => "PDF/UA-1",
         }
     }
 
-    fn standard_family(self) -> StandardFamily {
+    const fn min(self) -> Option<PdfVersion> {
         match self {
-            Validator::A1_A
-            | Validator::A1_B
-            | Validator::A2_A
-            | Validator::A2_B
-            | Validator::A2_U
-            | Validator::A3_A
-            | Validator::A3_B
-            | Validator::A3_U
-            | Validator::A4
-            | Validator::A4F
-            | Validator::A4E => StandardFamily::PdfA,
-            Validator::UA1 => StandardFamily::PdfUa,
+            // PDF/UA-1 requires Tagged PDF and XMP `/Metadata` streams, which both require PDF 1.4.
+            Self::UA1 => Some(PdfVersion::Pdf14),
         }
     }
 
-    /// Check whether two validators are mutually compatible
-    pub(crate) fn mutually_compatible_with(self, other: Self) -> bool {
-        match (self.standard_family(), other.standard_family()) {
-            (a, b) if a == b => false,
-            _ => {
-                // Each validator must appear at most once, so if they are the
-                // same, they are not compatible.
-                if self == other {
-                    return false;
-                }
-
-                let range_self = self.minimum_pdf_version().unwrap_or(PdfVersion::Pdf14)
-                    ..=self.maximum_pdf_version().unwrap_or(PdfVersion::Pdf20);
-                let range_other = other.minimum_pdf_version().unwrap_or(PdfVersion::Pdf14)
-                    ..=other.maximum_pdf_version().unwrap_or(PdfVersion::Pdf20);
-
-                // The ranges of compatible PDF versions must overlap, otherwise
-                // the validators are not compatible.
-                range_other.end().min(range_self.end())
-                    >= range_other.start().max(range_self.start())
-            }
+    const fn max(self) -> PdfVersion {
+        match self {
+            // PDF/UA-1 is specified against PDF 1.7.
+            Self::UA1 => PdfVersion::Pdf17,
         }
     }
-}
-
-/// The part-less standard family of a validator.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum StandardFamily {
-    PdfA,
-    PdfUa,
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]

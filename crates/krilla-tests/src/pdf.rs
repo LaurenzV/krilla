@@ -14,7 +14,7 @@ use crate::svg::sample_svg;
 use crate::text::simple_text_impl;
 use crate::{
     load_pdf, load_png_image, loc, rect_to_path, red_fill, settings_16, settings_17, settings_2,
-    youtube_link, NOTO_SANS,
+    validation_errors, youtube_link, NOTO_SANS,
 };
 
 #[snapshot(document)]
@@ -180,10 +180,8 @@ fn pdf_embedded_validated_export() {
     document.embed_pdf_pages(&pdf, &[0]);
 
     assert_eq!(
-        document.finish(),
-        Err(KrillaError::Validation(vec![ValidationError::EmbeddedPDF(
-            None
-        )]))
+        validation_errors(document.finish()),
+        vec![ValidationError::EmbeddedPDF(None)]
     )
 }
 

@@ -6,14 +6,14 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use indexmap::IndexMap;
-use pdf_writer::types::{OutputIntentSubtype, StructRole, StructRole2};
+use pdf_writer::types::{StructRole, StructRole2};
 use pdf_writer::writers::{OutputIntent, StructTreeRoot};
 use pdf_writer::{Chunk, Content, Finish, Limits, Name, Pdf, Ref, Settings, Str, TextStr};
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
 use crate::configure::validate::ValidationStore;
-use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
+use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
 use crate::error::{KrillaError, KrillaResult, LimitError};
 use crate::geom::Size;
 use crate::graphics::color::{rgb, ColorSpace};
@@ -125,8 +125,14 @@ impl SerializeSettings {
         self.configuration.version()
     }
 
-    pub(crate) fn validators(&self) -> &[Validator] {
+    pub(crate) fn validators(&self) -> Validators {
         self.configuration.validators()
+    }
+
+    /// Whether the `/AF` key is supported, accounting for the PDF version and active standards.
+    pub(crate) fn supports_associated_files(&self) -> bool {
+        self.configuration.version().specifies_associated_files()
+            || self.configuration.validators().specifies_associated_files()
     }
 }
 
@@ -139,7 +145,7 @@ impl Default for SerializeSettings {
             no_device_cs: false,
             xmp_metadata: true,
             cmyk_profile: None,
-            configuration: Configuration::new(),
+            configuration: Configuration::default(),
             enable_tagging: true,
             render_svg_glyph_fn: |_, _, _, _, _| None,
         }
@@ -249,8 +255,9 @@ pub(crate) struct SerializeContext {
     /// is based on this field) to generate a new Ref, instead of creating one manually with
     /// `Ref::new`.
     pub(crate) cur_ref: Ref,
-    /// All validation errors that are collected as part of the export process.
-    validation_errors: Vec<ValidationError>,
+    /// All validation errors that are collected as part of the export process
+    /// alongside the validators that raised the error.
+    validation_errors: Vec<(ValidationError, Validators)>,
     /// Settings used for serialization.
     serialize_settings: Arc<SerializeSettings>,
     /// Settings used for all PDF object chunks.
@@ -271,18 +278,9 @@ pub(crate) struct SerializeContext {
 impl SerializeContext {
     pub(crate) fn new(mut serialize_settings: SerializeSettings) -> Self {
         // Override flags as required by the validator
-        serialize_settings.no_device_cs |= serialize_settings
-            .validators()
-            .iter()
-            .any(Validator::requires_no_device_cs);
-        serialize_settings.enable_tagging |= serialize_settings
-            .validators()
-            .iter()
-            .any(Validator::requires_tagging);
-        serialize_settings.xmp_metadata |= serialize_settings
-            .validators()
-            .iter()
-            .any(Validator::xmp_metadata);
+        serialize_settings.no_device_cs |= serialize_settings.validators().requires_no_device_cs();
+        serialize_settings.enable_tagging |= serialize_settings.validators().requires_tagging();
+        serialize_settings.xmp_metadata |= serialize_settings.validators().requires_xmp_metadata();
 
         let mut cur_ref = Ref::new(1);
         let page_tree_ref = cur_ref.bump();
@@ -326,7 +324,7 @@ impl SerializeContext {
             || self
                 .serialize_settings
                 .validators()
-                .iter()
+                .into_iter()
                 .any(|v| v.prohibits(&ValidationError::MissingDocumentOutline))
         {
             self.global_objects.outline = MaybeTaken::new(Some(outline));
@@ -502,13 +500,8 @@ impl SerializeContext {
 /// Various registration methods.
 impl SerializeContext {
     pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
-        if self
-            .serialize_settings
-            .validators()
-            .iter()
-            .any(|v| v.prohibits(&error))
-        {
-            self.validation_errors.push(error);
+        if let Some(validators) = self.serialize_settings().validators().prohibits(&error) {
+            self.validation_errors.push((error, validators))
         }
     }
 
@@ -691,47 +684,39 @@ impl SerializeContext {
 /// All methods are supposed to only be called once in `SerializeContext::finish`!
 impl SerializeContext {
     fn serialize_destination_profiles(&mut self, chunk_container: &mut ChunkContainer) {
-        let validators: Vec<Validator> = self.serialize_settings.validators().to_vec();
-        let subtypes: Vec<OutputIntentSubtype<'_>> = validators
-            .iter()
-            .filter_map(|v| v.output_intent())
-            .collect();
+        let validators = self.serialize_settings.validators();
+        chunk_container.non_stream.destination_profiles =
+            validators.output_intent().map(|subtype| {
+                let root_ref = self.new_ref();
+                let mut chunk = self.new_chunk();
 
-        if subtypes.is_empty() {
-            return;
-        }
+                let oi_ref = self.new_ref();
+                let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
+                let icc_profile = self.serialize_settings.pdf_version().rgb_icc();
 
-        let icc_profile = self.serialize_settings.pdf_version().rgb_icc();
-        let icc_ref = self.register_cacheable(chunk_container, icc_profile.clone());
-        let info = format!(
-            "sRGB v{}.{}",
-            icc_profile.metadata().major,
-            icc_profile.metadata().minor
-        );
-
-        let root_ref = self.new_ref();
-        let mut chunk = self.new_chunk();
-
-        let oi_refs: Vec<Ref> = subtypes.iter().map(|_| self.new_ref()).collect();
-
-        for (subtype, oi_ref) in subtypes.into_iter().zip(oi_refs.iter().copied()) {
-            let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
-            oi.dest_output_profile(icc_ref)
+                oi.dest_output_profile(
+                    self.register_cacheable(chunk_container, icc_profile.clone()),
+                )
                 .subtype(subtype)
                 .output_condition_identifier(TextStr("Custom"))
                 .output_condition(TextStr("sRGB"))
                 .registry_name(TextStr(""))
-                .info(TextStr(info.as_str()));
-            oi.finish();
-        }
+                .info(TextStr(
+                    format!(
+                        "sRGB v{}.{}",
+                        icc_profile.metadata().major,
+                        icc_profile.metadata().minor
+                    )
+                    .as_str(),
+                ));
+                oi.finish();
 
-        let mut array = chunk.indirect(root_ref).array();
-        for oi_ref in oi_refs {
-            array.item(oi_ref);
-        }
-        array.finish();
+                let mut array = chunk.indirect(root_ref).array();
+                array.item(oi_ref);
+                array.finish();
 
-        chunk_container.non_stream.destination_profiles = Some((root_ref, chunk));
+                (root_ref, chunk)
+            });
     }
 
     fn serialize_page_label_tree(&mut self, chunk_container: &mut ChunkContainer) {

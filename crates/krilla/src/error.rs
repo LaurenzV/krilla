@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use crate::configure::ValidationError;
+use crate::configure::{ValidationError, Validators};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
 #[cfg(feature = "pdf")]
@@ -26,7 +26,7 @@ pub enum KrillaError {
     /// the [`SerializeSettings`] to something else than the dummy validator.
     ///
     /// [`SerializeSettings`]: crate::SerializeSettings
-    Validation(Vec<ValidationError>),
+    Validation(Vec<(ValidationError, Validators)>),
     /// A hard limit of the selected PDF version was exceeded.
     Limit(LimitError),
     /// The same destination name has been associated with two different destinations,

@@ -3,170 +3,251 @@
 pub mod validate;
 mod version;
 
-pub use validate::{ValidationError, Validator};
+pub use validate::{Accessibility, Archival, ValidationError, Validator, Validators};
 pub use version::PdfVersion;
 
+use crate::configure::validate::ValidatorsBuilder;
+
 /// A configuration of validator and PDF version.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct Configuration {
-    validators: Vec<Validator>,
+    validators: Validators,
     version: PdfVersion,
 }
 
-impl Default for Configuration {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Configuration {
-    /// Create a new configuration from validators and a PDF version.
-    ///
-    /// Returns `None` if the configuration is invalid.
-    pub fn new_with(
-        validators: impl IntoIterator<Item = Validator>,
-        version: PdfVersion,
-    ) -> Option<Self> {
-        let validators = Self::collect_compatible_validators(validators)?;
-
-        for v in &validators {
-            if !v.compatible_with_version(version) {
-                return None;
-            }
-        }
-
-        Some(Self {
-            validators,
-            version,
-        })
-    }
-
-    /// Create a new configuration from a validator. An appropriate PDF version
-    /// will be set automatically.
-    pub fn new_with_validator(validator: Validator) -> Self {
-        Self::new_with(std::iter::once(validator), validator.recommended_version()).unwrap()
-    }
-
-    /// Create a new configuration from multiple validators. An appropriate PDF version
-    /// will be set automatically.
-    ///
-    /// Returns `None` if the validators are not compatible with each other.
-    pub fn new_with_validators(validators: impl IntoIterator<Item = Validator>) -> Option<Self> {
-        let validators = Self::collect_compatible_validators(validators)?;
-        let version = validators
-            .iter()
-            .map(|v| v.maximum_pdf_version().unwrap_or(PdfVersion::Pdf20))
-            .max()
-            .unwrap_or(PdfVersion::Pdf17);
-
-        Self::new_with(validators, version)
-    }
-
-    fn collect_compatible_validators(
-        validators: impl IntoIterator<Item = Validator>,
-    ) -> Option<Vec<Validator>> {
-        let validators: Vec<Validator> = validators.into_iter().collect();
-        for i in 0..validators.len() {
-            for j in (i + 1)..validators.len() {
-                if !validators[i].mutually_compatible_with(validators[j]) {
-                    return None;
-                }
-            }
-        }
-
-        Some(validators)
-    }
-
-    /// Create a new configuration from a PDF version and no validator.
-    pub fn new_with_version(version: PdfVersion) -> Self {
-        Self {
-            validators: vec![],
-            version,
-        }
-    }
-
-    /// Create a new configuration without any validator.
-    pub fn new() -> Self {
-        Self {
-            validators: vec![],
-            version: PdfVersion::Pdf17,
-        }
-    }
-
     /// Return the validators of the configuration.
-    pub fn validators(&self) -> &[Validator] {
-        &self.validators
+    pub fn validators(self) -> Validators {
+        self.validators
     }
 
     /// Return the PDF version of the configuration.
-    pub fn version(&self) -> PdfVersion {
+    pub fn version(self) -> PdfVersion {
         self.version
     }
 }
 
+/// A configuration of validator and PDF version.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct ConfigurationBuilder {
+    validators: ValidatorsBuilder,
+    version: Option<PdfVersion>,
+}
+
+impl ConfigurationBuilder {
+    /// Create a new `ConfigurationBuilder` with default settings.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the PDF version (overwrites if already set).
+    pub fn with_version(mut self, version: PdfVersion) -> Self {
+        self.version = Some(version);
+        self
+    }
+
+    /// Set the PDF version, returning `Err` with the existing value if one is already set.
+    pub fn try_with_version(mut self, version: PdfVersion) -> Result<Self, PdfVersion> {
+        match self.version {
+            Some(v) => Err(v),
+            None => {
+                self.version = Some(version);
+                Ok(self)
+            }
+        }
+    }
+
+    /// Set a validator (overwrites if same standard family already set).
+    pub fn set_validator(mut self, validator: Validator) -> Self {
+        self.validators = self.validators.set_validator(validator);
+        self
+    }
+
+    /// Set a validator, returning Err if that standard family is already set.
+    pub fn set_validator_once(mut self, validator: Validator) -> Result<Self, Validator> {
+        self.validators = self.validators.set_validator_once(validator)?;
+        Ok(self)
+    }
+
+    /// Set the PDF/A validator (overwrites if already set).
+    pub fn with_archival_validator(mut self, archival: Archival) -> Self {
+        self.validators = self.validators.with_archival_validator(archival);
+        self
+    }
+
+    /// Set the PDF/A validator, returning Err if one is already set.
+    pub fn try_with_archival_validator(mut self, archival: Archival) -> Result<Self, Archival> {
+        self.validators = self.validators.try_with_archival_validator(archival)?;
+        Ok(self)
+    }
+
+    /// Set the PDF/UA accessibility validator (overwrites if already set).
+    pub fn with_accessibility_validator(mut self, ua: Accessibility) -> Self {
+        self.validators = self.validators.with_accessibility_validator(ua);
+        self
+    }
+
+    /// Set the PDF/UA accessibility validator, returning Err if one is already set.
+    pub fn try_with_accessibility_validator(
+        mut self,
+        ua: Accessibility,
+    ) -> Result<Self, Accessibility> {
+        self.validators = self.validators.try_with_accessibility_validator(ua)?;
+        Ok(self)
+    }
+
+    /// Build the [`Configuration`], returning an error if the validators and version are incompatible.
+    pub fn finish(self) -> Result<Configuration, ConfigurationError> {
+        let validators = self
+            .validators
+            .finish()
+            .map_err(ConfigurationError::NoOverlappingValidatorsRange)?;
+
+        let validator_range = validators.min().unwrap_or(PdfVersion::MIN)..=validators.max();
+        match self.version {
+            Some(version) if validator_range.contains(&version) => Ok(Configuration {
+                validators,
+                version,
+            }),
+            Some(version) => Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(
+                version, validators,
+            )),
+            None if !validators.is_empty() => Ok(Configuration {
+                validators,
+                version: *validator_range.end(),
+            }),
+            None => {
+                let version = PdfVersion::default();
+                debug_assert!(validator_range.contains(&version));
+                Ok(Configuration {
+                    validators,
+                    version,
+                })
+            }
+        }
+    }
+}
+
+/// An error that occurred while building a [`Configuration`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ConfigurationError {
+    /// The selected validators have no overlapping valid PDF version range.
+    NoOverlappingValidatorsRange(Validators),
+    /// The explicitly set PDF version falls outside the range allowed by the validators.
+    VersionDoesNotMatchValidatorsRange(PdfVersion, Validators),
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::configure::{Configuration, PdfVersion, Validator};
+    use crate::configure::{
+        Accessibility, Archival, Configuration, ConfigurationBuilder, ConfigurationError,
+        PdfVersion,
+    };
 
     #[test]
     fn invalid_combination_1() {
-        assert_eq!(
-            Configuration::new_with(std::iter::once(Validator::A1_B), PdfVersion::Pdf17),
-            None
-        );
+        // A1_B max is PDF 1.4; explicit PDF 1.7 is out of range.
+        assert!(matches!(
+            ConfigurationBuilder::new()
+                .with_version(PdfVersion::Pdf17)
+                .with_archival_validator(Archival::A1_B)
+                .finish(),
+            Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(
+                PdfVersion::Pdf17,
+                _
+            ))
+        ));
     }
 
     #[test]
     fn invalid_combination_2() {
-        // Same standard family
-        assert!(Configuration::new_with_validators([Validator::A2_B, Validator::A3_B]).is_none());
-    }
-
-    #[test]
-    fn invalid_combination_3() {
-        // A-4 requires at least PDF 2.0; UA1 allows at most PDF 1.7.
-        assert!(Configuration::new_with_validators([Validator::A4, Validator::UA1]).is_none());
-    }
-
-    #[test]
-    fn invalid_combination_4() {
-        // Duplicate validator
-        assert!(Configuration::new_with_validators([Validator::A3_B, Validator::A3_B]).is_none());
-    }
-
-    #[test]
-    fn invalid_combination_5() {
-        // A-1b is only valid up to PDF 1.4; PDF 1.7 is out of range.
-        assert!(
-            Configuration::new_with([Validator::A1_B, Validator::UA1], PdfVersion::Pdf17).is_none()
+        // Same standard family: second try_with_archival_validator returns Err.
+        assert_eq!(
+            ConfigurationBuilder::new()
+                .try_with_archival_validator(Archival::A2_B)
+                .unwrap()
+                .try_with_archival_validator(Archival::A3_B),
+            Err(Archival::A2_B)
         );
     }
 
     #[test]
+    fn invalid_combination_3() {
+        // A4 requires PDF 2.0; UA1 max is PDF 1.7 → no overlapping range.
+        assert!(matches!(
+            ConfigurationBuilder::new()
+                .with_archival_validator(Archival::A4)
+                .with_accessibility_validator(Accessibility::UA1)
+                .finish(),
+            Err(ConfigurationError::NoOverlappingValidatorsRange(_))
+        ));
+    }
+
+    #[test]
+    fn invalid_combination_4() {
+        // Duplicate (same validator).
+        assert_eq!(
+            ConfigurationBuilder::new()
+                .try_with_archival_validator(Archival::A3_B)
+                .unwrap()
+                .try_with_archival_validator(Archival::A3_B),
+            Err(Archival::A3_B)
+        );
+    }
+
+    #[test]
+    fn invalid_combination_5() {
+        // A1_B max is PDF 1.4; UA1 max is PDF 1.7 → intersection is PDF14..=PDF14.
+        // Explicitly setting PDF 1.7 is out of range.
+        assert!(matches!(
+            ConfigurationBuilder::new()
+                .with_archival_validator(Archival::A1_B)
+                .with_accessibility_validator(Accessibility::UA1)
+                .with_version(PdfVersion::Pdf17)
+                .finish(),
+            Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(
+                PdfVersion::Pdf17,
+                _
+            ))
+        ));
+    }
+
+    #[test]
     fn multi_validator_pdf_a3b_pdf_ua1() {
-        let config = Configuration::new_with_validators([Validator::A3_B, Validator::UA1]).unwrap();
-        assert_eq!(config.validators(), &[Validator::A3_B, Validator::UA1]);
+        let config = ConfigurationBuilder::new()
+            .with_archival_validator(Archival::A3_B)
+            .with_accessibility_validator(Accessibility::UA1)
+            .finish()
+            .unwrap();
+        assert_eq!(config.validators().archival(), Some(Archival::A3_B));
+        assert_eq!(
+            config.validators().accessibility(),
+            Some(Accessibility::UA1)
+        );
         assert_eq!(config.version(), PdfVersion::Pdf17);
     }
 
     #[test]
     fn multi_validator_pdfa2a_pdfua1() {
-        let config = Configuration::new_with_validators([Validator::A2_A, Validator::UA1]);
-        assert!(config.is_some());
+        assert!(ConfigurationBuilder::new()
+            .with_archival_validator(Archival::A2_A)
+            .with_accessibility_validator(Accessibility::UA1)
+            .finish()
+            .is_ok());
     }
 
     #[test]
     fn empty_validators() {
-        let config = Configuration::new_with_validators([]).unwrap();
+        let config = ConfigurationBuilder::new().finish().unwrap();
         assert!(config.validators().is_empty());
         assert_eq!(config.version(), PdfVersion::Pdf17);
     }
 
     #[test]
     fn default_config() {
-        let config = Configuration::new_with_validators([]).unwrap();
-        let default = Configuration::new();
-        assert_eq!(config.version(), default.version());
-        assert_eq!(config.validators(), default.validators());
+        assert_eq!(
+            ConfigurationBuilder::new().finish().unwrap(),
+            Configuration::default()
+        );
     }
 }

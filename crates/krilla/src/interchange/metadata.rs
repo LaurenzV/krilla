@@ -9,7 +9,7 @@ use pdf_writer::{Finish, Pdf, Ref, TextStr};
 use std::cell::LazyCell;
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
-use crate::configure::{Configuration, PdfVersion, ValidationError, Validator};
+use crate::configure::{Configuration, PdfVersion, ValidationError};
 use crate::serialize::SerializeContext;
 
 /// Metadata for a PDF document.
@@ -202,8 +202,7 @@ impl Metadata {
             if sc
                 .serialize_settings()
                 .validators()
-                .iter()
-                .any(Validator::requires_file_provenance_information)
+                .requires_file_provenance_information()
             {
                 let mut history = xmp.history();
                 let mut saved = history.add_event();
@@ -212,11 +211,10 @@ impl Metadata {
                     .action(xmp_writer::ResourceEventAction::Saved)
                     .when(date);
 
-                if sc
+                if !sc
                     .serialize_settings()
                     .validators()
-                    .iter()
-                    .all(|v| !v.prohibits_instance_id_in_xmp_metadata())
+                    .prohibits_instance_id_in_xmp_metadata()
                 {
                     saved.instance_id(&format!("{instance_id}_source"));
                 }
@@ -233,11 +231,10 @@ impl Metadata {
                     converted.software_agent(creator);
                 }
 
-                if sc
+                if !sc
                     .serialize_settings()
                     .validators()
-                    .iter()
-                    .all(|v| !v.prohibits_instance_id_in_xmp_metadata())
+                    .prohibits_instance_id_in_xmp_metadata()
                 {
                     converted.instance_id(&format!("{instance_id}_source"));
                 }
@@ -251,9 +248,9 @@ impl Metadata {
         &self,
         ref_: &mut Ref,
         pdf: &mut Pdf,
-        config: &Configuration,
+        config: Configuration,
     ) {
-        if config.validators().iter().any(|v| !v.allows_info_dict()) {
+        if config.validators().prohibits_info_dict() {
             return;
         }
 

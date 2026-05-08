@@ -5,7 +5,7 @@ use std::ops::DerefMut;
 use pdf_writer::{Finish, Name, Ref, Str, TextStr};
 
 use crate::chunk_container::ChunkContainer;
-use crate::configure::{PdfVersion, ValidationError, Validator};
+use crate::configure::{PdfVersion, ValidationError};
 use crate::interchange::metadata::pdf_date;
 use crate::metadata::DateTime;
 use crate::serialize::{Cacheable, SerializeContext};
@@ -119,9 +119,7 @@ impl Cacheable for EmbeddedFile {
 
         ef.finish();
 
-        let settings = sc.serialize_settings();
-        let validators = settings.validators();
-        if !validators.is_empty() && validators.iter().all(Validator::allows_associated_files) {
+        if sc.serialize_settings().supports_associated_files() {
             file_spec.association_kind(self.association_kind.to_pdf());
         }
 

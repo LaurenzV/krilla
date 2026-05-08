@@ -13,7 +13,7 @@ use pdf_writer::{Finish, Name, Ref, TextStr};
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::Color;
-use crate::configure::{PdfVersion, ValidationError, Validator};
+use crate::configure::{PdfVersion, ValidationError};
 use crate::error::KrillaResult;
 use crate::geom::{Quadrilateral, Rect};
 use crate::interactive::action::Action;
@@ -89,8 +89,7 @@ impl Annotation {
                 .serialize_settings()
                 .configuration
                 .validators()
-                .iter()
-                .any(Validator::requires_annotation_flags)
+                .requires_annotation_flags()
         {
             annotation.flags(AnnotationFlags::PRINT);
         }
