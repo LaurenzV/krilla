@@ -40,60 +40,28 @@ impl ConfigurationBuilder {
         Self::default()
     }
 
-    /// Set the PDF version (overwrites if already set).
+    /// Set the PDF version, overwriting the current one if already set.
     pub fn with_version(mut self, version: PdfVersion) -> Self {
         self.version = Some(version);
         self
     }
 
-    /// Set the PDF version, returning `Err` with the existing value if one is already set.
-    pub fn try_with_version(mut self, version: PdfVersion) -> Result<Self, PdfVersion> {
-        match self.version {
-            Some(v) => Err(v),
-            None => {
-                self.version = Some(version);
-                Ok(self)
-            }
-        }
-    }
-
-    /// Set a validator (overwrites if same standard family already set).
+    /// Set a validator, overwriting the current one if the same standard family is already set.
     pub fn set_validator(mut self, validator: Validator) -> Self {
         self.validators = self.validators.set_validator(validator);
         self
     }
 
-    /// Set a validator, returning Err if that standard family is already set.
-    pub fn set_validator_once(mut self, validator: Validator) -> Result<Self, Validator> {
-        self.validators = self.validators.set_validator_once(validator)?;
-        Ok(self)
-    }
-
-    /// Set the PDF/A validator (overwrites if already set).
+    /// Set the PDF/A validator, overwriting the current one if already set.
     pub fn with_archival_validator(mut self, archival: Archival) -> Self {
         self.validators = self.validators.with_archival_validator(archival);
         self
     }
 
-    /// Set the PDF/A validator, returning Err if one is already set.
-    pub fn try_with_archival_validator(mut self, archival: Archival) -> Result<Self, Archival> {
-        self.validators = self.validators.try_with_archival_validator(archival)?;
-        Ok(self)
-    }
-
-    /// Set the PDF/UA accessibility validator (overwrites if already set).
+    /// Set the PDF/UA accessibility validator, overwriting the current one if already set.
     pub fn with_accessibility_validator(mut self, ua: Accessibility) -> Self {
         self.validators = self.validators.with_accessibility_validator(ua);
         self
-    }
-
-    /// Set the PDF/UA accessibility validator, returning Err if one is already set.
-    pub fn try_with_accessibility_validator(
-        mut self,
-        ua: Accessibility,
-    ) -> Result<Self, Accessibility> {
-        self.validators = self.validators.try_with_accessibility_validator(ua)?;
-        Ok(self)
     }
 
     /// Build the [`Configuration`], returning an error if the validators and version are incompatible.
@@ -161,18 +129,6 @@ mod tests {
 
     #[test]
     fn invalid_combination_2() {
-        // Same standard family: second try_with_archival_validator returns Err.
-        assert_eq!(
-            ConfigurationBuilder::new()
-                .try_with_archival_validator(Archival::A2_B)
-                .unwrap()
-                .try_with_archival_validator(Archival::A3_B),
-            Err(Archival::A2_B)
-        );
-    }
-
-    #[test]
-    fn invalid_combination_3() {
         // A4 requires PDF 2.0; UA1 max is PDF 1.7 → no overlapping range.
         assert!(matches!(
             ConfigurationBuilder::new()
@@ -184,19 +140,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_combination_4() {
-        // Duplicate (same validator).
-        assert_eq!(
-            ConfigurationBuilder::new()
-                .try_with_archival_validator(Archival::A3_B)
-                .unwrap()
-                .try_with_archival_validator(Archival::A3_B),
-            Err(Archival::A3_B)
-        );
-    }
-
-    #[test]
-    fn invalid_combination_5() {
+    fn invalid_combination_3() {
         // A1_B max is PDF 1.4; UA1 max is PDF 1.7 → intersection is PDF14..=PDF14.
         // Explicitly setting PDF 1.7 is out of range.
         assert!(matches!(

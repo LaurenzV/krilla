@@ -308,7 +308,7 @@ impl IntoIterator for Validators {
 pub struct ValidatorsBuilder(Validators);
 
 impl ValidatorsBuilder {
-    /// Set a validator (overwrites if same standard family already set).
+    /// Set a validator, overwriting the current one if the same standard family is already set.
     pub fn set_validator(self, validator: Validator) -> Self {
         match validator {
             Validator::A(a) => self.with_archival_validator(a),
@@ -316,51 +316,16 @@ impl ValidatorsBuilder {
         }
     }
 
-    /// Set a validator, returning `Err` with the existing value if that standard family is already set.
-    pub fn set_validator_once(self, validator: Validator) -> Result<Self, Validator> {
-        match validator {
-            Validator::A(a) => self.try_with_archival_validator(a).map_err(Into::into),
-            Validator::Ua(ua) => self
-                .try_with_accessibility_validator(ua)
-                .map_err(Into::into),
-        }
-    }
-
-    /// Set the PDF/A validator (overwrites if already set).
+    /// Set the PDF/A validator, overwriting the current one if already set.
     pub fn with_archival_validator(mut self, archival: Archival) -> Self {
         self.0.a = Some(archival);
         self
     }
 
-    /// Set the PDF/A validator, returning `Err` with the existing value if one is already set.
-    pub fn try_with_archival_validator(mut self, archival: Archival) -> Result<Self, Archival> {
-        match self.0.a {
-            Some(a) => Err(a),
-            None => {
-                self.0.a = Some(archival);
-                Ok(self)
-            }
-        }
-    }
-
-    /// Set the PDF/UA accessibility validator (overwrites if already set).
+    /// Set the PDF/UA accessibility validator, overwriting the current one if already set.
     pub fn with_accessibility_validator(mut self, accessibility: Accessibility) -> Self {
         self.0.ua = Some(accessibility);
         self
-    }
-
-    /// Set the PDF/UA accessibility validator, returning `Err` with the existing value if one is already set.
-    pub fn try_with_accessibility_validator(
-        mut self,
-        accessibility: Accessibility,
-    ) -> Result<Self, Accessibility> {
-        match self.0.ua {
-            Some(ua) => Err(ua),
-            None => {
-                self.0.ua = Some(accessibility);
-                Ok(self)
-            }
-        }
     }
 
     pub(crate) fn finish(self) -> Result<Validators, Validators> {
