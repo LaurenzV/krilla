@@ -98,33 +98,7 @@ impl ChunkContainer {
     }
 
     pub(crate) fn finish(self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
-        let mut remapped_ref = Ref::new(1);
-        let mut remapper = HashMap::new();
-
-        // Allows us to estimate the capacity we will need for the new PDF.
-        let mut chunks_byte_len = 0;
-
-        // This traverses the chunks in the order that we will write them to the PDF and assigns new
-        // references as we go. This gives us the advantage that the PDF will be numbered with
-        // monotonically increasing numbers, which, while it is not a strict requirement for a valid
-        // PDF, makes it a lot cleaner and might make implementing features like object streams
-        // easier down the road.
-        //
-        // It also allows us to estimate the capacity we will need for the new PDF.
-        self.visit(sc, &mut |chunk| {
-            for object_ref in chunk.refs() {
-                let existing = remapper.insert(object_ref, remapped_ref.bump());
-                debug_assert!(existing.is_none());
-            }
-            chunks_byte_len += chunk.len();
-        })?;
-
-        // Chunk length is not an exact number because the length might change as we renumber,
-        // so we add a bit of a padding by multiplying with 1.1. The 200 is additional padding
-        // for the document catalog. This hopefully allows us to avoid re-alloactions in the general
-        // case, and thus give us better performance.
-        let capacity = (chunks_byte_len as f32 * 1.1 + 200.0) as usize;
-        let mut pdf = sc.new_pdf_with_capacity(capacity);
+        let mut pdf = sc.new_pdf();
         sc.serialize_settings().pdf_version().set_version(&mut pdf);
 
         if sc.serialize_settings().ascii_compatible
@@ -138,7 +112,7 @@ impl ChunkContainer {
 
         // Write the chunks in all the fields.
         self.visit(sc, &mut |chunk| {
-            chunk.renumber_into(&mut pdf, |old| remapper[&old]);
+            pdf.extend(chunk);
         })?;
 
         let missing_title = self.metadata.as_ref().is_none_or(|m| m.title.is_none());
@@ -150,9 +124,9 @@ impl ChunkContainer {
         // Write the PDF document info metadata.
         if let Some(metadata) = &self.metadata {
             metadata.serialize_document_info(
-                &mut remapped_ref,
                 &mut pdf,
                 sc.serialize_settings().configuration,
+                || sc.new_ref(),
             );
         }
 
@@ -208,7 +182,7 @@ impl ChunkContainer {
             || self.non_stream.struct_tree_root.is_some()
         {
             let meta_ref = if sc.serialize_settings().xmp_metadata {
-                let meta_ref = remapped_ref.bump();
+                let meta_ref = sc.new_ref();
                 let xmp_buf = xmp.finish(None);
                 pdf.stream(meta_ref, xmp_buf.as_bytes())
                     .pair(Name(b"Type"), Name(b"Metadata"))
@@ -218,12 +192,12 @@ impl ChunkContainer {
                 None
             };
 
-            let catalog_ref = remapped_ref.bump();
+            let catalog_ref = sc.new_ref();
 
             let mut catalog = pdf.catalog(catalog_ref);
 
             if let Some(pt) = &self.non_stream.page_tree {
-                catalog.pages(remapper[&pt.0]);
+                catalog.pages(pt.0);
             }
 
             if let Some(meta_ref) = meta_ref {
@@ -231,11 +205,11 @@ impl ChunkContainer {
             }
 
             if let Some(pl) = &self.non_stream.page_label_tree {
-                catalog.pair(Name(b"PageLabels"), remapper[&pl.0]);
+                catalog.pair(Name(b"PageLabels"), pl.0);
             }
 
             if let Some(oi) = &self.non_stream.destination_profiles {
-                catalog.pair(Name(b"OutputIntents"), remapper[&oi.0]);
+                catalog.pair(Name(b"OutputIntents"), oi.0);
             }
 
             if let Some(lang) = self.metadata.as_ref().and_then(|m| m.language.as_ref()) {
@@ -245,7 +219,7 @@ impl ChunkContainer {
             }
 
             if let Some(st) = &self.non_stream.struct_tree_root {
-                catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
+                catalog.pair(Name(b"StructTreeRoot"), st.0);
                 let mut mark_info = catalog.mark_info();
                 mark_info.marked(true);
                 if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16
@@ -286,7 +260,7 @@ impl ChunkContainer {
             }
 
             if let Some(ol) = &self.non_stream.outline {
-                catalog.outlines(remapper[&ol.0]);
+                catalog.outlines(ol.0);
             }
 
             let settings = sc.serialize_settings();
@@ -317,7 +291,7 @@ impl ChunkContainer {
                     sorted.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
 
                     for (name, (dest_ref, _)) in sorted {
-                        dest_name_entries.insert(Str(name.as_bytes()), remapper[&dest_ref]);
+                        dest_name_entries.insert(Str(name.as_bytes()), dest_ref);
                     }
 
                     dest_name_entries.finish();
@@ -329,7 +303,7 @@ impl ChunkContainer {
                     let mut embedded_name_entries = embedded_files_name_tree.names();
 
                     for (name, _ref) in &embedded_files {
-                        embedded_name_entries.insert(Str(name.as_bytes()), remapper[_ref]);
+                        embedded_name_entries.insert(Str(name.as_bytes()), *_ref);
                     }
                 }
             }
@@ -337,7 +311,7 @@ impl ChunkContainer {
             if !embedded_files.is_empty() && settings.supports_associated_files() {
                 let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
                 for _ref in embedded_files.values() {
-                    associated_files.item(remapper[_ref]).finish();
+                    associated_files.item(*_ref).finish();
                 }
             }
 
@@ -367,10 +341,9 @@ impl Visit for EmbeddedPdfChunk {
         // pages (stored in `SerializerContex::page_infos`), but `hayro_write` created new references
         // for those (stored in `result.root_refs`).
 
-        // Because of this, embedded PDF chunks will be renumbered twice: First, we preprocess the
-        // chunk such that page/XObjects are reassigned their original references from the serialize
-        // context, and all other objects are assigned new, unique references provided by the
-        // serialize context. Then, we renumber them once again by treating them like any other chunk.
+        // Because of this, embedded PDF chunks are preprocessed such that page/XObjects are
+        // reassigned their original references from the serialize context, and all other objects
+        // are assigned new, unique references provided by the serialize context.
 
         // Since we are calling `visit` twice, we also cache the renumbered chunk.
 

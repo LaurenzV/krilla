@@ -5,11 +5,11 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [7 0 R]
+  /Kids [5 0 R]
 >>
 endobj
 
-2 0 obj
+7 0 obj
 <<
   /Type /StructTreeRoot
   /RoleMap <<
@@ -19,35 +19,35 @@ endobj
     /Strong /Span
     /Em /Span
   >>
-  /K [5 0 R]
+  /K [8 0 R]
   /ParentTree <<
-    /Nums [0 3 0 R]
+    /Nums [0 10 0 R]
   >>
   /ParentTreeNextKey 1
 >>
 endobj
 
-3 0 obj
-[4 0 R]
+10 0 obj
+[9 0 R]
 endobj
 
-4 0 obj
+9 0 obj
 <<
   /Type /StructElem
   /S /Figure
-  /P 5 0 R
+  /P 8 0 R
   /Alt (This is the alternate text.)
   /K [0]
-  /Pg 7 0 R
+  /Pg 5 0 R
 >>
 endobj
 
-5 0 obj
+8 0 obj
 <<
   /Type /StructElem
   /S /Document
-  /P 2 0 R
-  /K [4 0 R]
+  /P 7 0 R
+  /K [9 0 R]
 >>
 endobj
 
@@ -57,18 +57,18 @@ endobj
 >>
 endobj
 
-7 0 obj
+5 0 obj
 <<
   /Type /Page
   /Resources 6 0 R
   /MediaBox [0 0 595 842]
   /StructParents 0
   /Parent 1 0 R
-  /Contents 8 0 R
+  /Contents 4 0 R
 >>
 endobj
 
-8 0 obj
+4 0 obj
 <<
   /Length 286
 >>
@@ -119,11 +119,11 @@ EMC
 endstream
 endobj
 
-9 0 obj
+11 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
-  /StructTreeRoot 2 0 R
+  /StructTreeRoot 7 0 R
   /MarkInfo <<
     /Marked true
     /Suspects false
@@ -132,23 +132,25 @@ endobj
 endobj
 
 xref
-0 10
-0000000000 65535 f
+0 12
+0000000002 65535 f
 0000000016 00000 n
+0000000003 00000 f
+0000000000 00000 f
+0000000733 00000 n
+0000000599 00000 n
+0000000537 00000 n
 0000000080 00000 n
-0000000306 00000 n
-0000000330 00000 n
-0000000454 00000 n
-0000000535 00000 n
-0000000597 00000 n
-0000000731 00000 n
-0000001071 00000 n
+0000000456 00000 n
+0000000332 00000 n
+0000000307 00000 n
+0000001073 00000 n
 trailer
 <<
-  /Size 10
-  /Root 9 0 R
-  /ID [(2dcUKWA8GjdlT9EdA5kAjw==) (2dcUKWA8GjdlT9EdA5kAjw==)]
+  /Size 12
+  /Root 11 0 R
+  /ID [(3mpKtBh5K8lFZZU64BcH9Q==) (3mpKtBh5K8lFZZU64BcH9Q==)]
 >>
 startxref
-1206
+1209
 %%EOF

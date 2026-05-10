@@ -5,23 +5,23 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [3 0 R]
+  /Kids [11 0 R]
 >>
 endobj
 
-2 0 obj
+12 0 obj
 <<
   /ProcSet [/PDF /Text /ImageC /ImageB]
 >>
 endobj
 
-3 0 obj
+11 0 obj
 <<
   /Type /Page
-  /Resources 2 0 R
+  /Resources 12 0 R
   /MediaBox [0 0 595 842]
   /Parent 1 0 R
-  /Contents 7 0 R
+  /Contents 10 0 R
 >>
 endobj
 
@@ -31,40 +31,40 @@ endobj
   /F (emojis.txt)
   /UF (emojis.txt)
   /EF <<
-    /F 8 0 R
-    /UF 8 0 R
+    /F 5 0 R
+    /UF 5 0 R
   >>
   /Desc (The description of the file.)
->>
-endobj
-
-5 0 obj
-<<
-  /Type /Filespec
-  /F (image.svg)
-  /UF (image.svg)
-  /EF <<
-    /F 9 0 R
-    /UF 9 0 R
-  >>
-  /Desc (A nice SVG image!)
 >>
 endobj
 
 6 0 obj
 <<
   /Type /Filespec
+  /F (image.svg)
+  /UF (image.svg)
+  /EF <<
+    /F 7 0 R
+    /UF 7 0 R
+  >>
+  /Desc (A nice SVG image!)
+>>
+endobj
+
+8 0 obj
+<<
+  /Type /Filespec
   /F (rgb8.png)
   /UF (rgb8.png)
   /EF <<
-    /F 10 0 R
-    /UF 10 0 R
+    /F 9 0 R
+    /UF 9 0 R
   >>
   /Desc (A nice picture.)
 >>
 endobj
 
-7 0 obj
+10 0 obj
 <<
   /Length 0
 >>
@@ -73,7 +73,7 @@ stream
 endstream
 endobj
 
-8 0 obj
+5 0 obj
 <<
   /Length 423
   /Type /EmbeddedFile
@@ -94,7 +94,7 @@ F09F8DB5F09FA783F09FA5A4F09FA78BE29BB3EFB88FF09FAA81F09F8FB9F09F8EA3
 endstream
 endobj
 
-9 0 obj
+7 0 obj
 <<
   /Length 407
   /Type /EmbeddedFile
@@ -119,7 +119,7 @@ stream
 endstream
 endobj
 
-10 0 obj
+9 0 obj
 <<
   /Length 3121
   /Type /EmbeddedFile
@@ -178,38 +178,40 @@ F1A85C75D57F3C2A575DF51F8FCA5557FDC7A372D555FFF1A85C75D57F3C2A575DF51F
 endstream
 endobj
 
-11 0 obj
+13 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
   /Names <<
     /EmbeddedFiles <<
-      /Names [(emojis.txt) 4 0 R (image.svg) 5 0 R (rgb8.png) 6 0 R]
+      /Names [(emojis.txt) 4 0 R (image.svg) 6 0 R (rgb8.png) 8 0 R]
     >>
   >>
 >>
 endobj
 
 xref
-0 12
-0000000000 65535 f
+0 14
+0000000002 65535 f
 0000000016 00000 n
-0000000080 00000 n
-0000000142 00000 n
-0000000257 00000 n
-0000000414 00000 n
-0000000558 00000 n
-0000000700 00000 n
-0000000752 00000 n
-0000001365 00000 n
-0000001941 00000 n
-0000005256 00000 n
+0000000003 00000 f
+0000000000 00000 f
+0000000262 00000 n
+0000000756 00000 n
+0000000419 00000 n
+0000001369 00000 n
+0000000563 00000 n
+0000001945 00000 n
+0000000703 00000 n
+0000000144 00000 n
+0000000081 00000 n
+0000005259 00000 n
 trailer
 <<
-  /Size 12
-  /Root 11 0 R
-  /ID [(mGmlnUrVyYCAVzUieKFSRg==) (mGmlnUrVyYCAVzUieKFSRg==)]
+  /Size 14
+  /Root 13 0 R
+  /ID [(getdpvQ1CMNRDVMwqptJLw==) (getdpvQ1CMNRDVMwqptJLw==)]
 >>
 startxref
-5426
+5429
 %%EOF

@@ -9,27 +9,27 @@
 >>
 endobj
 
-2 0 obj
+12 0 obj
 <<
   /ProcSet [/PDF /Text /ImageC /ImageB]
   /Font <<
-    /f0 3 0 R
+    /f0 4 0 R
   >>
 >>
 endobj
 
-3 0 obj
+4 0 obj
 <<
   /Type /Font
   /Subtype /Type0
   /BaseFont /BZVPLP+NotoSansDevanagari-Regular
   /Encoding /Identity-H
-  /DescendantFonts [4 0 R]
-  /ToUnicode 8 0 R
+  /DescendantFonts [7 0 R]
+  /ToUnicode 9 0 R
 >>
 endobj
 
-4 0 obj
+7 0 obj
 <<
   /Type /Font
   /Subtype /CIDFontType2
@@ -39,14 +39,14 @@ endobj
     /Ordering (Identity)
     /Supplement 0
   >>
-  /FontDescriptor 5 0 R
+  /FontDescriptor 8 0 R
   /DW 0
   /CIDToGIDMap /Identity
   /W [0 0 600 1 1 1021.99994 2 2 260 3 3 598 5 5 609 6 6 598 8 8 409 9 9 259 10 10 580 13 13 615 14 14 555 16 16 853 17 17 376 18 18 556 19 19 584 20 20 259 21 21 676 23 23 717 24 24 570 25 25 379]
 >>
 endobj
 
-5 0 obj
+8 0 obj
 <<
   /Type /FontDescriptor
   /FontName /BZVPLP+NotoSansDevanagari-Regular
@@ -57,22 +57,22 @@ endobj
   /Descent -408
   /CapHeight 622
   /StemV 95.4
-  /CIDSet 7 0 R
-  /FontFile2 9 0 R
+  /CIDSet 10 0 R
+  /FontFile2 11 0 R
 >>
 endobj
 
 6 0 obj
 <<
   /Type /Page
-  /Resources 2 0 R
+  /Resources 12 0 R
   /MediaBox [0 0 200 200]
   /Parent 1 0 R
-  /Contents 10 0 R
+  /Contents 5 0 R
 >>
 endobj
 
-7 0 obj
+10 0 obj
 <<
   /Length 24
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -82,7 +82,7 @@ stream
 endstream
 endobj
 
-8 0 obj
+9 0 obj
 <<
   /Length 912
   /Type /CMap
@@ -139,7 +139,7 @@ end
 endstream
 endobj
 
-9 0 obj
+11 0 obj
 <<
   /Length 6262
   /Filter [/ASCIIHexDecode /FlateDecode]
@@ -237,7 +237,7 @@ E0BF01925E7E11
 endstream
 endobj
 
-10 0 obj
+5 0 obj
 <<
   /Length 1871
 >>
@@ -379,7 +379,7 @@ Q
 endstream
 endobj
 
-11 0 obj
+13 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -387,25 +387,27 @@ endobj
 endobj
 
 xref
-0 12
-0000000000 65535 f
+0 14
+0000000002 65535 f
 0000000016 00000 n
+0000000003 00000 f
+0000000000 00000 f
+0000000173 00000 n
+0000008639 00000 n
+0000001054 00000 n
+0000000344 00000 n
+0000000797 00000 n
+0000001289 00000 n
+0000001170 00000 n
+0000002280 00000 n
 0000000080 00000 n
-0000000172 00000 n
-0000000343 00000 n
-0000000796 00000 n
-0000001051 00000 n
-0000001167 00000 n
-0000001285 00000 n
-0000002276 00000 n
-0000008634 00000 n
-0000010561 00000 n
+0000010565 00000 n
 trailer
 <<
-  /Size 12
-  /Root 11 0 R
-  /ID [(YexhoxIPTFwn/4Nrdzds3A==) (YexhoxIPTFwn/4Nrdzds3A==)]
+  /Size 14
+  /Root 13 0 R
+  /ID [(JoyTMmWeuG1xC2fLPsyUnQ==) (JoyTMmWeuG1xC2fLPsyUnQ==)]
 >>
 startxref
-10616
+10620
 %%EOF

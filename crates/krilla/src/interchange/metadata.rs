@@ -246,16 +246,16 @@ impl Metadata {
 
     pub(crate) fn serialize_document_info(
         &self,
-        ref_: &mut Ref,
         pdf: &mut Pdf,
         config: Configuration,
+        mut new_ref: impl FnMut() -> Ref,
     ) {
         if config.validators().prohibits_info_dict() {
             return;
         }
 
         if self.has_document_info() {
-            let ref_ = ref_.bump();
+            let ref_ = new_ref();
             let mut document_info = LazyCell::new(|| pdf.document_info(ref_));
 
             // ALl of those are deprecated in PDF 2.0 and will only be written

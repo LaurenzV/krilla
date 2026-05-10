@@ -5,21 +5,21 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [2 0 R]
+  /Kids [7 0 R]
 >>
 endobj
 
-2 0 obj
+7 0 obj
 <<
   /Type /Page
   /Resources <<>>
   /MediaBox [0 0 595 842]
   /Parent 1 0 R
-  /Contents 4 0 R
+  /Contents 6 0 R
 >>
 endobj
 
-3 0 obj
+4 0 obj
 <<
   /Type /Filespec
   /F (emojis.txt)
@@ -33,7 +33,7 @@ endobj
 >>
 endobj
 
-4 0 obj
+6 0 obj
 <<
   /Length 0
 >>
@@ -63,43 +63,45 @@ F09F8DB5F09FA783F09FA5A4F09FA78BE29BB3EFB88FF09FAA81F09F8FB9F09F8EA3
 endstream
 endobj
 
-6 0 obj
+8 0 obj
 <<
   /ModDate (D:20010101000000Z)
   /CreationDate (D:20010101000000Z)
 >>
 endobj
 
-7 0 obj
+9 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
   /Lang (en)
   /Names <<
     /EmbeddedFiles <<
-      /Names [(emojis.txt) 3 0 R]
+      /Names [(emojis.txt) 4 0 R]
     >>
   >>
-  /AF [3 0 R]
+  /AF [4 0 R]
 >>
 endobj
 
 xref
-0 8
-0000000000 65535 f
+0 10
+0000000002 65535 f
 0000000016 00000 n
-0000000080 00000 n
+0000000003 00000 f
+0000000000 00000 f
 0000000194 00000 n
-0000000381 00000 n
 0000000433 00000 n
+0000000381 00000 n
+0000000080 00000 n
 0000001046 00000 n
 0000001135 00000 n
 trailer
 <<
-  /Size 8
-  /Root 7 0 R
-  /Info 6 0 R
-  /ID [(YWWGk6oEqjf+1drnNiLv2w==) (YWWGk6oEqjf+1drnNiLv2w==)]
+  /Size 10
+  /Root 9 0 R
+  /Info 8 0 R
+  /ID [(z2e2vnGlCCSEQI+ISyt2dw==) (z2e2vnGlCCSEQI+ISyt2dw==)]
 >>
 startxref
 1296
