@@ -826,7 +826,8 @@ impl TagGroup {
             sc.register_validation_error(ValidationError::MissingAltText(tag.location));
         }
 
-        // TODO: validate TH-outside-THead structure for PDF < 1.5
+        // TODO: Once we have a generalized mechanism for validating tag trees,
+        // validate TH-outside-THead structure for PDF < 1.5.
 
         for attr in tag.attrs.iter() {
             let Attr::Struct(attr) = attr else {
