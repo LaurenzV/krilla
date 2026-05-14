@@ -1156,7 +1156,8 @@ fn validate_pdf14_ua1_table_header_scope() {
 
 #[test]
 fn validate_pdf14_tagged_annotation_no_ua() {
-    // tagging + annotation + PDF 1.4 without UA validator must not fail
+    // Ensure tagging + annotation + PDF 1.4 without UA validator doesn't
+    // fail (see https://github.com/LaurenzV/krilla/pull/278#discussion_r3213542007).
     let mut document = Document::new_with(settings_17());
     let mut page = document.start_page();
 
