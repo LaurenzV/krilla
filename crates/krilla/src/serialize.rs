@@ -74,6 +74,11 @@ pub struct SerializeSettings {
     /// you use. For example, when exporting to PDF/A, this value will be set to
     /// true, regardless of what value will be passed.
     pub xmp_metadata: bool,
+    /// Whether eligible indirect objects should be written into object streams.
+    ///
+    /// Object streams require PDF 1.5 or newer. This setting is ignored for
+    /// older PDF versions.
+    pub object_streams: bool,
     /// The ICC profile that should be used for CMYK colors
     /// when `no_device_cs` is enabled.
     ///
@@ -144,6 +149,7 @@ impl Default for SerializeSettings {
             compress_content_streams: true,
             no_device_cs: false,
             xmp_metadata: true,
+            object_streams: true,
             cmyk_profile: None,
             configuration: Configuration::default(),
             enable_tagging: true,
@@ -281,6 +287,7 @@ impl SerializeContext {
         serialize_settings.no_device_cs |= serialize_settings.validators().requires_no_device_cs();
         serialize_settings.enable_tagging |= serialize_settings.validators().requires_tagging();
         serialize_settings.xmp_metadata |= serialize_settings.validators().requires_xmp_metadata();
+        serialize_settings.object_streams &= serialize_settings.pdf_version() >= PdfVersion::Pdf15;
 
         let mut cur_ref = Ref::new(1);
         let page_tree_ref = cur_ref.bump();

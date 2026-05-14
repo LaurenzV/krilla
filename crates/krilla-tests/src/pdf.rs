@@ -85,6 +85,32 @@ fn pdf_14_no_sixteen_bit_images() {
 }
 
 #[test]
+fn pdf_object_streams_enabled_by_default() {
+    let mut document = Document::new();
+    document.start_page().finish();
+
+    let pdf = document.finish().unwrap();
+    assert!(pdf
+        .windows(b"/ObjStm".len())
+        .any(|window| window == b"/ObjStm"));
+    assert!(pdf.windows(b"/XRef".len()).any(|window| window == b"/XRef"));
+}
+
+#[test]
+fn pdf_14_disables_object_streams() {
+    let mut document = Document::new_with(settings_17());
+    document.start_page().finish();
+
+    let pdf = document.finish().unwrap();
+    assert!(!pdf
+        .windows(b"/ObjStm".len())
+        .any(|window| window == b"/ObjStm"));
+    assert!(pdf
+        .windows(b"xref\n".len())
+        .any(|window| window == b"xref\n"));
+}
+
+#[test]
 fn pdf_14_unvalidated_version_limit_error() {
     let mut document = Document::new_with(settings_17());
     let mut page = document.start_page();

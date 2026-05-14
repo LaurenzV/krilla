@@ -891,6 +891,7 @@ pub fn settings_1() -> SerializeSettings {
         compress_content_streams: false,
         no_device_cs: false,
         xmp_metadata: false,
+        object_streams: true,
         cmyk_profile: None,
         enable_tagging: true,
         configuration: Configuration::default(),

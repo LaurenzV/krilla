@@ -151,6 +151,11 @@ impl Document {
             chunk_container,
         } = self;
 
-        Ok(serializer_context.finish(chunk_container)?.finish())
+        let pdf = serializer_context.finish(chunk_container)?;
+        if pdf.has_compressed_xref_entries() {
+            Ok(pdf.finish_with_xref_stream_auto())
+        } else {
+            Ok(pdf.finish())
+        }
     }
 }

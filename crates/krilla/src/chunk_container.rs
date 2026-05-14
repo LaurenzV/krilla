@@ -1,5 +1,9 @@
-use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::{
+    Chunk, Filter, Finish, Name, ObjectStreamBuilder, ObjectStreamFilter, ObjectStreamJob, Pdf,
+    Ref, Str, TextStr,
+};
 use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 use std::sync::OnceLock;
 use xmp_writer::{RenditionClass, XmpWriter};
 
@@ -8,9 +12,11 @@ use crate::error::KrillaResult;
 use crate::interchange::metadata::Metadata;
 use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
+use crate::stream::deflate_encode;
 use crate::util::{stable_hash_base64, Deferred};
 
 type DChunk = Deferred<Chunk>;
+const OBJECT_STREAM_MAX_OBJECTS: usize = 100;
 
 /// Collects all chunks that we create while building
 /// the PDF and then writes them out in an orderly manner.
@@ -43,18 +49,18 @@ pub(crate) struct NonStreamChunks {
     pub(crate) destination_profiles: Option<(Ref, Chunk)>,
     pub(crate) struct_tree_root: Option<(Ref, Chunk)>,
     pub(crate) struct_elements: Option<Chunk>,
-    pub(crate) page_labels: Chunk,
-    pub(crate) annotations: Chunk,
-    pub(crate) color_spaces: Chunk,
-    pub(crate) destinations: Chunk,
-    pub(crate) ext_g_states: Chunk,
-    pub(crate) resource_dictionaries: Chunk,
-    pub(crate) masks: Chunk,
-    pub(crate) fonts: Chunk,
-    pub(crate) shading_functions: Chunk,
-    pub(crate) patterns: Chunk,
-    pub(crate) pages: Chunk,
-    pub(crate) embedded_files: Chunk,
+    pub(crate) page_labels: ObjectChunk,
+    pub(crate) annotations: ObjectChunk,
+    pub(crate) color_spaces: ObjectChunk,
+    pub(crate) destinations: ObjectChunk,
+    pub(crate) ext_g_states: ObjectChunk,
+    pub(crate) resource_dictionaries: ObjectChunk,
+    pub(crate) masks: ObjectChunk,
+    pub(crate) fonts: ObjectChunk,
+    pub(crate) shading_functions: ObjectChunk,
+    pub(crate) patterns: ObjectChunk,
+    pub(crate) pages: ObjectChunk,
+    pub(crate) embedded_files: ObjectChunk,
 }
 
 impl ChunkContainer {
@@ -81,18 +87,18 @@ impl ChunkContainer {
                 destination_profiles: None,
                 struct_tree_root: None,
                 struct_elements: None,
-                page_labels: sc.new_chunk(),
-                annotations: sc.new_chunk(),
-                color_spaces: sc.new_chunk(),
-                destinations: sc.new_chunk(),
-                ext_g_states: sc.new_chunk(),
-                resource_dictionaries: sc.new_chunk(),
-                masks: sc.new_chunk(),
-                fonts: sc.new_chunk(),
-                shading_functions: sc.new_chunk(),
-                patterns: sc.new_chunk(),
-                pages: sc.new_chunk(),
-                embedded_files: sc.new_chunk(),
+                page_labels: ObjectChunk::new(sc),
+                annotations: ObjectChunk::new(sc),
+                color_spaces: ObjectChunk::new(sc),
+                destinations: ObjectChunk::new(sc),
+                ext_g_states: ObjectChunk::new(sc),
+                resource_dictionaries: ObjectChunk::new(sc),
+                masks: ObjectChunk::new(sc),
+                fonts: ObjectChunk::new(sc),
+                shading_functions: ObjectChunk::new(sc),
+                patterns: ObjectChunk::new(sc),
+                pages: ObjectChunk::new(sc),
+                embedded_files: ObjectChunk::new(sc),
             },
         }
     }
@@ -111,9 +117,42 @@ impl ChunkContainer {
         }
 
         // Write the chunks in all the fields.
-        self.visit(sc, &mut |chunk| {
-            pdf.extend(chunk);
-        })?;
+        if sc.serialize_settings().object_streams {
+            let object_streams = {
+                let mut builder =
+                    ObjectStreamBuilder::new(sc.chunk_settings(), OBJECT_STREAM_MAX_OBJECTS);
+                let mut next_ref = || sc.new_ref();
+                let mut spawn = |job: ObjectStreamJob| {
+                    Deferred::new(move || {
+                        job.build_with_filter(|data| {
+                            (
+                                deflate_encode(data),
+                                ObjectStreamFilter::Single(Filter::FlateDecode),
+                            )
+                        })
+                    })
+                };
+
+                self.non_stream
+                    .visit_object_streams(&mut builder, &mut next_ref, &mut spawn);
+                builder.finish_with(&mut next_ref, &mut spawn)
+            };
+
+            for object_stream in object_streams {
+                pdf.extend(object_stream.wait());
+            }
+
+            self.mixed.visit(sc, &mut |chunk| {
+                pdf.extend(chunk);
+            })?;
+            self.streams.visit(sc, &mut |chunk| {
+                pdf.extend(chunk);
+            })?;
+        } else {
+            self.visit(sc, &mut |chunk| {
+                pdf.extend(chunk);
+            })?;
+        }
 
         let missing_title = self.metadata.as_ref().is_none_or(|m| m.title.is_none());
 
@@ -328,9 +367,52 @@ pub(crate) struct EmbeddedPdfChunk {
     pub(crate) new_chunk: OnceLock<Chunk>,
 }
 
+pub(crate) enum ObjectChunk {
+    Plain(Chunk),
+    Streamed(Chunk),
+}
+
+impl ObjectChunk {
+    fn new(sc: &SerializeContext) -> Self {
+        let chunk = sc.new_chunk();
+        if sc.serialize_settings().object_streams {
+            Self::Streamed(chunk)
+        } else {
+            Self::Plain(chunk)
+        }
+    }
+}
+
+impl Deref for ObjectChunk {
+    type Target = Chunk;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Plain(chunk) | Self::Streamed(chunk) => chunk,
+        }
+    }
+}
+
+impl DerefMut for ObjectChunk {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            Self::Plain(chunk) | Self::Streamed(chunk) => chunk,
+        }
+    }
+}
+
 /// Visits all chunks in a type.
 trait Visit {
     fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()>;
+}
+
+trait VisitObjectStreams {
+    fn visit_object_streams<T>(
+        &self,
+        builder: &mut ObjectStreamBuilder<T>,
+        next_ref: &mut impl FnMut() -> Ref,
+        spawn: &mut impl FnMut(ObjectStreamJob) -> T,
+    );
 }
 
 impl Visit for EmbeddedPdfChunk {
@@ -415,6 +497,15 @@ impl Visit for NonStreamChunks {
     }
 }
 
+impl Visit for ObjectChunk {
+    fn visit(&self, sc: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
+        match self {
+            Self::Plain(chunk) => chunk.visit(sc, f),
+            Self::Streamed(chunk) => chunk.visit(sc, f),
+        }
+    }
+}
+
 impl Visit for Chunk {
     fn visit(&self, _: &mut SerializeContext, f: &mut impl FnMut(&Chunk)) -> KrillaResult<()> {
         f(self);
@@ -458,5 +549,83 @@ impl<T: Visit> Visit for Vec<T> {
             field.visit(sc, f)?;
         }
         Ok(())
+    }
+}
+
+impl VisitObjectStreams for NonStreamChunks {
+    fn visit_object_streams<T>(
+        &self,
+        builder: &mut ObjectStreamBuilder<T>,
+        next_ref: &mut impl FnMut() -> Ref,
+        spawn: &mut impl FnMut(ObjectStreamJob) -> T,
+    ) {
+        self.page_tree
+            .visit_object_streams(builder, next_ref, spawn);
+        self.outline.visit_object_streams(builder, next_ref, spawn);
+        self.page_label_tree
+            .visit_object_streams(builder, next_ref, spawn);
+        self.destination_profiles
+            .visit_object_streams(builder, next_ref, spawn);
+        self.struct_tree_root
+            .visit_object_streams(builder, next_ref, spawn);
+        self.struct_elements
+            .visit_object_streams(builder, next_ref, spawn);
+        self.page_labels
+            .visit_object_streams(builder, next_ref, spawn);
+        self.annotations
+            .visit_object_streams(builder, next_ref, spawn);
+        self.color_spaces
+            .visit_object_streams(builder, next_ref, spawn);
+        self.destinations
+            .visit_object_streams(builder, next_ref, spawn);
+        self.ext_g_states
+            .visit_object_streams(builder, next_ref, spawn);
+        self.resource_dictionaries
+            .visit_object_streams(builder, next_ref, spawn);
+        self.masks.visit_object_streams(builder, next_ref, spawn);
+        self.fonts.visit_object_streams(builder, next_ref, spawn);
+        self.shading_functions
+            .visit_object_streams(builder, next_ref, spawn);
+        self.patterns.visit_object_streams(builder, next_ref, spawn);
+        self.pages.visit_object_streams(builder, next_ref, spawn);
+        self.embedded_files
+            .visit_object_streams(builder, next_ref, spawn);
+    }
+}
+
+impl VisitObjectStreams for ObjectChunk {
+    fn visit_object_streams<T>(
+        &self,
+        builder: &mut ObjectStreamBuilder<T>,
+        next_ref: &mut impl FnMut() -> Ref,
+        spawn: &mut impl FnMut(ObjectStreamJob) -> T,
+    ) {
+        builder.extend_with(self, next_ref, spawn);
+    }
+}
+
+impl VisitObjectStreams for Option<Chunk> {
+    fn visit_object_streams<T>(
+        &self,
+        builder: &mut ObjectStreamBuilder<T>,
+        next_ref: &mut impl FnMut() -> Ref,
+        spawn: &mut impl FnMut(ObjectStreamJob) -> T,
+    ) {
+        if let Some(chunk) = self {
+            builder.extend_with(chunk, next_ref, spawn);
+        }
+    }
+}
+
+impl VisitObjectStreams for Option<(Ref, Chunk)> {
+    fn visit_object_streams<T>(
+        &self,
+        builder: &mut ObjectStreamBuilder<T>,
+        next_ref: &mut impl FnMut() -> Ref,
+        spawn: &mut impl FnMut(ObjectStreamJob) -> T,
+    ) {
+        if let Some((_, chunk)) = self {
+            builder.extend_with(chunk, next_ref, spawn);
+        }
     }
 }
