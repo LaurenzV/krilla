@@ -18,12 +18,7 @@ use krilla::text::{GlyphId, KrillaGlyph};
 use krilla_macros::snapshot;
 
 use crate::embed::{embedded_file_impl, file_1};
-use crate::{
-    blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
-    metadata_1, metadata_2, rect_to_path, red_fill, settings_13, settings_15, settings_19,
-    settings_20, settings_23, settings_24, settings_32, settings_33, settings_34, settings_7,
-    settings_8, settings_9, stops_with_2_solid_1, validation_errors, youtube_link, NOTO_SANS,
-};
+use crate::{blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc, metadata_1, metadata_2, rect_to_path, red_fill, settings_13, settings_15, settings_17, settings_19, settings_20, settings_23, settings_24, settings_32, settings_33, settings_7, settings_8, settings_9, stops_with_2_solid_1, validation_errors, youtube_link, NOTO_SANS};
 use crate::{Document, SerializeSettings};
 
 fn pdfa_document() -> Document {
@@ -1162,7 +1157,7 @@ fn validate_pdf14_ua1_table_header_scope() {
 #[test]
 fn validate_pdf14_tagged_annotation_no_ua() {
     // tagging + annotation + PDF 1.4 without UA validator must not fail
-    let mut document = Document::new_with(settings_34());
+    let mut document = Document::new_with(settings_17());
     let mut page = document.start_page();
 
     let annot = page.add_tagged_annotation(Annotation::new_link(

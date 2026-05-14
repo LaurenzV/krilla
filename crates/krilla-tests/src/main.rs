@@ -1181,16 +1181,6 @@ pub fn settings_33() -> SerializeSettings {
     }
 }
 
-pub fn settings_34() -> SerializeSettings {
-    SerializeSettings {
-        configuration: ConfigurationBuilder::new()
-            .with_version(PdfVersion::Pdf14)
-            .finish()
-            .unwrap(),
-        ..settings_1()
-    }
-}
-
 pub fn metadata_1() -> Metadata {
     Metadata::new()
         .language("en".to_string())
