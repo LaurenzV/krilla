@@ -176,6 +176,10 @@ impl<'a> Surface<'a> {
     /// Panics if a tagged section has already been started.
     pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
         if let Some(id) = &mut self.page_identifier {
+            // Since this surface has a page identifier, the root builder
+            // transform is the page root transform.
+            let page_root_tranform = self.bd.root_builder.root_transform();
+
             match tag {
                 // An artifact is actually not really part of tagged PDF and doesn't have
                 // a marked content identifier, so we need to return a dummy one here. It's just
@@ -193,9 +197,12 @@ impl<'a> Surface<'a> {
                     }
 
                     if artifact.requires_properties(self.sc.serialize_settings().pdf_version()) {
-                        self.bd
-                            .get_mut()
-                            .start_marked_content_with_properties(self.sc, None, tag);
+                        self.bd.get_mut().start_marked_content_with_properties(
+                            self.sc,
+                            page_root_tranform,
+                            None,
+                            tag,
+                        );
                     } else {
                         self.bd.get_mut().start_marked_content(tag.name());
                     }
@@ -205,6 +212,7 @@ impl<'a> Surface<'a> {
                 ContentTag::Span(_) | ContentTag::Other => {
                     self.bd.get_mut().start_marked_content_with_properties(
                         self.sc,
+                        page_root_tranform,
                         Some(id.mcid),
                         tag,
                     );
