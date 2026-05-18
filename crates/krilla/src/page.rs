@@ -445,8 +445,33 @@ impl InternalPage {
             page.struct_parents(struct_parent);
         }
 
-        // Only required for PDF/UA, but might as well always set it.
-        if !self.annotations.is_empty() && sc.serialize_settings().enable_tagging {
+        // Only required for PDF/UA, but might as well always set it if there
+        // are annotations.
+        //
+        // Since the navigation order of annotations only has an effect if there
+        // are annotations, we usually only set the key in that case. However,
+        // the accessibility audit in Adobe Acrobat always [requires the key to
+        // be set][1], even if there are no annotations (perhaps the rationale
+        // is that the user can add some). Hence, we check if there is an
+        // accessibility validator or one requiring tags to decide whether to
+        // force the key.
+        //
+        // Since forcing `/Tabs S` unconditionally for PDF/A and PDF/UA files
+        // targeting PDF 1.4 and below would unconditionally raise a
+        // `RequiresNewerPdfVersion(StructureOrderTabbing, _)` error, we also
+        // check the target version.
+        //
+        // [1]: https://helpx.adobe.com/acrobat/using/create-verify-pdf-accessibility.html#TabOrder "Create and verify PDF accessibility (Acrobat Pro): Tab order"
+        if (!self.annotations.is_empty()
+            || ((sc
+                .serialize_settings()
+                .validators()
+                .accessibility()
+                .is_some()
+                || sc.serialize_settings().validators().requires_tagging())
+                && sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15))
+            && sc.serialize_settings().enable_tagging
+        {
             if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
                 page.tab_order(TabOrder::StructureOrder);
             } else {
