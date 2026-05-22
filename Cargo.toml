@@ -18,12 +18,12 @@ base64 = "0.22.1"
 bumpalo = "3.16.0"
 comemo = "0.5.0"
 difference = "2.0.0"
-flate2 = {version = "1.1.0", default-features = false, features = ["zlib-rs"]}
+flate2 = "1.1.0"
 # Can't bump because usvg uses older version.
 float-cmp = "0.9.0"
 fontdb = "0.23.0"
 gif = "0.14.2"
-hayro-write = { git = "https://github.com/LaurenzV/hayro", rev = "a1a5144" }
+hayro-write = { git = "https://github.com/LaurenzV/hayro", rev = "8488d9ba076274ef5f6de433249a2314d4fbee0d" }
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.14.0"
 image-webp = "0.2.1"

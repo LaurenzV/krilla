@@ -514,7 +514,6 @@ checksum = "843fba2746e448b37e26a819579957415c8cef339bf08564fe8b7ddbd959573c"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
- "zlib-rs",
 ]
 
 [[package]]
@@ -721,12 +720,12 @@ checksum = "4f467dd6dccf739c208452f8014c75c18bb8301b050ad1cfb27153803edb0f51"
 [[package]]
 name = "hayro-ccitt"
 version = "0.3.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
+source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
 
 [[package]]
 name = "hayro-jbig2"
 version = "0.3.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
+source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
 dependencies = [
  "fearless_simd",
  "hayro-ccitt",
@@ -735,15 +734,15 @@ dependencies = [
 [[package]]
 name = "hayro-jpeg2000"
 version = "0.3.5"
-source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
+source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
 dependencies = [
  "fearless_simd",
 ]
 
 [[package]]
 name = "hayro-syntax"
-version = "0.6.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
+version = "0.7.0"
+source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
 dependencies = [
  "flate2",
  "hayro-jbig2",
@@ -756,8 +755,8 @@ dependencies = [
 
 [[package]]
 name = "hayro-write"
-version = "0.5.1"
-source = "git+https://github.com/LaurenzV/hayro?rev=a1a5144#a1a51446281112d267e25f18121e8d025a200c3f"
+version = "0.7.0"
+source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
 dependencies = [
  "flate2",
  "hayro-syntax",
@@ -2656,12 +2655,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "zlib-rs"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3be3d40e40a133f9c916ee3f9f4fa2d9d63435b5fbe1bfc6d9dae0aa0ada1513"
 
 [[package]]
 name = "zmij"
