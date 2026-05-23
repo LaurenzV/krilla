@@ -1,7 +1,7 @@
 //! Including other PDF files.
 
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
@@ -34,6 +34,21 @@ pub enum PdfError {
     /// The argument indicates the version of the embedded PDF document.
     VersionMismatch(PdfVersion),
 }
+
+impl Display for PdfError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            PdfError::InvalidPage(index) => write!(f, "invalid page index {index}"),
+            PdfError::VersionMismatch(version) => write!(
+                f,
+                "embedded PDF requires {}, which is newer than the selected PDF version",
+                version.as_str()
+            ),
+        }
+    }
+}
+
+impl std::error::Error for PdfError {}
 
 struct PdfDocumentRepr(Arc<Pdf>);
 
