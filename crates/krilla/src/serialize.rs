@@ -119,10 +119,6 @@ pub struct SerializeSettings {
     /// Whether to use the full font bounding box for the font descriptor instead of
     /// computing a tight bounding box from the subset's glyph outlines.
     ///
-    /// When set to `true`, the font descriptor's `FontBBox` will use the original font's
-    /// global bounding box. When `false` (the default), krilla computes a tight bounding
-    /// box by walking the outlines of all glyphs in the subset.
-    ///
     /// Using the full font bbox can be useful for compatibility with certain PDF consumers
     /// that expect the descriptor bbox to match the original font metrics.
     pub use_full_font_bbox: bool,
