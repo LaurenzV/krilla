@@ -341,6 +341,23 @@ mod cid {
         );
     }
 
+    #[snapshot(settings_34)]
+    fn font_full_font_bbox(page: &mut Page) {
+        let mut surface = page.surface();
+
+        let font_data = DEJAVU_SANS_MONO.clone();
+        let font = Font::new(font_data.clone(), 0).unwrap();
+
+        surface.draw_text(
+            Point::from_xy(0.0, 25.0),
+            font.clone(),
+            25.0,
+            "H",
+            false,
+            TextDirection::Auto,
+        );
+    }
+
     // See https://github.com/typst/typst/issues/6671.
     #[snapshot]
     fn font_wrong_metrics_3(page: &mut Page) {

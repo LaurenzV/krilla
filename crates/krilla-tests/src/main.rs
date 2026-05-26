@@ -1182,6 +1182,13 @@ pub fn settings_33() -> SerializeSettings {
     }
 }
 
+pub fn settings_34() -> SerializeSettings {
+    SerializeSettings {
+        use_full_font_bbox: true,
+        ..settings_1()
+    }
+}
+
 pub fn metadata_1() -> Metadata {
     Metadata::new()
         .language("en".to_string())
