@@ -895,6 +895,7 @@ pub fn settings_1() -> SerializeSettings {
         enable_tagging: true,
         configuration: Configuration::default(),
         render_svg_glyph_fn: render_svg_glyph,
+        use_full_font_bbox: false,
     }
 }
 

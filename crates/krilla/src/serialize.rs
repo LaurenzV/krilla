@@ -116,6 +116,16 @@ pub struct SerializeSettings {
     /// just use the default function which doesn't render them at all. If you do want this, it
     /// is recommended that you use the function provided by the `krilla-svg` crate.
     pub render_svg_glyph_fn: RenderSvgGlyphFn,
+    /// Whether to use the full font bounding box for the font descriptor instead of
+    /// computing a tight bounding box from the subset's glyph outlines.
+    ///
+    /// When set to `true`, the font descriptor's `FontBBox` will use the original font's
+    /// global bounding box. When `false` (the default), krilla computes a tight bounding
+    /// box by walking the outlines of all glyphs in the subset.
+    ///
+    /// Using the full font bbox can be useful for compatibility with certain PDF consumers
+    /// that expect the descriptor bbox to match the original font metrics.
+    pub use_full_font_bbox: bool,
 }
 
 pub type RenderSvgGlyphFn = fn(&[u8], rgb::Color, GlyphId, (f32, f32), &mut Surface) -> Option<()>;
@@ -148,6 +158,7 @@ impl Default for SerializeSettings {
             configuration: Configuration::default(),
             enable_tagging: true,
             render_svg_glyph_fn: |_, _, _, _, _| None,
+            use_full_font_bbox: false,
         }
     }
 }

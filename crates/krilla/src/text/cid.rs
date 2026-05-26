@@ -234,7 +234,9 @@ impl CIDFont {
             sc.register_validation_error(ValidationError::RestrictedLicense(self.font.clone()));
         }
 
-        let (subsetted, global_bbox) = subset_font(self.font.clone(), glyph_remapper)?;
+        let use_full_font_bbox = sc.serialize_settings().use_full_font_bbox;
+        let (subsetted, global_bbox) =
+            subset_font(self.font.clone(), glyph_remapper, use_full_font_bbox)?;
         let num_glyphs = subsetted.num_glyphs();
         let subsetted_data = subsetted.font_data().0;
 
@@ -434,8 +436,12 @@ pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
 }
 
 #[cfg_attr(feature = "comemo", comemo::memoize)]
-fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<(Font, Rect)> {
-    let mut bbox: Option<Rect> = None;
+fn subset_font(
+    font: Font,
+    glyph_remapper: &GlyphRemapper,
+    use_full_font_bbox: bool,
+) -> KrillaResult<(Font, Rect)> {
+    let global_bbox = font.bbox();
 
     let variation_coordinates = font
         .variation_coordinates()
@@ -455,7 +461,12 @@ fn subset_font(font: Font, glyph_remapper: &GlyphRemapper) -> KrillaResult<(Font
             "failed to subset font".to_string(),
         ))
     })?;
-    let global_bbox = font.bbox();
+
+    if use_full_font_bbox {
+        return Ok((font, global_bbox));
+    }
+
+    let mut bbox: Option<Rect> = None;
 
     for g in 0..font.num_glyphs() {
         if let Some(path_bbox) = compute_bbox(&font, skrifa::GlyphId::new(g)) {
