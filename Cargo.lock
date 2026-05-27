@@ -720,12 +720,14 @@ checksum = "4f467dd6dccf739c208452f8014c75c18bb8301b050ad1cfb27153803edb0f51"
 [[package]]
 name = "hayro-ccitt"
 version = "0.3.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f4d0e94ddd48749f06bbe4e5389fb9799a0c45bcaf00495042076ef05e3241a"
 
 [[package]]
 name = "hayro-jbig2"
 version = "0.3.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69374b3668dd45aeb3d3145cda68f2c7b4f223aaa2511e67d076f1c7d741388d"
 dependencies = [
  "fearless_simd",
  "hayro-ccitt",
@@ -734,15 +736,17 @@ dependencies = [
 [[package]]
 name = "hayro-jpeg2000"
 version = "0.3.5"
-source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c75ab947623ef4ccaa7acf0579edf7cbb5a73838e3839a7be73335e522f433a1"
 dependencies = [
  "fearless_simd",
 ]
 
 [[package]]
 name = "hayro-syntax"
-version = "0.7.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81f90649c61d66ebe7700e8978a476e9ee9779ccb5acd4ac52459f9ee8383e53"
 dependencies = [
  "flate2",
  "hayro-jbig2",
@@ -756,7 +760,8 @@ dependencies = [
 [[package]]
 name = "hayro-write"
 version = "0.7.0"
-source = "git+https://github.com/LaurenzV/hayro?rev=8488d9ba076274ef5f6de433249a2314d4fbee0d#8488d9ba076274ef5f6de433249a2314d4fbee0d"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0b3db92c4917aad24ff30d61413a9a7509ae88b27aee1ae34eff881e1d2723a"
 dependencies = [
  "flate2",
  "hayro-syntax",
@@ -1350,8 +1355,9 @@ checksum = "487f2ccd1e17ce8c1bfab3a65c89525af41cfad4c8659021a1e9a2aacd73b89b"
 
 [[package]]
 name = "pdf-writer"
-version = "0.14.0"
-source = "git+https://github.com/typst/pdf-writer?rev=bc50acaea3c6022ef095a52bb75a273ef656813b#bc50acaea3c6022ef095a52bb75a273ef656813b"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5e456864a7a304047bff84977dc6fb162bd956475d40ba50b2dcecaada7f753"
 dependencies = [
  "bitflags 2.11.1",
  "itoa",
