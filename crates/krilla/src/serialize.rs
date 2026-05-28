@@ -389,6 +389,7 @@ impl SerializeContext {
         Pdf::with_settings_and_capacity(self.chunk_settings, capacity)
     }
 
+    #[cfg(feature = "pdf")]
     pub(crate) fn chunk_settings(&self) -> Settings {
         self.chunk_settings
     }
