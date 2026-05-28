@@ -137,6 +137,7 @@ pub(crate) enum StreamFilter {
     Flate,
     FlateMemoized,
     AsciiHex,
+    #[cfg(feature = "raster-images")]
     Dct,
 }
 
@@ -146,6 +147,7 @@ impl StreamFilter {
             Self::AsciiHex => Name(b"ASCIIHexDecode"),
             Self::Flate => Name(b"FlateDecode"),
             Self::FlateMemoized => Name(b"FlateDecode"),
+            #[cfg(feature = "raster-images")]
             Self::Dct => Name(b"DCTDecode"),
         }
     }
@@ -155,6 +157,7 @@ impl StreamFilter {
             StreamFilter::Flate => true,
             StreamFilter::FlateMemoized => true,
             StreamFilter::AsciiHex => false,
+            #[cfg(feature = "raster-images")]
             StreamFilter::Dct => true,
         }
     }
@@ -170,6 +173,7 @@ impl StreamFilter {
             // Note: We don't actually encode manually with DCT, because
             // this is only used for JPEG images which are already encoded,
             // so this shouldn't be called at all.
+            #[cfg(feature = "raster-images")]
             StreamFilter::Dct => panic!("can't apply dct decode"),
         }
     }
@@ -270,6 +274,7 @@ impl<'a> FilterStreamBuilder<'a> {
         Self::binary(content)
     }
 
+    #[cfg(feature = "raster-images")]
     pub(crate) fn new_from_jpeg_data(content: &'a [u8]) -> Self {
         let mut filter_stream = Self::empty(content);
         // JPEG data already is DCT encoded.

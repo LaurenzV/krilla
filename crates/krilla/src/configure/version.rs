@@ -2,7 +2,9 @@ use pdf_writer::Pdf;
 use std::sync::LazyLock;
 use xmp_writer::XmpWriter;
 
-use crate::graphics::icc::{ICCMetadata, ICCProfile};
+#[cfg(feature = "raster-images")]
+use crate::graphics::icc::ICCMetadata;
+use crate::graphics::icc::ICCProfile;
 #[cfg(feature = "raster-images")]
 use crate::image::BitsPerComponent;
 
@@ -69,6 +71,7 @@ impl PdfVersion {
         }
     }
 
+    #[cfg(feature = "raster-images")]
     pub(crate) fn supports_icc(&self, metadata: &ICCMetadata) -> bool {
         match self {
             PdfVersion::Pdf14 => metadata.major <= 2 && metadata.minor <= 2,
