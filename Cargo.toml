@@ -46,7 +46,7 @@ siphasher = "1.0.1"
 sitro = { git = "https://github.com/LaurenzV/sitro", rev = "c0b26d14", default-features = false }
 skrifa = "0.42.0"
 smallvec = { version = "1.15.1", features = ["union", "const_new", "write"] }
-subsetter = { git = "https://github.com/typst/subsetter/", rev = "d849a0e5ab178e62b7c80c7eace30260c85d0b7a", version = "0.2.3", features = ["variable-fonts"] }
+subsetter = { version = "0.2.4", features = ["variable-fonts"] }
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.12.0"
 tiny-skia-path = "0.12.0"

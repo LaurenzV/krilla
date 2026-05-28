@@ -744,9 +744,9 @@ dependencies = [
 
 [[package]]
 name = "hayro-syntax"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81f90649c61d66ebe7700e8978a476e9ee9779ccb5acd4ac52459f9ee8383e53"
+checksum = "0edeafd70aa2db743de8ede8637d07ec87db05efe69cde371d03f1b185fcef27"
 dependencies = [
  "flate2",
  "hayro-jbig2",
@@ -1873,8 +1873,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "subsetter"
-version = "0.2.3"
-source = "git+https://github.com/typst/subsetter/?rev=d849a0e5ab178e62b7c80c7eace30260c85d0b7a#d849a0e5ab178e62b7c80c7eace30260c85d0b7a"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8178bfc97de4bc56fa2daa1c84bde1182943f3730414b0a362a1fefc72b7db4b"
 dependencies = [
  "kurbo",
  "rustc-hash",
