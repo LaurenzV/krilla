@@ -10,7 +10,7 @@ use pdf_writer::{Chunk, Finish, Ref, TextStr};
 
 use crate::chunk_container::ChunkContainer;
 use crate::configure::validate::VersionedFeature;
-use crate::configure::{PdfVersion, ValidationError};
+use crate::configure::ValidationError;
 use crate::content::ContentBuilder;
 use crate::error::KrillaResult;
 use crate::geom::{Rect, Size, Transform};
@@ -469,10 +469,13 @@ impl InternalPage {
                 .accessibility()
                 .is_some()
                 || sc.serialize_settings().validators().requires_tagging())
-                && sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15))
+                && sc.serialize_settings().pdf_version()
+                    >= VersionedFeature::StructureOrderTabbing.minimum_pdf_version()))
             && sc.serialize_settings().enable_tagging
         {
-            if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
+            if sc.serialize_settings().pdf_version()
+                >= VersionedFeature::StructureOrderTabbing.minimum_pdf_version()
+            {
                 page.tab_order(TabOrder::StructureOrder);
             } else {
                 sc.register_validation_error(ValidationError::RequiresNewerPdfVersion(

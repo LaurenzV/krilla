@@ -891,7 +891,7 @@ impl TagGroup {
                     }
                 }
                 TableAttr::HeaderScope(scope) => {
-                    if pdf_version >= PdfVersion::Pdf15 {
+                    if pdf_version >= VersionedFeature::TableHeaderScope.minimum_pdf_version() {
                         table_attributes.scope(scope.to_pdf());
                     } else if scope == &TableHeaderScope::Row {
                         // Without `Scope`, the correct cell to point to is ambiguous.

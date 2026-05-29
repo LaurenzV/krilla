@@ -183,7 +183,10 @@ impl<'a> Surface<'a> {
                 // for the sake of simplicity. But the user of the library does not need to know
                 // about this.
                 ContentTag::Artifact(artifact) => {
-                    if matches!(artifact.kind, ArtifactType::Header | ArtifactType::Footer) {
+                    if matches!(artifact.kind, ArtifactType::Header | ArtifactType::Footer)
+                        && self.sc.serialize_settings().pdf_version()
+                            < VersionedFeature::HeaderFooterArtifactSubtypes.minimum_pdf_version()
+                    {
                         self.sc.register_validation_error(
                             ValidationError::RequiresNewerPdfVersion(
                                 VersionedFeature::HeaderFooterArtifactSubtypes,
