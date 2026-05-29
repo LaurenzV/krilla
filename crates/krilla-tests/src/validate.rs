@@ -2,7 +2,7 @@ use krilla::action::LinkAction;
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{rgb, separation};
 use krilla::configure::validate::VersionedFeature;
-use krilla::configure::ValidationError;
+use krilla::configure::{Accessibility, ConfigurationBuilder, PdfVersion, ValidationError};
 use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
 use krilla::geom::{Point, Rect, Size};
@@ -20,14 +20,26 @@ use krilla_macros::snapshot;
 use crate::embed::{embedded_file_impl, file_1};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
-    metadata_1, metadata_2, rect_to_path, red_fill, settings_13, settings_15, settings_17,
-    settings_19, settings_20, settings_23, settings_24, settings_32, settings_33, settings_7,
-    settings_8, settings_9, stops_with_2_solid_1, validation_errors, youtube_link, NOTO_SANS,
+    metadata_1, metadata_2, rect_to_path, red_fill, settings_1, settings_13, settings_15,
+    settings_17, settings_19, settings_20, settings_23, settings_24, settings_32, settings_33,
+    settings_7, settings_8, settings_9, stops_with_2_solid_1, validation_errors, youtube_link,
+    NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
 fn pdfa_document() -> Document {
     Document::new_with(settings_7())
+}
+
+fn pdf_ua1_settings(version: PdfVersion) -> SerializeSettings {
+    SerializeSettings {
+        configuration: ConfigurationBuilder::new()
+            .with_accessibility_validator(Accessibility::UA1)
+            .with_version(version)
+            .finish()
+            .unwrap(),
+        ..settings_1()
+    }
 }
 
 fn q_nesting_impl(settings: SerializeSettings) -> Document {
@@ -965,8 +977,8 @@ fn validate_inconsistent_separation_fallback() {
     );
 }
 
-fn validate_pdf14_ua1_header_footer_artifact_subtypes() {
-    let mut document = Document::new_with(settings_33());
+fn header_footer_artifact_subtypes_impl(settings: SerializeSettings) -> Document {
+    let mut document = Document::new_with(settings);
     let mut page = document.start_page();
     let mut surface = page.surface();
 
@@ -983,11 +995,14 @@ fn validate_pdf14_ua1_header_footer_artifact_subtypes() {
     let mut tag_tree = TagTree::new();
     tag_tree.push(id);
     document.set_tag_tree(tag_tree);
-
     document.set_metadata(metadata_2());
+    document.set_outline(Outline::new());
 
-    let outline = Outline::new();
-    document.set_outline(outline);
+    document
+}
+
+fn validate_pdf14_ua1_header_footer_artifact_subtypes() {
+    let document = header_footer_artifact_subtypes_impl(settings_33());
 
     assert_eq!(
         validation_errors(document.finish()),
@@ -996,6 +1011,15 @@ fn validate_pdf14_ua1_header_footer_artifact_subtypes() {
             None
         )]
     );
+}
+
+#[test]
+fn validate_pdf17_ua1_header_footer_artifact_subtypes() {
+    let document = header_footer_artifact_subtypes_impl(pdf_ua1_settings(
+        VersionedFeature::HeaderFooterArtifactSubtypes.minimum_pdf_version(),
+    ));
+
+    assert!(document.finish().is_ok());
 }
 
 #[snapshot(document)]
@@ -1077,9 +1101,8 @@ fn validate_multi_validator_pdf_a3b_pdf_ua1_full_example(document: &mut Document
     document.set_outline(Outline::new());
 }
 
-#[test]
-fn validate_pdf14_ua1_structure_order_tabbing() {
-    let mut document = Document::new_with(settings_33());
+fn structure_order_tabbing_impl(settings: SerializeSettings) -> Document {
+    let mut document = Document::new_with(settings);
     let mut page = document.start_page();
 
     let annot = page.add_tagged_annotation(Annotation::new_link(
@@ -1101,6 +1124,13 @@ fn validate_pdf14_ua1_structure_order_tabbing() {
     let outline = Outline::new();
     document.set_outline(outline);
 
+    document
+}
+
+#[test]
+fn validate_pdf14_ua1_structure_order_tabbing() {
+    let document = structure_order_tabbing_impl(settings_33());
+
     assert_eq!(
         validation_errors(document.finish()),
         vec![ValidationError::RequiresNewerPdfVersion(
@@ -1111,8 +1141,16 @@ fn validate_pdf14_ua1_structure_order_tabbing() {
 }
 
 #[test]
-fn validate_pdf14_ua1_table_header_scope() {
-    let mut document = Document::new_with(settings_33());
+fn validate_pdf15_ua1_structure_order_tabbing() {
+    let document = structure_order_tabbing_impl(pdf_ua1_settings(
+        VersionedFeature::StructureOrderTabbing.minimum_pdf_version(),
+    ));
+
+    assert!(document.finish().is_ok());
+}
+
+fn table_header_scope_impl(settings: SerializeSettings) -> Document {
+    let mut document = Document::new_with(settings);
     let mut page = document.start_page();
     let mut surface = page.surface();
 
@@ -1150,6 +1188,13 @@ fn validate_pdf14_ua1_table_header_scope() {
     let outline = Outline::new();
     document.set_outline(outline);
 
+    document
+}
+
+#[test]
+fn validate_pdf14_ua1_table_header_scope() {
+    let document = table_header_scope_impl(settings_33());
+
     assert_eq!(
         validation_errors(document.finish()),
         vec![ValidationError::RequiresNewerPdfVersion(
@@ -1157,6 +1202,15 @@ fn validate_pdf14_ua1_table_header_scope() {
             None
         )]
     );
+}
+
+#[test]
+fn validate_pdf15_ua1_table_header_scope() {
+    let document = table_header_scope_impl(pdf_ua1_settings(
+        VersionedFeature::TableHeaderScope.minimum_pdf_version(),
+    ));
+
+    assert!(document.finish().is_ok());
 }
 
 #[test]
