@@ -127,6 +127,7 @@ impl ContentBuilder {
     pub(crate) fn start_marked_content_with_properties(
         &mut self,
         sc: &mut SerializeContext,
+        page_root_transform: Transform,
         mcid: Option<i32>,
         tag: ContentTag,
     ) {
@@ -141,10 +142,7 @@ impl ContentBuilder {
             properties.pairs([(Name(b"MCID"), mcid)]);
         }
 
-        // Page height extracted from transform and passed to function to allow
-        // its dependants to flip the y-axis, mirroring Krilla conventions.
-        let page_height = self.root_transform.ty();
-        tag.write_properties(sc, properties, page_height);
+        tag.write_properties(sc, properties, page_root_transform);
     }
 
     pub(crate) fn end_marked_content(&mut self) {
@@ -158,6 +156,10 @@ impl ContentBuilder {
 
     pub(crate) fn concat_transform(&mut self, transform: &Transform) {
         self.graphics_states.transform(*transform);
+    }
+
+    pub(crate) fn root_transform(&self) -> Transform {
+        self.root_transform
     }
 
     fn cur_transform_with_root_transform(&self) -> Transform {

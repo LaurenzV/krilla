@@ -5,6 +5,7 @@ use krilla::annotation::{LinkAnnotation, Target};
 use krilla::error::KrillaError;
 use krilla::geom::{PathBuilder, Point, Rect, Size, Transform};
 use krilla::metadata::Metadata;
+use krilla::num::NormalizedF32;
 use krilla::outline::Outline;
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
@@ -526,6 +527,24 @@ fn tagging_artifact_subtypes(document: &mut Document) {
     )));
     surface.outline_text_(100.0, "++");
     surface.end_tagged();
+
+    surface.finish();
+    page.finish();
+}
+
+#[snapshot(document)]
+fn tagging_artifact_with_bbox_in_xobject(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    surface.push_opacity(NormalizedF32::new(0.5).unwrap());
+    surface.start_tagged(ContentTag::Artifact(Artifact::new(
+        ArtifactType::Background,
+        Some(Rect::from_xywh(1.0, 88.0, 21.0, 10.0).unwrap()),
+    )));
+    surface.outline_text_(100.0, "++");
+    surface.end_tagged();
+    surface.pop();
 
     surface.finish();
     page.finish();

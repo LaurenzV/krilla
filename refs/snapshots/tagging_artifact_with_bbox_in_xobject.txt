@@ -1,0 +1,144 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [5 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /ExtGState
+  /ca 0.5
+  /CA 0.5
+>>
+endobj
+
+3 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+4 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /ExtGState <<
+    /g0 2 0 R
+  >>
+  /XObject <<
+    /x0 7 0 R
+  >>
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /Page
+  /Resources 4 0 R
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 6 0 R
+>>
+endobj
+
+6 0 obj
+<<
+  /Length 35
+>>
+stream
+q
+1 0 0 -1 0 842 cm
+/g0 gs
+/x0 Do
+Q
+endstream
+endobj
+
+7 0 obj
+<<
+  /Length 412
+  /Type /XObject
+  /Subtype /Form
+  /Resources 3 0 R
+  /BBox [1 88.1 21.84 97.78]
+  /Group <<
+    /Type /Group
+    /S /Transparency
+    /I true
+    /CS /DeviceRGB
+  >>
+>>
+stream
+/Artifact <<
+  /BBox [1 744 22 754]
+  /Type /Background
+>> BDC
+q
+0 g
+6.42 92.24 m
+10.4 92.24 l
+10.4 93.66 l
+6.42 93.66 l
+6.42 97.78 l
+4.98 97.78 l
+4.98 93.66 l
+1 93.66 l
+1 92.24 l
+4.98 92.24 l
+4.98 88.1 l
+6.42 88.1 l
+h
+f
+Q
+q
+0 g
+17.86 92.24 m
+21.84 92.24 l
+21.84 93.66 l
+17.86 93.66 l
+17.86 97.78 l
+16.42 97.78 l
+16.42 93.66 l
+12.440001 93.66 l
+12.440001 92.24 l
+16.42 92.24 l
+16.42 88.1 l
+17.86 88.1 l
+h
+f
+Q
+EMC
+endstream
+endobj
+
+8 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 9
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000141 00000 n
+0000000203 00000 n
+0000000333 00000 n
+0000000448 00000 n
+0000000536 00000 n
+0000001170 00000 n
+trailer
+<<
+  /Size 9
+  /Root 8 0 R
+  /ID [(N8FiufAJ7KRMafSBIAiCng==) (N8FiufAJ7KRMafSBIAiCng==)]
+>>
+startxref
+1224
+%%EOF

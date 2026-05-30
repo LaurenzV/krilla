@@ -140,7 +140,7 @@ use crate::chunk_container::ChunkContainer;
 use crate::configure::validate::VersionedFeature;
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
-use crate::geom::Rect;
+use crate::geom::{Rect, Transform};
 use crate::page::page_root_transform;
 use crate::serialize::SerializeContext;
 
@@ -311,7 +311,7 @@ impl ContentTag<'_> {
         &self,
         sc: &mut SerializeContext,
         mut properties: PropertyList,
-        page_height: f32,
+        page_root_transform: Transform,
     ) {
         match self {
             ContentTag::Artifact(artifact) => {
@@ -321,8 +321,7 @@ impl ContentTag<'_> {
                 let mut artifact_props = properties.artifact();
 
                 if let Some(bbox) = artifact.bbox {
-                    let transform = page_root_transform(page_height);
-                    let actual_rect = bbox.transform(transform).unwrap();
+                    let actual_rect = bbox.transform(page_root_transform).unwrap();
                     artifact_props.bounding_box(actual_rect.to_pdf_rect());
                 }
 
