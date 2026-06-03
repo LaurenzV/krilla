@@ -55,7 +55,7 @@ jobs:
         run: cargo build
 
       - name: Run tests
-        run: cargo test -p krilla-tests --features visreg -- --nocapture
+        run: cargo test --features visreg -- --nocapture
 
       - name: Install pdfcpu
         run: |

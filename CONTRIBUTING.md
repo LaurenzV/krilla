@@ -23,7 +23,7 @@ be skipped. This should hopefully be enough for most cases, as running the visua
 a very specific setup on your computer.
 
 If you really do need to run the visual regression tests, you can run
-`cargo test -p krilla-tests --features visreg`. `krilla` uses my own small library called `sitro` (https://github.com/LaurenzV/sitro) that
+`cargo test --features visreg`. `krilla` uses my own small library called `sitro` (https://github.com/LaurenzV/sitro) that
 I built for this purpose to render PDFs, which basically is an abstraction over different PDF viewers and allows
 rendering PDF to bitmap images. You simply need to download the Docker image (see the README of the crate) and
 make sure that Docker is enabled when running the tests.

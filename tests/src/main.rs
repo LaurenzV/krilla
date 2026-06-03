@@ -67,7 +67,7 @@ const REPLACE: Option<&str> = option_env!("REPLACE");
 const STORE: Option<&str> = option_env!("STORE");
 
 pub(crate) static WORKSPACE_PATH: LazyLock<PathBuf> =
-    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../"));
+    LazyLock::new(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../"));
 
 pub(crate) static ASSETS_PATH: LazyLock<PathBuf> = LazyLock::new(|| WORKSPACE_PATH.join("assets"));
 

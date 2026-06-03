@@ -4,9 +4,9 @@ import shutil
 
 from pathlib import Path
 
-ROOT = Path(__file__).parent.parent.parent
+ROOT = Path(__file__).parent.parent
 SVG_DIR = ROOT / "assets" / "svgs"
-OUT_PATH = ROOT / "src" / "tests" / "svg.rs"
+OUT_PATH = ROOT / "tests" / "src" / "svg_generated.rs"
 
 NO_RELATIVE_PATHS = "no relative paths supported"
 INVESTIGATE = "need to investigate"

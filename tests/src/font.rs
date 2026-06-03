@@ -130,7 +130,7 @@ mod colr {
     #[visreg(document)]
     fn font_noto_color_emoji_composite_modes(document: &mut Document) {
         let font = Font::new(NOTO_COLOR_EMOJI_COLR.clone(), 0).unwrap();
-        let emojis = include_str!("../../../assets/emojis_colr_composite.txt");
+        let emojis = include_str!("../../assets/emojis_colr_composite.txt");
         let emojis = emojis.split_whitespace().collect::<Vec<_>>();
 
         let cell_size = 40.0;
