@@ -1848,9 +1848,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "subsetter"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8178bfc97de4bc56fa2daa1c84bde1182943f3730414b0a362a1fefc72b7db4b"
+checksum = "2b474f1790ddab89b72ab193574e41b4f18de5c65e131043207e0197f2f6c64f"
 dependencies = [
  "kurbo",
  "rustc-hash",
