@@ -162,13 +162,10 @@ pub struct Artifact {
 impl Artifact {
     /// Create a new artifact with a type and an optional BBox.
     ///
-    /// This will panic if the artifact type is `Background` and no bounding box
-    /// is provided.
+    /// You must provide a bounding box if `kind` is
+    /// [`ArtifactType::Background`] and you are targetting PDF 1.7, otherwise,
+    /// Krilla will later panic.
     pub fn new(kind: ArtifactType, bbox: Option<Rect>) -> Self {
-        if kind == ArtifactType::Background && bbox.is_none() {
-            panic!("Background artifacts must have a bounding box");
-        }
-
         Self { kind, bbox }
     }
 
@@ -185,6 +182,17 @@ impl Artifact {
                 .map_pdf_version(pdf_version)
                 .to_pdf_artifact_type()
                 .is_some()
+    }
+
+    /// Whether the artifact requires a BBox.
+    pub(crate) fn requires_bbox(self, pdf_version: PdfVersion) -> bool {
+        // Background artifacts were introduced in PDF 1.7. In table 330, the
+        // standard makes bounding boxes mandatory for background artifacts
+        // only. PDF 2.0 lifts this requirement in table 363.
+        //
+        // When changing the below condition, also change the error at the
+        // callsite.
+        self.kind == ArtifactType::Background && pdf_version == PdfVersion::Pdf17
     }
 }
 
