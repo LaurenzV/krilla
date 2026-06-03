@@ -13,6 +13,7 @@ OUT_PATH = ROOT / "tests" / "src" / "svg_generated.rs"
 DEFAULT_RESVG_DIR = ROOT.parent / "resvg"
 DEFAULT_RESVG_TESTS_DIR = DEFAULT_RESVG_DIR / "crates" / "resvg" / "tests" / "tests"
 DEFAULT_RESVG_FONTS_DIR = DEFAULT_RESVG_DIR / "crates" / "resvg" / "tests" / "fonts"
+TEXT_FONT_FILE_SUFFIXES = {".md", ".txt"}
 
 NO_RELATIVE_PATHS = "no relative paths supported"
 INVESTIGATE = "need to investigate"
@@ -20,7 +21,6 @@ NO_REFLECT = "spreadMethod reflect not supported"
 NO_REPEAT = "spreadMethod repeat not supported"
 NO_SUPPORT = "not supported in PDF"
 NO_FONT = "font is not part of test suite yet"
-NO_VARIABLE_FONTS = "variable fonts are not implemented yet"
 
 IGNORE_TESTS = {
     # The following test cases still need to be investigated
@@ -103,26 +103,21 @@ MANUAL_TESTS = {
     "small_text_with_filter.svg",
 }
 
-IGNORED_PREFIXES = {
-    "resvg_text_font_variation_settings_": NO_VARIABLE_FONTS,
-}
-
-
 def upstream_test_name(path):
     stem = "_".join(path.with_suffix("").parts)
     stem = re.sub(r"[^A-Za-z0-9_]", "_", stem)
     return f"resvg_{stem}.svg"
 
 
+def read_font_file(path):
+    data = path.read_bytes()
+    if path.suffix.lower() in TEXT_FONT_FILE_SUFFIXES:
+        data = data.replace(b"\r\n", b"\n")
+    return data
+
+
 def ignored_test_reason(name):
-    if name in IGNORE_TESTS:
-        return IGNORE_TESTS[name]
-
-    for prefix, reason in IGNORED_PREFIXES.items():
-        if name.startswith(prefix):
-            return reason
-
-    return None
+    return IGNORE_TESTS.get(name)
 
 
 def sync_resvg_tests(resvg_tests_dir):
@@ -186,15 +181,16 @@ def sync_resvg_fonts(resvg_fonts_dir):
 
     for source_path in sorted(p for p in resvg_fonts_dir.iterdir() if p.is_file()):
         target_path = SVG_FONT_DIR / source_path.name
+        source_data = read_font_file(source_path)
 
         if not target_path.exists():
             copied += 1
-        elif source_path.read_bytes() != target_path.read_bytes():
+        elif source_data != read_font_file(target_path):
             updated += 1
         else:
             continue
 
-        shutil.copyfile(source_path, target_path)
+        target_path.write_bytes(source_data)
 
     return copied, updated
 

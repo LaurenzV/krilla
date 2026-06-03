@@ -1571,34 +1571,20 @@
 #[visreg(svg)] fn resvg_text_font_style_oblique() {}
 #[visreg(svg)] fn resvg_text_font_variant_inherit() {}
 #[visreg(svg)] fn resvg_text_font_variant_small_caps() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_all_axes_combined() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_auto_font_stretch_condensed() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_auto_font_style_oblique() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_auto_font_weight_700() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_explicit_overrides_auto() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_grad_negative() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_multiple_axes() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_opsz_144() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_slnt_negative() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_wdth_151() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_wdth_25() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_wght_100() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_wght_700() {}
-// variable fonts are not implemented yet
-#[visreg(svg, ignore)] fn resvg_text_font_variation_settings_xtra_extreme() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_all_axes_combined() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_auto_font_stretch_condensed() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_auto_font_style_oblique() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_auto_font_weight_700() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_explicit_overrides_auto() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_grad_negative() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_multiple_axes() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_opsz_144() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_slnt_negative() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_wdth_151() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_wdth_25() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_wght_100() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_wght_700() {}
+#[visreg(svg)] fn resvg_text_font_variation_settings_xtra_extreme() {}
 #[visreg(svg)] fn resvg_text_font_weight_650() {}
 #[visreg(svg)] fn resvg_text_font_weight_700() {}
 #[visreg(svg)] fn resvg_text_font_weight_bold() {}
