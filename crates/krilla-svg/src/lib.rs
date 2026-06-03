@@ -9,6 +9,7 @@ to PDF.
 
 #![deny(missing_docs)]
 
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::sync::Arc;
@@ -20,7 +21,7 @@ use krilla::paint::FillRule;
 use krilla::surface::Surface;
 use krilla::text::Font;
 use krilla::text::GlyphId;
-use usvg::{fontdb, roxmltree, Group, ImageKind, Node, Tree};
+use usvg::{fontdb, roxmltree, FontVariation, Group, ImageKind, Node, Tree};
 
 use crate::util::RectExt;
 
@@ -87,18 +88,28 @@ impl SurfaceExt for Surface<'_> {
 }
 
 struct ProcessContext {
-    fonts: HashMap<fontdb::ID, Font>,
+    fonts: HashMap<FontInstance, Font>,
     svg_settings: SvgSettings,
 }
 
 impl ProcessContext {
-    fn new(fonts: HashMap<fontdb::ID, Font>, svg_settings: SvgSettings) -> Self {
+    fn new(fonts: HashMap<FontInstance, Font>, svg_settings: SvgSettings) -> Self {
         Self {
             fonts,
             svg_settings,
         }
     }
+
+    fn font(&self, id: fontdb::ID, variations: &[FontVariation]) -> Option<Font> {
+        self.fonts.get(&(id, Cow::Borrowed(variations))).cloned()
+    }
 }
+
+/// Identifies a font at specific variation coordinates.
+///
+/// Uses a `Cow` instead of a `Vec` to make it possible to look up a font without providing a cloned
+/// `Vec<FontVariation>`.
+type FontInstance = (fontdb::ID, Cow<'static, [FontVariation]>);
 
 pub(crate) fn render_tree(tree: &Tree, svg_settings: SvgSettings, surface: &mut Surface) {
     let mut db = tree.fontdb().clone();
@@ -216,19 +227,21 @@ fn get_context_from_node(
     ProcessContext::new(db, svg_settings)
 }
 
-fn get_ids_from_group_impl(group: &Group, ids: &mut HashSet<fontdb::ID>) {
+fn get_ids_from_group_impl(group: &Group, ids: &mut HashSet<FontInstance>) {
     for child in group.children() {
         get_ids_impl(child, ids);
     }
 }
 
 // Collect all used font IDs
-fn get_ids_impl(node: &Node, ids: &mut HashSet<fontdb::ID>) {
+fn get_ids_impl(node: &Node, ids: &mut HashSet<FontInstance>) {
     match node {
         Node::Text(t) => {
             for span in t.layouted() {
                 for g in &span.positioned_glyphs {
-                    ids.insert(g.font);
+                    if !ids.contains(&(g.font, Cow::Borrowed(&span.variations))) {
+                        ids.insert((g.font, Cow::Owned(span.variations.clone())));
+                    }
                 }
             }
         }
@@ -246,20 +259,31 @@ fn get_ids_impl(node: &Node, ids: &mut HashSet<fontdb::ID>) {
     node.subroots(|subroot| get_ids_from_group_impl(subroot, ids));
 }
 
-fn convert_fontdb(db: &mut Database, ids: Option<Vec<fontdb::ID>>) -> HashMap<fontdb::ID, Font> {
+fn convert_fontdb(
+    db: &mut Database,
+    ids: Option<Vec<FontInstance>>,
+) -> HashMap<FontInstance, Font> {
     let mut map = HashMap::new();
 
-    let ids = ids.unwrap_or(db.faces().map(|f| f.id).collect::<Vec<_>>());
+    let ids = ids.unwrap_or(
+        db.faces()
+            .map(|f| (f.id, Cow::Owned(vec![])))
+            .collect::<Vec<_>>(),
+    );
 
-    for id in ids {
+    for (id, variations) in ids {
         // What we could do is just go through each font and then create a new Font object for each of them.
         // However, this is somewhat wasteful and expensive, because we have to hash each font, which
         // can go be multiple MB. So instead, we first construct a font info object, which is much
         // cheaper, and then check whether we already have a corresponding font object in the cache.
         // If not, we still need to construct it.
         if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
-            if let Some(font) = Font::new(font_data.into(), index) {
-                map.insert(id, font);
+            let coords: Vec<_> = variations
+                .iter()
+                .map(|var| (krilla::text::Tag::new(&var.tag), var.value))
+                .collect();
+            if let Some(font) = Font::new_variable(font_data.into(), index, &coords) {
+                map.insert((id, variations), font);
             }
         }
     }

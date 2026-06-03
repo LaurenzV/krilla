@@ -1,0 +1,4 @@
+<svg id="svg1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <text id="text1" x="10" y="40" font-family="Cantarell" font-size="32" style="font-variation-settings: 'wght' 300">Hello</text>
+  <text id="text1" x="10" y="80" font-family="Cantarell" font-size="32" style="font-variation-settings: 'wght' 700">Hello</text>
+</svg>

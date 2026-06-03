@@ -31,7 +31,7 @@ pub(crate) fn render(
 
         for glyph in &span.positioned_glyphs {
             // Ignore glyph if font can't be fetched.
-            let Some(font) = process_context.fonts.get(&glyph.font).cloned() else {
+            let Some(font) = process_context.font(glyph.font, &span.variations) else {
                 continue;
             };
 

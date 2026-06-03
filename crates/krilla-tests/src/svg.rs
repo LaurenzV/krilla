@@ -1,14 +1,16 @@
 #![allow(non_snake_case)]
 
+use std::sync::Arc;
+
 use krilla::geom::{Size, Transform};
 use krilla::graphic::Graphic;
-use krilla::page::PageSettings;
+use krilla::page::{Page, PageSettings};
 use krilla::surface::Surface;
 use krilla::Document;
-use krilla_macros::visreg;
+use krilla_macros::{snapshot, visreg};
 use krilla_svg::{SurfaceExt, SvgSettings};
 
-use crate::{FONTDB, SVGS_PATH};
+use crate::{ASSETS_PATH, CANTARELL_VAR, FONTDB, SVGS_PATH};
 
 pub(crate) fn sample_svg() -> usvg::Tree {
     let data = std::fs::read(SVGS_PATH.join("resvg_masking_mask_with_opacity_1.svg")).unwrap();
@@ -69,6 +71,27 @@ fn svg_should_be_clipped(surface: &mut Surface) {
         SvgSettings::default(),
     );
     surface.pop();
+}
+
+#[snapshot]
+fn svg_variable_font(page: &mut Page) {
+    let mut surface = page.surface();
+    let mut fontdb = fontdb::Database::new();
+    fontdb.load_font_data(CANTARELL_VAR.as_ref().to_vec());
+    let data = std::fs::read(SVGS_PATH.join("custom_variable_font.svg")).unwrap();
+    let tree = usvg::Tree::from_data(
+        &data,
+        &usvg::Options {
+            fontdb: Arc::new(fontdb),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    surface.draw_svg(
+        &tree,
+        Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
+        SvgSettings::default(),
+    );
 }
 
 #[visreg]
