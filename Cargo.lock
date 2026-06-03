@@ -1044,6 +1044,8 @@ dependencies = [
  "fontdb",
  "krilla",
  "resvg",
+ "skrifa 0.42.0",
+ "smallvec",
  "tiny-skia 0.12.0",
  "usvg",
 ]
