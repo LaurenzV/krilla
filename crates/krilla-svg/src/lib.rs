@@ -9,7 +9,6 @@ to PDF.
 
 #![deny(missing_docs)]
 
-use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::sync::Arc;
 
@@ -18,10 +17,10 @@ use krilla::color::rgb;
 use krilla::geom::{Rect, Size, Transform};
 use krilla::paint::FillRule;
 use krilla::surface::Surface;
-use krilla::text::Font;
 use krilla::text::GlyphId;
-use usvg::{fontdb, roxmltree, Group, ImageKind, Node, Tree};
+use usvg::{fontdb, roxmltree, Node, Tree};
 
+use crate::text::Fonts;
 use crate::util::RectExt;
 
 mod clip_path;
@@ -86,15 +85,15 @@ impl SurfaceExt for Surface<'_> {
     }
 }
 
-struct ProcessContext {
-    fonts: HashMap<fontdb::ID, Font>,
+struct ProcessContext<'a> {
+    pub fonts: Fonts<'a>,
     svg_settings: SvgSettings,
 }
 
-impl ProcessContext {
-    fn new(fonts: HashMap<fontdb::ID, Font>, svg_settings: SvgSettings) -> Self {
+impl<'a> ProcessContext<'a> {
+    fn new(tree_fontdb: &'a mut Database, svg_settings: SvgSettings) -> Self {
         Self {
-            fonts,
+            fonts: Fonts::new(tree_fontdb),
             svg_settings,
         }
     }
@@ -102,7 +101,7 @@ impl ProcessContext {
 
 pub(crate) fn render_tree(tree: &Tree, svg_settings: SvgSettings, surface: &mut Surface) {
     let mut db = tree.fontdb().clone();
-    let mut fc = get_context_from_group(Arc::make_mut(&mut db), svg_settings, tree.root());
+    let mut fc = ProcessContext::new(Arc::make_mut(&mut db), svg_settings);
     group::render(tree.root(), surface, &mut fc);
 }
 
@@ -112,7 +111,7 @@ pub(crate) fn render_node(
     svg_settings: SvgSettings,
     surface: &mut Surface,
 ) {
-    let mut fc = get_context_from_node(Arc::make_mut(&mut tree_fontdb), svg_settings, node);
+    let mut fc = ProcessContext::new(Arc::make_mut(&mut tree_fontdb), svg_settings);
     group::render_node(node, surface, &mut fc);
 }
 
@@ -188,81 +187,4 @@ pub fn render_svg_glyph(
     }
 
     Some(())
-}
-
-fn get_context_from_group(
-    tree_fontdb: &mut Database,
-    svg_settings: SvgSettings,
-    group: &Group,
-) -> ProcessContext {
-    let mut ids = HashSet::new();
-    get_ids_from_group_impl(group, &mut ids);
-    let ids = ids.into_iter().collect::<Vec<_>>();
-    let db = convert_fontdb(tree_fontdb, Some(ids));
-
-    ProcessContext::new(db, svg_settings)
-}
-
-fn get_context_from_node(
-    tree_fontdb: &mut Database,
-    svg_settings: SvgSettings,
-    node: &Node,
-) -> ProcessContext {
-    let mut ids = HashSet::new();
-    get_ids_impl(node, &mut ids);
-    let ids = ids.into_iter().collect::<Vec<_>>();
-    let db = convert_fontdb(tree_fontdb, Some(ids));
-
-    ProcessContext::new(db, svg_settings)
-}
-
-fn get_ids_from_group_impl(group: &Group, ids: &mut HashSet<fontdb::ID>) {
-    for child in group.children() {
-        get_ids_impl(child, ids);
-    }
-}
-
-// Collect all used font IDs
-fn get_ids_impl(node: &Node, ids: &mut HashSet<fontdb::ID>) {
-    match node {
-        Node::Text(t) => {
-            for span in t.layouted() {
-                for g in &span.positioned_glyphs {
-                    ids.insert(g.font);
-                }
-            }
-        }
-        Node::Group(group) => {
-            get_ids_from_group_impl(group, ids);
-        }
-        Node::Image(image) => {
-            if let ImageKind::SVG(svg) = image.kind() {
-                get_ids_from_group_impl(svg.root(), ids);
-            }
-        }
-        _ => {}
-    }
-
-    node.subroots(|subroot| get_ids_from_group_impl(subroot, ids));
-}
-
-fn convert_fontdb(db: &mut Database, ids: Option<Vec<fontdb::ID>>) -> HashMap<fontdb::ID, Font> {
-    let mut map = HashMap::new();
-
-    let ids = ids.unwrap_or(db.faces().map(|f| f.id).collect::<Vec<_>>());
-
-    for id in ids {
-        // What we could do is just go through each font and then create a new Font object for each of them.
-        // However, this is somewhat wasteful and expensive, because we have to hash each font, which
-        // can go be multiple MB. So instead, we first construct a font info object, which is much
-        // cheaper, and then check whether we already have a corresponding font object in the cache.
-        // If not, we still need to construct it.
-        if let Some((font_data, index)) = unsafe { db.make_shared_face_data(id) } {
-            if let Some(font) = Font::new(font_data.into(), index) {
-                map.insert(id, font);
-            }
-        }
-    }
-
-    map
 }

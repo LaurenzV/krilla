@@ -1,3 +1,7 @@
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+
+use fontdb::Database;
 use krilla::color::rgb;
 use krilla::geom::Point;
 use krilla::num::NormalizedF32;
@@ -31,7 +35,7 @@ pub(crate) fn render(
 
         for glyph in &span.positioned_glyphs {
             // Ignore glyph if font can't be fetched.
-            let Some(font) = process_context.fonts.get(&glyph.font).cloned() else {
+            let Some(font) = process_context.fonts.retrieve(glyph.font) else {
                 continue;
             };
 
@@ -137,6 +141,37 @@ pub(crate) fn render(
 
         if let Some(line_through) = &span.line_through {
             path::render(line_through, surface, process_context);
+        }
+    }
+}
+
+/// Manages the krilla fonts used by an SVG.
+pub struct Fonts<'a> {
+    db: &'a mut Database,
+    fonts: HashMap<fontdb::ID, Font>,
+}
+
+impl<'a> Fonts<'a> {
+    pub fn new(db: &'a mut Database) -> Self {
+        Self {
+            db,
+            fonts: HashMap::new(),
+        }
+    }
+
+    /// Retrieves the font identified by `id` from the cache or loads it.
+    fn retrieve(&mut self, id: fontdb::ID) -> Option<Font> {
+        match self.fonts.entry(id) {
+            Entry::Occupied(entry) => Some(entry.get().clone()),
+            Entry::Vacant(entry) => {
+                if let Some((font_data, index)) = unsafe { self.db.make_shared_face_data(id) } {
+                    if let Some(font) = Font::new(font_data.into(), index) {
+                        entry.insert(font.clone());
+                        return Some(font);
+                    }
+                }
+                None
+            }
         }
     }
 }
