@@ -86,7 +86,7 @@ impl SurfaceExt for Surface<'_> {
 }
 
 struct ProcessContext<'a> {
-    pub fonts: Fonts<'a>,
+    pub(crate) fonts: Fonts<'a>,
     svg_settings: SvgSettings,
 }
 

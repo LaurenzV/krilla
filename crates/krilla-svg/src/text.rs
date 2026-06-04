@@ -148,7 +148,7 @@ pub(crate) fn render(
 }
 
 /// Manages the krilla fonts used by an SVG.
-pub struct Fonts<'a> {
+pub(crate) struct Fonts<'a> {
     db: &'a mut Database,
     fonts: HashMap<FontInstance, Option<Font>>,
     supported_axes: HashMap<fontdb::ID, SmallVec<[[u8; 4]; 2]>>,
@@ -159,7 +159,7 @@ type FontInstance = (fontdb::ID, FontVariations);
 type FontVariations = SmallVec<[FontVariation; 2]>;
 
 impl<'a> Fonts<'a> {
-    pub fn new(db: &'a mut Database) -> Self {
+    pub(crate) fn new(db: &'a mut Database) -> Self {
         Self {
             db,
             fonts: HashMap::new(),
