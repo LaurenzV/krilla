@@ -150,7 +150,7 @@ pub(crate) fn render(
 /// Manages the krilla fonts used by an SVG.
 pub struct Fonts<'a> {
     db: &'a mut Database,
-    fonts: HashMap<FontInstance, Font>,
+    fonts: HashMap<FontInstance, Option<Font>>,
     supported_axes: HashMap<fontdb::ID, SmallVec<[[u8; 4]; 2]>>,
 }
 
@@ -171,20 +171,23 @@ impl<'a> Fonts<'a> {
     fn retrieve(&mut self, span: &usvg::layout::Span, id: fontdb::ID) -> Option<Font> {
         let variations = self.resolve_variations(span, id);
         match self.fonts.entry((id, variations)) {
-            Entry::Occupied(entry) => Some(entry.get().clone()),
+            Entry::Occupied(entry) => entry.get().clone(),
             Entry::Vacant(entry) => {
-                if let Some((font_data, index)) = unsafe { self.db.make_shared_face_data(id) } {
+                let font = if let Some((font_data, index)) =
+                    unsafe { self.db.make_shared_face_data(id) }
+                {
                     let variations = &entry.key().1;
                     let coords: SmallVec<[_; 2]> = variations
                         .iter()
                         .map(|var| (krilla::text::Tag::new(&var.tag), var.value))
                         .collect();
-                    if let Some(font) = Font::new_variable(font_data.into(), index, &coords) {
-                        entry.insert(font.clone());
-                        return Some(font);
-                    }
-                }
-                None
+                    Font::new_variable(font_data.into(), index, &coords)
+                } else {
+                    None
+                };
+
+                entry.insert(font.clone());
+                font
             }
         }
     }
