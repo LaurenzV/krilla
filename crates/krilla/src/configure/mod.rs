@@ -9,7 +9,7 @@ pub use version::PdfVersion;
 use crate::configure::validate::ValidatorsBuilder;
 
 /// A configuration of validator and PDF version.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Configuration {
     validators: Validators,
     version: PdfVersion,

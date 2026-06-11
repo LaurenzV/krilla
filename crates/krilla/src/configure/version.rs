@@ -9,7 +9,7 @@ use crate::graphics::icc::ICCProfile;
 use crate::image::BitsPerComponent;
 
 /// The version of a PDF document.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PdfVersion {
     /// PDF 1.4.
     Pdf14,
