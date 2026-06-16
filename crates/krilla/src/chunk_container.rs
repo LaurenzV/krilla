@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 use xmp_writer::{RenditionClass, XmpWriter};
 
 use crate::configure::{PdfVersion, ValidationError};
-use crate::error::KrillaResult;
+use crate::error::{KrillaError, KrillaResult};
 use crate::interchange::metadata::Metadata;
 use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
@@ -175,13 +175,21 @@ impl ChunkContainer {
         };
 
         let mut xmp = XmpWriter::new();
+        let user_namespaces = self
+            .metadata
+            .as_ref()
+            .map(|m| m.deduped_custom_xmp_namespaces(sc.serialize_settings().validators()))
+            .unwrap_or_default();
         if let Some(metadata) = &self.metadata {
+            metadata
+                .check_custom_xmp_properties()
+                .map_err(KrillaError::Xmp)?;
             metadata.serialize_xmp_metadata(&mut xmp, sc, &instance_id);
         }
 
         let settings = sc.serialize_settings();
         let validators = settings.validators();
-        validators.write_xmp(&mut xmp);
+        validators.write_xmp(&mut xmp, &user_namespaces);
 
         xmp.num_pages(sc.page_infos().len() as u32);
         xmp.format("application/pdf");

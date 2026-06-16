@@ -35,6 +35,8 @@ use crate::color::separation::SeparationSpace;
 use crate::color::RegularColor;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
+use crate::metadata::write_user_extension_schema;
+use crate::metadata::xmp::Namespace;
 use crate::surface::Location;
 use crate::text::Font;
 use crate::text::GlyphId;
@@ -142,6 +144,14 @@ pub enum ValidationError {
     EmbeddedPDF(Option<Location>),
     /// A feature only available in a later PDF version was required.
     RequiresNewerPdfVersion(VersionedFeature, Option<Location>),
+    /// A custom XMP property was used in PDF/A export without a matching
+    /// PDF/A extension schema description.
+    MissingXmpPropertyDescription {
+        /// The namespace URL of the offending property.
+        namespace_url: String,
+        /// The name of the offending property.
+        property_name: String,
+    },
 }
 
 /// Features that may require a later PDF version than the current one.
@@ -237,11 +247,19 @@ impl Validators {
         self.into_iter().any(Validator::requires_xmp_metadata)
     }
 
-    /// Whether any extension schemata should be descibed using the "pdfaSchema"
+    /// Whether any extension schemata should be described using the "pdfaSchema"
     /// namespace.
     pub(crate) fn requires_xmp_metadata_extension_schema(self) -> bool {
         self.a
             .is_some_and(Archival::requires_xmp_metadata_extension_schema)
+    }
+
+    /// Whether the predefined XMP schemas are from the
+    /// larger XMP 2005 set (PDF/A-2 and PDF/A-3) rather than the smaller XMP
+    /// 2004 set (PDF/A-1).
+    pub(crate) fn uses_xmp_2005_predefined_schemas(self) -> bool {
+        self.a
+            .is_some_and(Archival::uses_xmp_2005_predefined_schemas)
     }
 
     /// Whether the `instanceID` field is allowed in XMP.
@@ -286,7 +304,7 @@ impl Validators {
         self.a.map(Archival::output_intent)
     }
 
-    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter) {
+    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter, user_namespaces: &[&Namespace]) {
         if self.requires_xmp_metadata_extension_schema() {
             let mut extension_schemas = xmp.extension_schemas();
             if let Some(a) = self.a {
@@ -294,6 +312,9 @@ impl Validators {
             }
             if let Some(ua) = self.ua {
                 ua.write_xmp_extension_schema_description(&mut extension_schemas);
+            }
+            for ns in user_namespaces {
+                write_user_extension_schema(&mut extension_schemas, ns);
             }
         }
 
@@ -698,6 +719,9 @@ impl Archival {
                 Self::A4 | Self::A4F | Self::A4E,
                 ValidationError::EmbeddedFile(EmbedError::MissingDescription, _),
             ) => self == Self::A4,
+            (_, ValidationError::MissingXmpPropertyDescription { .. }) => {
+                self.requires_xmp_metadata_extension_schema()
+            }
         }
     }
 
@@ -791,6 +815,17 @@ impl Archival {
             // definition of its metadata contents to be embedded as an
             // associated file. It no longer uses the inline schema definition
             // using the "pdfaSchema" namespaces for extension schemata.
+            Self::A4 | Self::A4F | Self::A4E => false,
+        }
+    }
+
+    /// Whether the predefined XMP schemas
+    /// follow the XMP 2005 specification (PDF/A-2 and PDF/A-3) rather than the
+    /// smaller XMP 2004 set (PDF/A-1).
+    fn uses_xmp_2005_predefined_schemas(self) -> bool {
+        match self {
+            Self::A1_A | Self::A1_B => false,
+            Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U => true,
             Self::A4 | Self::A4F | Self::A4E => false,
         }
     }
@@ -1134,7 +1169,8 @@ impl Accessibility {
                     EmbedError::Existence | EmbedError::MissingDate | EmbedError::MissingMimeType,
                     _,
                 )
-                | ValidationError::MissingDocumentDate,
+                | ValidationError::MissingDocumentDate
+                | ValidationError::MissingXmpPropertyDescription { .. },
             ) => false,
         }
     }
