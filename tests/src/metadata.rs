@@ -170,6 +170,20 @@ fn metadata_custom_xmp_factur_x(document: &mut Document) {
     document.set_metadata(metadata);
 }
 
+/// `xmpDM` is a namespace xmp-writer serializes natively, but it is only a
+/// predefined PDF/A schema from XMP 2005 on.
+#[snapshot(document, settings_19)]
+fn validate_pdf_a1_custom_xmp_builtin_namespace(document: &mut Document) {
+    let dm = Namespace::new("xmpDM", "http://ns.adobe.com/xap/1.0/DynamicMedia/")
+        .schema_name("XMP Dynamic Media")
+        .add_description("scene", "Text", Category::External, "The name of the scene");
+    let metadata = Metadata::new()
+        .creation_date(datetime())
+        .language("en".to_string())
+        .custom_xmp_properties(vec![Property::new(dm, "scene", Value::text("intro"))]);
+    document.set_metadata(metadata);
+}
+
 /// A Factur-X invoice in the MINIMUM profile.
 const FACTUR_X_MINIMUM_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice

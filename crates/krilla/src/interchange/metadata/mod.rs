@@ -322,22 +322,16 @@ impl Metadata {
     }
 
     /// Returns the user-defined XMP namespaces that need a PDF/A extension
-    /// schema, deduplicated by URL in insertion order. Predefined PDF/A schemas
-    /// (version-dependent, see [`is_predefined_pdfa_schema`]) and namespaces
-    /// xmp-writer serializes natively are excluded, since neither needs one.
+    /// schema, deduplicated by URL in insertion order. Only predefined PDF/A
+    /// schemas (version-dependent, see [`is_predefined_pdfa_schema`]) are
+    /// excluded.
     pub(crate) fn deduped_custom_xmp_namespaces(&self, validators: Validators) -> Vec<&Namespace> {
         let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
         let mut seen = std::collections::HashSet::new();
         let mut result = Vec::new();
 
         self.visit_custom_xmp_namespaces(&mut |ns| {
-            // Skip schemas that need no user extension schema: PDF/A-predefined
-            // ones, and those xmp-writer serializes natively (e.g. value-type
-            // structure schemas), which have no custom namespace to describe.
-            if !is_predefined_pdfa_schema(&ns.url, xmp_2005)
-                && builtin_xmp_namespace(&ns.url).is_none()
-                && seen.insert(ns.url.as_str())
-            {
+            if !is_predefined_pdfa_schema(&ns.url, xmp_2005) && seen.insert(ns.url.as_str()) {
                 result.push(ns);
             }
         });
@@ -770,11 +764,16 @@ pub(crate) fn write_user_extension_schema(
     schemas: &mut xmp_writer::pdfa::PdfAExtSchemasWriter,
     ns: &Namespace,
 ) {
+    let xmp_namespace = build_xmp_namespace(ns);
+    // A namespace xmp-writer knows natively is serialized under its canonical
+    // prefix, not the user-supplied one.
+    let prefix = xmp_namespace.prefix();
+
     let mut schema = schemas.add_schema();
     let schema_name = ns
         .schema_name
         .clone()
-        .unwrap_or_else(|| format!("{} schema", ns.prefix));
+        .unwrap_or_else(|| format!("{prefix} schema"));
     schema
         .element("schema", XmpNamespace::PdfASchema)
         .value(schema_name.as_str());
@@ -783,7 +782,7 @@ pub(crate) fn write_user_extension_schema(
         .value(ns.url.as_str());
     schema
         .element("prefix", XmpNamespace::PdfASchema)
-        .value(ns.prefix.as_str());
+        .value(prefix);
 
     if !ns.property_descriptions.is_empty() {
         let mut properties = schema.properties();
