@@ -3,11 +3,12 @@ use krilla::configure::{PdfVersion, ValidationError};
 use krilla::error::{KrillaError, LimitError};
 use krilla::geom::{Size, Transform};
 use krilla::page::{Page, PageSettings};
-use krilla::pdf::PdfError;
+use krilla::pdf::{Pdf, PdfError};
 use krilla::surface::Surface;
 use krilla::{Document, SerializeSettings};
 use krilla_macros::{snapshot, visreg};
 use krilla_svg::{SurfaceExt, SvgSettings};
+use std::sync::Arc;
 
 use crate::metadata::metadata_impl;
 use crate::svg::sample_svg;
@@ -203,6 +204,90 @@ fn pdf_embedded_consistency() {
             last = Some(finished);
         }
     }
+}
+
+fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
+    haystack
+        .windows(needle.len())
+        .any(|window| window == needle)
+}
+
+fn embedded_pdf_xobject_bytes(name: &str) -> Vec<u8> {
+    let mut document = Document::new();
+    let mut page = document.start_page_with(PageSettings::from_wh(300.0, 300.0).unwrap());
+    let mut surface = page.surface();
+    let pdf = load_pdf(name);
+
+    surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 200.0).unwrap(), 0);
+    surface.finish();
+    page.finish();
+
+    document.finish().unwrap()
+}
+
+fn embedded_xobject_group_dicts(name: &str) -> Vec<Vec<u8>> {
+    let data = embedded_pdf_xobject_bytes(name);
+    let output = Pdf::new(Arc::new(data)).unwrap();
+    let page = output.pages().first().unwrap();
+    let resources = page.resources();
+
+    resources
+        .x_objects
+        .keys()
+        .filter_map(|name| resources.get_x_object(&name))
+        .map(|x_object| x_object.dict().data().to_vec())
+        .filter(|dict| contains_bytes(dict, b"/Group"))
+        .collect()
+}
+
+#[test]
+fn pdf_embedded_as_xobject_uses_cmyk_group_for_cmyk_source() {
+    let groups = embedded_xobject_group_dicts("xobject_group_cmyk.pdf");
+
+    assert_eq!(groups.len(), 1, "expected one embedded PDF XObject group");
+    assert!(
+        contains_bytes(&groups[0], b"/DeviceCMYK"),
+        "expected CMYK source PDF XObject group to use /DeviceCMYK, got: {}",
+        String::from_utf8_lossy(&groups[0])
+    );
+}
+
+#[test]
+fn pdf_embedded_as_xobject_does_not_force_cmyk_group_for_rgb_source() {
+    let groups = embedded_xobject_group_dicts("xobject_group_rgb.pdf");
+
+    assert_eq!(groups.len(), 1, "expected one embedded PDF XObject group");
+    assert!(
+        !contains_bytes(&groups[0], b"/DeviceCMYK"),
+        "expected RGB source PDF XObject group not to be forced to /DeviceCMYK, got: {}",
+        String::from_utf8_lossy(&groups[0])
+    );
+}
+
+#[test]
+fn pdf_embedded_as_xobject_uses_cmyk_group_for_spot_source() {
+    let data = embedded_pdf_xobject_bytes("xobject_group_spot.pdf");
+    let output = Pdf::new(Arc::new(data.clone())).unwrap();
+    let page = output.pages().first().unwrap();
+    let resources = page.resources();
+    let groups = resources
+        .x_objects
+        .keys()
+        .filter_map(|name| resources.get_x_object(&name))
+        .map(|x_object| x_object.dict().data().to_vec())
+        .filter(|dict| contains_bytes(dict, b"/Group"))
+        .collect::<Vec<_>>();
+
+    assert_eq!(groups.len(), 1, "expected one embedded PDF XObject group");
+    assert!(
+        contains_bytes(&groups[0], b"/DeviceCMYK"),
+        "expected spot-color source PDF XObject group to use /DeviceCMYK, got: {}",
+        String::from_utf8_lossy(&groups[0])
+    );
+    assert!(
+        contains_bytes(&data, b"/Separation") && contains_bytes(&data, b"/SpotGreen"),
+        "expected embedded spot-color resources to remain present"
+    );
 }
 
 #[visreg]

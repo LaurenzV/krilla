@@ -1,0 +1,165 @@
+%PDF-1.3
+%“Œ‹ž ReportLab Generated PDF document (opensource)
+1 0 obj
+<<
+/F1 2 0 R /F2 3 0 R
+>>
+endobj
+2 0 obj
+<<
+/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
+>>
+endobj
+3 0 obj
+<<
+/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font
+>>
+endobj
+4 0 obj
+<<
+/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
+endobj
+5 0 obj
+<<
+/PageMode /UseNone /Pages 7 0 R /Type /Catalog
+>>
+endobj
+6 0 obj
+<<
+/Author (John Doe) /CreationDate (D:20260618005800+02'00') /Creator (Codex reportlab CMYK test) /Keywords () /ModDate (D:20260618005800+02'00') /Producer (ReportLab PDF Library - \(opensource\)) 
+  /Subject (unspecified) /Title (CMYK preservation test source) /Trapped /False
+>>
+endobj
+7 0 obj
+<<
+/Count 1 /Kids [ 4 0 R ] /Type /Pages
+>>
+endobj
+8 0 obj
+<<
+/Length 2633
+>>
+stream
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+0 0 0 1 k
+BT /F2 16 Tf 19.2 TL ET
+BT 1 0 0 1 56.69291 779.5276 Tm (CMYK preservation test source) Tj T* ET
+BT /F1 9 Tf 10.8 TL ET
+BT 1 0 0 1 56.69291 759.685 Tm (Each swatch is drawn with explicit DeviceCMYK fill and stroke values.) Tj T* ET
+1 0 0 0 k
+1 0 0 0 K
+n 56.69291 612.2835 204.0945 87.87402 re B*
+0 0 0 0 k
+n 68.0315 623.622 181.4173 25.51181 re f*
+0 0 0 1 k
+BT /F2 8 Tf 9.6 TL ET
+BT 1 0 0 1 73.70079 635.5276 Tm (C100 M0 Y0 K0) Tj T* ET
+0 0 0 1 k
+BT /F1 8 Tf 9.6 TL ET
+BT 1 0 0 1 56.69291 598.1102 Tm (Pure cyan) Tj T* ET
+0 1 0 0 k
+0 1 0 0 K
+n 306.1417 612.2835 204.0945 87.87402 re B*
+0 0 0 0 k
+n 317.4803 623.622 181.4173 25.51181 re f*
+0 0 0 1 k
+BT /F2 8 Tf 9.6 TL ET
+BT 1 0 0 1 323.1496 635.5276 Tm (C0 M100 Y0 K0) Tj T* ET
+0 0 0 1 k
+BT /F1 8 Tf 9.6 TL ET
+BT 1 0 0 1 306.1417 598.1102 Tm (Pure magenta) Tj T* ET
+0 0 1 0 k
+0 0 1 0 K
+n 56.69291 467.7165 204.0945 87.87402 re B*
+0 0 0 0 k
+n 68.0315 479.0551 181.4173 25.51181 re f*
+0 0 0 1 k
+BT /F2 8 Tf 9.6 TL ET
+BT 1 0 0 1 73.70079 490.9606 Tm (C0 M0 Y100 K0) Tj T* ET
+0 0 0 1 k
+BT /F1 8 Tf 9.6 TL ET
+BT 1 0 0 1 56.69291 453.5433 Tm (Pure yellow) Tj T* ET
+0 0 0 1 k
+0 0 0 1 K
+n 306.1417 467.7165 204.0945 87.87402 re B*
+0 0 0 0 k
+n 317.4803 479.0551 181.4173 25.51181 re f*
+0 0 0 1 k
+BT /F2 8 Tf 9.6 TL ET
+BT 1 0 0 1 323.1496 490.9606 Tm (C0 M0 Y0 K100) Tj T* ET
+0 0 0 1 k
+BT /F1 8 Tf 9.6 TL ET
+BT 1 0 0 1 306.1417 453.5433 Tm (One-color black) Tj T* ET
+0 .1 1 0 k
+0 .1 1 0 K
+n 56.69291 323.1496 204.0945 87.87402 re B*
+0 0 0 0 k
+n 68.0315 334.4882 181.4173 25.51181 re f*
+0 0 0 1 k
+BT /F2 8 Tf 9.6 TL ET
+BT 1 0 0 1 73.70079 346.3937 Tm (C0 M10 Y100 K0) Tj T* ET
+0 0 0 1 k
+BT /F1 8 Tf 9.6 TL ET
+BT 1 0 0 1 56.69291 308.9764 Tm (Warm process yellow) Tj T* ET
+1 1 1 1 k
+1 1 1 1 K
+n 306.1417 323.1496 204.0945 87.87402 re B*
+0 0 0 0 k
+n 317.4803 334.4882 181.4173 25.51181 re f*
+0 0 0 1 k
+BT /F2 8 Tf 9.6 TL ET
+BT 1 0 0 1 323.1496 346.3937 Tm (C100 M100 Y100 K100) Tj T* ET
+0 0 0 1 k
+BT /F1 8 Tf 9.6 TL ET
+BT 1 0 0 1 306.1417 308.9764 Tm (Four-color black) Tj T* ET
+0 .1 1 0 k
+0 0 0 1 K
+n
+348.6614 184.252 m
+348.6614 212.4315 325.8174 235.2756 297.6378 235.2756 c
+269.4582 235.2756 246.6142 212.4315 246.6142 184.252 c
+246.6142 156.0724 269.4582 133.2283 297.6378 133.2283 c
+325.8174 133.2283 348.6614 156.0724 348.6614 184.252 c
+B*
+0 0 0 1 k
+BT /F2 8 Tf 9.6 TL ET
+BT 1 0 0 1 253.3978 178.5827 Tm (Circle: C0 M10 Y100 K0) Tj T* ET
+0 0 0 1 K
+.8 w
+n 56.69291 107.7165 m 538.5827 107.7165 l S
+0 0 0 1 k
+BT /F1 8 Tf 9.6 TL ET
+BT 1 0 0 1 56.69291 90.70866 Tm (Black line and text are DeviceCMYK C0 M0 Y0 K100, not rich black.) Tj T* ET
+ 
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000061 00000 n 
+0000000102 00000 n 
+0000000209 00000 n 
+0000000321 00000 n 
+0000000524 00000 n 
+0000000592 00000 n 
+0000000889 00000 n 
+0000000948 00000 n 
+trailer
+<<
+/ID 
+[<557bfffa1a71cc109e8a5e4198c56ba3><557bfffa1a71cc109e8a5e4198c56ba3>]
+% ReportLab generated PDF document -- digest (opensource)
+
+/Info 6 0 R
+/Root 5 0 R
+/Size 9
+>>
+startxref
+3632
+%%EOF

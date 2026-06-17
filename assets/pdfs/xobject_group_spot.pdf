@@ -1,0 +1,110 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.2756 841.8898] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> /ColorSpace << /SpotGreen 6 0 R >> >> /Contents 8 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+6 0 obj
+[ /Separation /SpotGreen /DeviceCMYK 7 0 R ]
+endobj
+7 0 obj
+<< /FunctionType 2 /Domain [0 1] /Range [0 1 0 1 0 1 0 1] /C0 [0 0 0 0] /C1 [1 0 .8 0] /N 1 >>
+endobj
+8 0 obj
+<< /Length 2309 >>
+stream
+0 0 0 1 k
+BT /F2 16 Tf 1 0 0 1 56.6929 779.5276 Tm (CMYK and spot-color preservation test source) Tj ET
+BT /F1 9 Tf 1 0 0 1 56.6929 759.6850 Tm (CMYK swatches use DeviceCMYK; the spot swatch uses a real /Separation color space.) Tj ET
+1 0 0 0 k
+1 0 0 0 K
+56.6929 612.2835 204.0945 87.8740 re B*
+0 0 0 0 k
+68.0315 623.6220 181.4173 25.5118 re f*
+0 0 0 1 k
+BT /F2 8 Tf 1 0 0 1 73.7008 635.5276 Tm (C100 M0 Y0 K0) Tj ET
+BT /F1 8 Tf 1 0 0 1 56.6929 598.1102 Tm (Pure cyan) Tj ET
+0 1 0 0 k
+0 1 0 0 K
+306.1417 612.2835 204.0945 87.8740 re B*
+0 0 0 0 k
+317.4803 623.6220 181.4173 25.5118 re f*
+0 0 0 1 k
+BT /F2 8 Tf 1 0 0 1 323.1496 635.5276 Tm (C0 M100 Y0 K0) Tj ET
+BT /F1 8 Tf 1 0 0 1 306.1417 598.1102 Tm (Pure magenta) Tj ET
+0 0 1 0 k
+0 0 1 0 K
+56.6929 467.7165 204.0945 87.8740 re B*
+0 0 0 0 k
+68.0315 479.0551 181.4173 25.5118 re f*
+0 0 0 1 k
+BT /F2 8 Tf 1 0 0 1 73.7008 490.9606 Tm (C0 M0 Y100 K0) Tj ET
+BT /F1 8 Tf 1 0 0 1 56.6929 453.5433 Tm (Pure yellow) Tj ET
+0 0 0 1 k
+0 0 0 1 K
+306.1417 467.7165 204.0945 87.8740 re B*
+0 0 0 0 k
+317.4803 479.0551 181.4173 25.5118 re f*
+0 0 0 1 k
+BT /F2 8 Tf 1 0 0 1 323.1496 490.9606 Tm (C0 M0 Y0 K100) Tj ET
+BT /F1 8 Tf 1 0 0 1 306.1417 453.5433 Tm (One-color black) Tj ET
+0 .1 1 0 k
+0 .1 1 0 K
+56.6929 323.1496 204.0945 87.8740 re B*
+0 0 0 0 k
+68.0315 334.4882 181.4173 25.5118 re f*
+0 0 0 1 k
+BT /F2 8 Tf 1 0 0 1 73.7008 346.3937 Tm (C0 M10 Y100 K0) Tj ET
+BT /F1 8 Tf 1 0 0 1 56.6929 308.9764 Tm (Warm process yellow) Tj ET
+/SpotGreen cs 1 scn
+/SpotGreen CS 1 SCN
+306.1417 323.1496 204.0945 87.8740 re B*
+0 0 0 0 k
+317.4803 334.4882 181.4173 25.5118 re f*
+0 0 0 1 k
+BT /F2 8 Tf 1 0 0 1 323.1496 346.3937 Tm (SpotGreen 100%) Tj ET
+BT /F1 8 Tf 1 0 0 1 306.1417 308.9764 Tm (Spot color / Separation) Tj ET
+/SpotGreen cs .5 scn
+/SpotGreen CS .5 SCN
+348.6614 184.2520 m
+348.6614 212.4315 325.8174 235.2756 297.6378 235.2756 c
+269.4582 235.2756 246.6142 212.4315 246.6142 184.2520 c
+246.6142 156.0724 269.4582 133.2283 297.6378 133.2283 c
+325.8174 133.2283 348.6614 156.0724 348.6614 184.2520 c
+h
+B*
+0 0 0 1 k
+BT /F2 8 Tf 1 0 0 1 249.4488 178.5827 Tm (Circle: SpotGreen 50%) Tj ET
+0 0 0 1 K
+0.8 w
+56.6929 107.7165 m 538.5827 107.7165 l S
+BT /F1 8 Tf 1 0 0 1 56.6929 90.7087 Tm (Black line and text are DeviceCMYK C0 M0 Y0 K100. SpotGreen is a /Separation colorant.) Tj ET
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000302 00000 n 
+0000000372 00000 n 
+0000000447 00000 n 
+0000000507 00000 n 
+0000000617 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+2977
+%%EOF
