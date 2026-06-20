@@ -240,49 +240,74 @@ fn embedded_xobject_group_dicts(name: &str) -> Vec<Vec<u8>> {
         .collect()
 }
 
-#[test]
-fn pdf_embedded_as_xobject_uses_cmyk_group_for_cmyk_source() {
-    let groups = embedded_xobject_group_dicts("xobject_group_cmyk.pdf");
+fn embedded_xobject_group_fragments(name: &str) -> Vec<Vec<u8>> {
+    embedded_xobject_group_dicts(name)
+        .into_iter()
+        .filter_map(|dict| {
+            let group_start = dict
+                .windows(b"/Group".len())
+                .position(|window| window == b"/Group")?;
+            let rest = &dict[group_start..];
+            let group_end = rest
+                .windows(b"/Resources".len())
+                .position(|window| window == b"/Resources")
+                .unwrap_or(rest.len());
+
+            Some(rest[..group_end].to_vec())
+        })
+        .collect()
+}
+
+fn embedded_xobject_group_fragment(name: &str) -> Vec<u8> {
+    let groups = embedded_xobject_group_fragments(name);
 
     assert_eq!(groups.len(), 1, "expected one embedded PDF XObject group");
+
+    groups[0].clone()
+}
+
+#[test]
+fn pdf_embedded_as_xobject_preserves_explicit_cmyk_group_color_space() {
+    let group = embedded_xobject_group_fragment("xobject_group_explicit_cmyk.pdf");
+
     assert!(
-        contains_bytes(&groups[0], b"/DeviceCMYK"),
-        "expected CMYK source PDF XObject group to use /DeviceCMYK, got: {}",
-        String::from_utf8_lossy(&groups[0])
+        contains_bytes(&group, b"/DeviceCMYK"),
+        "expected explicit CMYK page group to be preserved, got: {}",
+        String::from_utf8_lossy(&group)
     );
 }
 
 #[test]
-fn pdf_embedded_as_xobject_does_not_force_cmyk_group_for_rgb_source() {
-    let groups = embedded_xobject_group_dicts("xobject_group_rgb.pdf");
+fn pdf_embedded_as_xobject_preserves_explicit_rgb_group_color_space() {
+    let group = embedded_xobject_group_fragment("xobject_group_explicit_rgb.pdf");
 
-    assert_eq!(groups.len(), 1, "expected one embedded PDF XObject group");
     assert!(
-        !contains_bytes(&groups[0], b"/DeviceCMYK"),
-        "expected RGB source PDF XObject group not to be forced to /DeviceCMYK, got: {}",
-        String::from_utf8_lossy(&groups[0])
+        contains_bytes(&group, b"/DeviceRGB"),
+        "expected explicit RGB page group to be preserved, got: {}",
+        String::from_utf8_lossy(&group)
     );
 }
 
 #[test]
-fn pdf_embedded_as_xobject_uses_cmyk_group_for_spot_source() {
+fn pdf_embedded_as_xobject_does_not_infer_cmyk_group_from_cmyk_source() {
+    let group = embedded_xobject_group_fragment("xobject_group_cmyk.pdf");
+
+    assert!(
+        !contains_bytes(&group, b"/DeviceRGB") && !contains_bytes(&group, b"/DeviceCMYK"),
+        "expected CMYK content without an explicit page group to keep the group color space unspecified, got: {}",
+        String::from_utf8_lossy(&group)
+    );
+}
+
+#[test]
+fn pdf_embedded_as_xobject_does_not_infer_cmyk_group_from_spot_source() {
     let data = embedded_pdf_xobject_bytes("xobject_group_spot.pdf");
-    let output = Pdf::new(Arc::new(data.clone())).unwrap();
-    let page = output.pages().first().unwrap();
-    let resources = page.resources();
-    let groups = resources
-        .x_objects
-        .keys()
-        .filter_map(|name| resources.get_x_object(&name))
-        .map(|x_object| x_object.dict().data().to_vec())
-        .filter(|dict| contains_bytes(dict, b"/Group"))
-        .collect::<Vec<_>>();
+    let group = embedded_xobject_group_fragment("xobject_group_spot.pdf");
 
-    assert_eq!(groups.len(), 1, "expected one embedded PDF XObject group");
     assert!(
-        contains_bytes(&groups[0], b"/DeviceCMYK"),
-        "expected spot-color source PDF XObject group to use /DeviceCMYK, got: {}",
-        String::from_utf8_lossy(&groups[0])
+        !contains_bytes(&group, b"/DeviceRGB") && !contains_bytes(&group, b"/DeviceCMYK"),
+        "expected spot-color content without an explicit page group to keep the group color space unspecified, got: {}",
+        String::from_utf8_lossy(&group)
     );
     assert!(
         contains_bytes(&data, b"/Separation") && contains_bytes(&data, b"/SpotGreen"),

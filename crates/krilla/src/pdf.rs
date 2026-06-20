@@ -6,9 +6,8 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
-use hayro_write::hayro_syntax::content::ops::TypedInstruction;
-use hayro_write::hayro_syntax::object::{Dict, Object, Stream};
-use hayro_write::hayro_syntax::page::{Page, Resources};
+use hayro_write::hayro_syntax::object::{Dict, Object};
+use hayro_write::hayro_syntax::page::Page;
 use hayro_write::hayro_syntax::PdfVersion as HayroPdfVersion;
 use hayro_write::{ExtractionError, ExtractionQuery};
 use pdf_writer::{Name, Ref};
@@ -23,8 +22,6 @@ use crate::resource::Resource;
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::surface::Location;
 use crate::util::{Deferred, Prehashed};
-
-const COLOR_SPACE_SCAN_MAX_DEPTH: usize = 8;
 
 /// An error that can occur when embedding a PDF document.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -93,6 +90,8 @@ pub(crate) struct PdfDocumentInfo {
     query_refs: Vec<Ref>,
     cached_xobjects: HashMap<usize, Ref>,
     queries: Vec<ExtractionQuery>,
+    // hayro-write calls the group callback once for each XObject extraction query.
+    xobject_page_indices: Vec<usize>,
     locations: Vec<Option<Location>>,
 }
 
@@ -154,6 +153,7 @@ impl PdfSerializerContext {
 
         info.query_refs.push(ref_);
         info.queries.push(ExtractionQuery::new_xobject(page_index));
+        info.xobject_page_indices.push(page_index);
         info.locations.push(location);
 
         info.cached_xobjects.insert(page_index, ref_);
@@ -178,12 +178,24 @@ impl PdfSerializerContext {
                 sc.register_validation_error(ValidationError::EmbeddedPDF(*location))
             }
 
-            // In theory `hayro-write` only requires this for PDFs that are embedded
-            // as XObject's to write the XObject group color space (embedded pages don't need it),
-            // but we just always allocate it if we have at least one PDF,
-            // regardless of how the files are embedded. We can change this in the
-            // future, but it keeps the code simpler.
-            let xobject_group_color_space = if embedded_xobjects_use_cmyk(&doc, &info) {
+            let xobject_group_color_spaces = explicit_xobject_group_color_spaces(&doc, &info);
+            let uses_cmyk_xobject_group_color_space = xobject_group_color_spaces
+                .iter()
+                .any(|cs| *cs == XObjectGroupColorSpace::Cmyk);
+            let uses_rgb_xobject_group_color_space = xobject_group_color_spaces
+                .iter()
+                .any(|cs| *cs == XObjectGroupColorSpace::Rgb);
+
+            let rgb_xobject_group_color_space = if uses_rgb_xobject_group_color_space {
+                Some(sc.register_colorspace(
+                    chunk_container,
+                    rgb::color_space(sc.serialize_settings().no_device_cs).into(),
+                ))
+            } else {
+                None
+            };
+
+            let cmyk_xobject_group_color_space = if uses_cmyk_xobject_group_color_space {
                 let color_space = match cmyk::color_space(&sc.serialize_settings()) {
                     Some(cs) => cs.into(),
                     None => {
@@ -192,12 +204,9 @@ impl PdfSerializerContext {
                     }
                 };
 
-                sc.register_colorspace(chunk_container, color_space)
+                Some(sc.register_colorspace(chunk_container, color_space))
             } else {
-                sc.register_colorspace(
-                    chunk_container,
-                    rgb::color_space(sc.serialize_settings().no_device_cs).into(),
-                )
+                None
             };
             let chunk_settings = sc.chunk_settings();
 
@@ -205,21 +214,23 @@ impl PdfSerializerContext {
                 // We can't share the serializer context between threads, so each PDF has it's own
                 // reference, and we remap it later in `ChunkContainer`.
                 let mut new_ref = Ref::new(1);
-                // `local_ref` refers to the Ref that will be assigned to it locally
-                // in the extracted PDF chunk. Note that the colorspace itself
-                // doesn't actually exist in the extracted PDF, i.e. the Ref
-                // points to the null object. It just represents a placeholder Ref.
-                // Later on when actually merging the PDF chunk into the final
-                // krilla PDF, we replace `local_ref` with `cs_ref` such that it
-                // actually points to the colorspace that is embedded in the full PDF.
-                let (assigned_cs_ref, should_cs_ref, device_cs) = match &xobject_group_color_space {
-                    MaybeDeviceColorSpace::DeviceRgb => (None, None, Some(DeviceColorSpace::Rgb)),
-                    MaybeDeviceColorSpace::DeviceCMYK => (None, None, Some(DeviceColorSpace::Cmyk)),
-                    MaybeDeviceColorSpace::ColorSpace(cs) => {
-                        (Some(new_ref.bump()), Some(cs.get_ref()), None)
-                    }
-                    MaybeDeviceColorSpace::DeviceGray => unreachable!(),
-                };
+                let mut xobject_group_color_space_mappings = vec![];
+                let rgb_xobject_group_color_space =
+                    rgb_xobject_group_color_space.map(|color_space| {
+                        prepare_xobject_group_color_space(
+                            color_space,
+                            &mut new_ref,
+                            &mut xobject_group_color_space_mappings,
+                        )
+                    });
+                let cmyk_xobject_group_color_space =
+                    cmyk_xobject_group_color_space.map(|color_space| {
+                        prepare_xobject_group_color_space(
+                            color_space,
+                            &mut new_ref,
+                            &mut xobject_group_color_space_mappings,
+                        )
+                    });
 
                 let first_location = info.locations.iter().flatten().next().cloned();
                 let pdf = doc.pdf();
@@ -234,21 +245,27 @@ impl PdfSerializerContext {
                     ));
                 }
 
+                let mut xobject_group_color_spaces = xobject_group_color_spaces.into_iter();
                 let extracted = hayro_write::extract(
                     pdf,
                     Box::new(|| new_ref.bump()),
                     chunk_settings,
-                    |group| {
-                        if let Some(local_group_color_space_ref) = assigned_cs_ref {
-                            group
-                                .insert(Name(b"CS"))
-                                .primitive(local_group_color_space_ref);
-                        } else {
-                            match device_cs {
-                                Some(DeviceColorSpace::Rgb) => group.color_space().device_rgb(),
-                                Some(DeviceColorSpace::Cmyk) => group.color_space().device_cmyk(),
-                                Some(DeviceColorSpace::Gray) | None => unreachable!(),
-                            };
+                    |group| match xobject_group_color_spaces
+                        .next()
+                        .unwrap_or(XObjectGroupColorSpace::Unspecified)
+                    {
+                        XObjectGroupColorSpace::Unspecified => {}
+                        XObjectGroupColorSpace::Rgb => {
+                            write_xobject_group_color_space(
+                                group,
+                                rgb_xobject_group_color_space.as_ref().unwrap(),
+                            );
+                        }
+                        XObjectGroupColorSpace::Cmyk => {
+                            write_xobject_group_color_space(
+                                group,
+                                cmyk_xobject_group_color_space.as_ref().unwrap(),
+                            );
                         }
                     },
                     &info.queries,
@@ -261,8 +278,8 @@ impl PdfSerializerContext {
 
                 root_ref_mappings.insert(result.page_tree_parent_ref, page_tree_parent_ref);
 
-                if let (Some(local_group_color_space_ref), Some(group_color_space_ref)) =
-                    (assigned_cs_ref, should_cs_ref)
+                for (local_group_color_space_ref, group_color_space_ref) in
+                    xobject_group_color_space_mappings
                 {
                     root_ref_mappings.insert(local_group_color_space_ref, group_color_space_ref);
                 }
@@ -296,6 +313,83 @@ impl PdfSerializerContext {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum XObjectGroupColorSpace {
+    Unspecified,
+    Rgb,
+    Cmyk,
+}
+
+enum PreparedXObjectGroupColorSpace {
+    Device(DeviceColorSpace),
+    ColorSpaceRef(Ref),
+}
+
+fn prepare_xobject_group_color_space(
+    color_space: MaybeDeviceColorSpace,
+    new_ref: &mut Ref,
+    mappings: &mut Vec<(Ref, Ref)>,
+) -> PreparedXObjectGroupColorSpace {
+    match color_space {
+        MaybeDeviceColorSpace::DeviceRgb => {
+            PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Rgb)
+        }
+        MaybeDeviceColorSpace::DeviceCMYK => {
+            PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Cmyk)
+        }
+        MaybeDeviceColorSpace::ColorSpace(cs) => {
+            let local_ref = new_ref.bump();
+            mappings.push((local_ref, cs.get_ref()));
+            PreparedXObjectGroupColorSpace::ColorSpaceRef(local_ref)
+        }
+        MaybeDeviceColorSpace::DeviceGray => unreachable!(),
+    }
+}
+
+fn write_xobject_group_color_space(
+    group: &mut pdf_writer::writers::Group<'_>,
+    color_space: &PreparedXObjectGroupColorSpace,
+) {
+    match color_space {
+        PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Rgb) => {
+            group.color_space().device_rgb();
+        }
+        PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Cmyk) => {
+            group.color_space().device_cmyk();
+        }
+        PreparedXObjectGroupColorSpace::ColorSpaceRef(ref_) => {
+            group.insert(Name(b"CS")).primitive(*ref_);
+        }
+        PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Gray) => unreachable!(),
+    }
+}
+
+fn explicit_xobject_group_color_spaces(
+    document: &PdfDocument,
+    info: &PdfDocumentInfo,
+) -> Vec<XObjectGroupColorSpace> {
+    info.xobject_page_indices
+        .iter()
+        .map(|page_index| {
+            document
+                .pages()
+                .get(*page_index)
+                .and_then(explicit_page_group_color_space)
+                .unwrap_or(XObjectGroupColorSpace::Unspecified)
+        })
+        .collect()
+}
+
+fn explicit_page_group_color_space(page: &Page<'_>) -> Option<XObjectGroupColorSpace> {
+    let group = page.raw().get::<Dict<'_>>(b"Group")?;
+
+    match group.get::<Object<'_>>(b"CS")? {
+        Object::Name(name) if name.as_ref() == b"DeviceCMYK" => Some(XObjectGroupColorSpace::Cmyk),
+        Object::Name(name) if name.as_ref() == b"DeviceRGB" => Some(XObjectGroupColorSpace::Rgb),
+        _ => None,
+    }
+}
+
 fn convert_pdf_version(version: HayroPdfVersion) -> PdfVersion {
     match version {
         // Those are obviously not right, but we don't support versions lower than 1.4 in krilla.
@@ -313,97 +407,6 @@ fn convert_pdf_version(version: HayroPdfVersion) -> PdfVersion {
         HayroPdfVersion::Pdf17 => PdfVersion::Pdf17,
         HayroPdfVersion::Pdf20 => PdfVersion::Pdf20,
     }
-}
-
-fn embedded_xobjects_use_cmyk(document: &PdfDocument, info: &PdfDocumentInfo) -> bool {
-    info.cached_xobjects.keys().any(|page_index| {
-        document
-            .pages()
-            .get(*page_index)
-            .is_some_and(page_uses_cmyk)
-    })
-}
-
-fn page_uses_cmyk(page: &Page<'_>) -> bool {
-    let mut operations = page.typed_operations();
-
-    while let Some(op) = operations.next() {
-        if match op {
-            TypedInstruction::StrokeColorCmyk(_) | TypedInstruction::NonStrokeColorCmyk(_) => true,
-            TypedInstruction::ColorSpaceStroke(cs) => is_cmyk_color_space_name(cs.0.as_ref()),
-            TypedInstruction::ColorSpaceNonStroke(cs) => is_cmyk_color_space_name(cs.0.as_ref()),
-            _ => false,
-        } {
-            return true;
-        }
-    }
-
-    resources_use_cmyk(page.resources())
-}
-
-fn resources_use_cmyk(resources: &Resources<'_>) -> bool {
-    resources.color_spaces.keys().any(|name| {
-        resources
-            .get_color_space(&name)
-            .is_some_and(|object| object_uses_cmyk(object, COLOR_SPACE_SCAN_MAX_DEPTH))
-    }) || resources.x_objects.keys().any(|name| {
-        resources
-            .get_x_object(&name)
-            .is_some_and(|stream| stream_uses_cmyk(&stream))
-    }) || resources.parent().is_some_and(resources_use_cmyk)
-}
-
-fn stream_uses_cmyk(stream: &Stream<'_>) -> bool {
-    dict_uses_cmyk(stream.dict(), COLOR_SPACE_SCAN_MAX_DEPTH)
-}
-
-fn dict_uses_cmyk(dict: &Dict<'_>, depth: usize) -> bool {
-    contains_bytes(dict.data(), b"/DeviceCMYK")
-        || contains_bytes(dict.data(), b"/Separation")
-        || contains_bytes(dict.data(), b"/DeviceN")
-        || (depth > 0
-            && dict.get::<i32>(b"N") == Some(4)
-            && dict.keys().any(|key| key.as_ref() == b"Alternate"))
-        || (depth > 0
-            && dict.keys().any(|key| {
-                dict.get::<Object<'_>>(key.as_ref())
-                    .is_some_and(|object| object_uses_cmyk(object, depth - 1))
-            }))
-}
-
-fn object_uses_cmyk(object: Object<'_>, depth: usize) -> bool {
-    if depth == 0 {
-        return false;
-    }
-
-    match object {
-        Object::Name(name) => is_cmyk_color_space_name(name.as_ref()),
-        Object::Array(array) => {
-            let mut items = array.iter::<Object<'_>>();
-            if matches!(items.next(), Some(Object::Name(name)) if name.as_ref() == b"ICCBased")
-                && matches!(items.next(), Some(Object::Stream(stream)) if stream.dict().get::<i32>(b"N") == Some(4))
-            {
-                return true;
-            }
-
-            array
-                .iter::<Object<'_>>()
-                .any(|object| object_uses_cmyk(object, depth - 1))
-        }
-        Object::Dict(dict) => dict_uses_cmyk(&dict, depth - 1),
-        Object::Stream(stream) => dict_uses_cmyk(stream.dict(), depth - 1),
-        _ => false,
-    }
-}
-
-fn is_cmyk_color_space_name(name: &[u8]) -> bool {
-    matches!(name, b"DeviceCMYK" | b"Separation" | b"DeviceN")
-}
-
-fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
-    haystack
-        .windows(needle.len())
-        .any(|window| window == needle)
 }
 
 fn convert_extraction_result<T>(
