@@ -284,8 +284,8 @@ fn metadata_custom_xmp_pdf_a_missing_description() {
     assert!(
         errors.iter().any(|(e, _)| matches!(
             e,
-            ValidationError::MissingXmpPropertyDescription { property_name, namespace_url }
-                if property_name == "DocumentType" && namespace_url == "urn:factur-x:test#"
+            ValidationError::MissingXmpPropertyDescription { property_name, namespace_uri }
+                if property_name == "DocumentType" && namespace_uri == "urn:factur-x:test#"
         )),
         "expected MissingXmpPropertyDescription, got {errors:?}",
     );
@@ -352,9 +352,9 @@ fn metadata_custom_xmp_camera_raw_version_specific() {
     assert!(
         errors.iter().any(|(e, _)| matches!(
             e,
-            ValidationError::MissingXmpPropertyDescription { property_name, namespace_url }
+            ValidationError::MissingXmpPropertyDescription { property_name, namespace_uri }
                 if property_name == "WhiteBalance"
-                    && namespace_url == "http://ns.adobe.com/camera-raw-settings/1.0/"
+                    && namespace_uri == "http://ns.adobe.com/camera-raw-settings/1.0/"
         )),
         "expected MissingXmpPropertyDescription, got {errors:?}",
     );

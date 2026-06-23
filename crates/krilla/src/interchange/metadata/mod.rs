@@ -275,7 +275,7 @@ impl Metadata {
 
         for property in &self.custom_xmp_properties {
             if check_descriptions
-                && !is_predefined_pdfa_schema(&property.namespace.url, xmp_2005)
+                && !is_predefined_pdfa_schema(&property.namespace.uri, xmp_2005)
                 && !property
                     .namespace
                     .property_descriptions
@@ -283,7 +283,7 @@ impl Metadata {
                     .any(|desc| desc.name == property.name)
             {
                 sc.register_validation_error(ValidationError::MissingXmpPropertyDescription {
-                    namespace_url: property.namespace.url.clone(),
+                    namespace_uri: property.namespace.uri.clone(),
                     property_name: property.name.clone(),
                 });
             }
@@ -322,7 +322,7 @@ impl Metadata {
     }
 
     /// Returns the user-defined XMP namespaces that need a PDF/A extension
-    /// schema, deduplicated by URL in insertion order. Only predefined PDF/A
+    /// schema, deduplicated by URI in insertion order. Only predefined PDF/A
     /// schemas (version-dependent, see [`is_predefined_pdfa_schema`]) are
     /// excluded.
     pub(crate) fn deduped_custom_xmp_namespaces(&self, validators: Validators) -> Vec<&Namespace> {
@@ -331,7 +331,7 @@ impl Metadata {
         let mut result = Vec::new();
 
         self.visit_custom_xmp_namespaces(&mut |ns| {
-            if !is_predefined_pdfa_schema(&ns.url, xmp_2005) && seen.insert(ns.url.as_str()) {
+            if !is_predefined_pdfa_schema(&ns.uri, xmp_2005) && seen.insert(ns.uri.as_str()) {
                 result.push(ns);
             }
         });
@@ -341,19 +341,19 @@ impl Metadata {
 
     /// Checks the custom XMP properties for problems that would corrupt the
     /// output regardless of the validator: namespace conflicts that produce
-    /// invalid XML (one prefix bound to two URLs) or silently drop data (one
-    /// URL declared with different definitions), and non-finite reals.
+    /// invalid XML (one prefix bound to two URIs) or silently drop data (one
+    /// URI declared with different definitions), and non-finite reals.
     pub(crate) fn check_custom_xmp_properties(&self) -> Result<(), XmpError> {
         let mut namespaces = Vec::new();
         self.visit_custom_xmp_namespaces(&mut |ns| namespaces.push(ns));
 
-        let mut by_url = std::collections::HashMap::new();
+        let mut by_uri = std::collections::HashMap::new();
         let mut by_prefix = std::collections::HashMap::new();
 
         for ns in namespaces {
             // Predefined schemas are always serialized under their canonical
             // prefix, so the user-supplied fields can't conflict.
-            if builtin_xmp_namespace(&ns.url).is_some() {
+            if builtin_xmp_namespace(&ns.uri).is_some() {
                 continue;
             }
 
@@ -361,14 +361,14 @@ impl Metadata {
                 return Err(XmpError::ReservedPrefix(ns.prefix.clone()));
             }
 
-            if *by_url.entry(ns.url.as_str()).or_insert(ns) != ns {
-                return Err(XmpError::ConflictingNamespace(ns.url.clone()));
+            if *by_uri.entry(ns.uri.as_str()).or_insert(ns) != ns {
+                return Err(XmpError::ConflictingNamespace(ns.uri.clone()));
             }
 
             if *by_prefix
                 .entry(ns.prefix.as_str())
-                .or_insert(ns.url.as_str())
-                != ns.url
+                .or_insert(ns.uri.as_str())
+                != ns.uri
             {
                 return Err(XmpError::ConflictingPrefix(ns.prefix.clone()));
             }
@@ -616,7 +616,7 @@ impl PageLayout {
 }
 
 /// The namespaces xmp-writer can serialize natively. A user-supplied namespace
-/// with one of these URLs must be mapped to the corresponding built-in variant,
+/// with one of these URIs must be mapped to the corresponding built-in variant,
 /// since xmp-writer would otherwise declare the same namespace twice.
 static BUILTIN_XMP_NAMESPACES: &[XmpNamespace<'static>] = &[
     XmpNamespace::Rdf,
@@ -647,11 +647,11 @@ static BUILTIN_XMP_NAMESPACES: &[XmpNamespace<'static>] = &[
     XmpNamespace::PdfAField,
 ];
 
-/// Returns the predefined xmp-writer namespace with the given URL, if any.
-fn builtin_xmp_namespace(url: &str) -> Option<XmpNamespace<'static>> {
+/// Returns the predefined xmp-writer namespace with the given URI, if any.
+fn builtin_xmp_namespace(uri: &str) -> Option<XmpNamespace<'static>> {
     BUILTIN_XMP_NAMESPACES
         .iter()
-        .find(|ns| ns.url() == url)
+        .find(|ns| ns.url() == uri)
         .cloned()
 }
 
@@ -697,12 +697,12 @@ static PREDEFINED_PDFA_SCHEMAS_XMP_2005_ADDITIONS: &[&str] = &[
     "http://ns.adobe.com/exif/1.0/aux/",            // aux
 ];
 
-/// Whether `url` is a predefined XMP schema that PDF/A exempts from an extension
+/// Whether `uri` is a predefined XMP schema that PDF/A exempts from an extension
 /// schema description. `xmp_2005` selects the larger PDF/A-2/-3 set over the
 /// PDF/A-1 set; see [`Validators::uses_xmp_2005_predefined_schemas`].
-fn is_predefined_pdfa_schema(url: &str, xmp_2005: bool) -> bool {
-    PREDEFINED_PDFA_SCHEMAS_XMP_2004.contains(&url)
-        || (xmp_2005 && PREDEFINED_PDFA_SCHEMAS_XMP_2005_ADDITIONS.contains(&url))
+fn is_predefined_pdfa_schema(uri: &str, xmp_2005: bool) -> bool {
+    PREDEFINED_PDFA_SCHEMAS_XMP_2004.contains(&uri)
+        || (xmp_2005 && PREDEFINED_PDFA_SCHEMAS_XMP_2005_ADDITIONS.contains(&uri))
 }
 
 fn has_non_finite_real(value: &Value) -> bool {
@@ -717,11 +717,11 @@ fn has_non_finite_real(value: &Value) -> bool {
 }
 
 pub(crate) fn build_xmp_namespace(ns: &Namespace) -> XmpNamespace<'_> {
-    builtin_xmp_namespace(&ns.url).unwrap_or_else(|| {
+    builtin_xmp_namespace(&ns.uri).unwrap_or_else(|| {
         XmpNamespace::Custom(Box::new(CustomNamespace::new(
             ns.schema_name.as_deref().unwrap_or(ns.prefix.as_str()),
             ns.prefix.as_str(),
-            ns.url.as_str(),
+            ns.uri.as_str(),
         )))
     })
 }
@@ -779,7 +779,7 @@ pub(crate) fn write_user_extension_schema(
         .value(schema_name.as_str());
     schema
         .element("namespaceURI", XmpNamespace::PdfASchema)
-        .value(ns.url.as_str());
+        .value(ns.uri.as_str());
     schema
         .element("prefix", XmpNamespace::PdfASchema)
         .value(prefix);

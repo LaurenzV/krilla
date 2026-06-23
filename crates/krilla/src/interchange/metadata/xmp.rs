@@ -10,15 +10,15 @@
 //!
 //! ## Predefined schemas
 //!
-//! If a namespace URL matches a schema predefined by the XMP specification,
+//! If a namespace URI matches a schema predefined by the XMP specification,
 //! properties are written under that schema's canonical prefix, and the
 //! namespace's prefix, schema name and property descriptions are ignored.
 //! It is your responsibility that the property actually exists in the
 //! predefined schema.
 //!
 //! Custom namespaces must not reuse the prefix of a predefined schema or
-//! bind one prefix to two different URLs, and all declarations of the same
-//! URL must be identical; otherwise [`Document::finish`] returns an
+//! bind one prefix to two different URIs, and all declarations of the same
+//! URI must be identical; otherwise [`Document::finish`] returns an
 //! [`XmpError`].
 //!
 //! ## PDF/A
@@ -35,7 +35,7 @@ use super::DateTime;
 
 /// An XMP namespace.
 ///
-/// A namespace is identified by its URL. The prefix is the short name used
+/// A namespace is identified by its URI. The prefix is the short name used
 /// in the serialized XML. For PDF/A output, the
 /// namespace must describe each property through
 /// [`Self::property_descriptions`].
@@ -43,8 +43,8 @@ use super::DateTime;
 pub struct Namespace {
     /// The XML prefix (e.g. `"fx"`).
     pub prefix: String,
-    /// The namespace URL (e.g. `"urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#"`).
-    pub url: String,
+    /// The namespace URI (e.g. `"urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#"`).
+    pub uri: String,
     /// Optional human-readable schema name for the PDF/A extension schema
     /// description. Defaults to `"<prefix> schema"`.
     pub schema_name: Option<String>,
@@ -56,11 +56,11 @@ pub struct Namespace {
 }
 
 impl Namespace {
-    /// Create a new namespace with the given prefix and URL.
-    pub fn new(prefix: impl Into<String>, url: impl Into<String>) -> Self {
+    /// Create a new namespace with the given prefix and URI.
+    pub fn new(prefix: impl Into<String>, uri: impl Into<String>) -> Self {
         Self {
             prefix: prefix.into(),
-            url: url.into(),
+            uri: uri.into(),
             schema_name: None,
             property_descriptions: Vec::new(),
         }
@@ -206,9 +206,9 @@ impl Value {
 /// An invalid set of custom XMP properties.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum XmpError {
-    /// The same namespace URL was declared inconsistently: all declarations
-    /// of one URL must be identical, but two of them disagreed on the prefix,
-    /// schema name, or property descriptions. Contains the namespace URL.
+    /// The same namespace URI was declared inconsistently: all declarations
+    /// of one URI must be identical, but two of them disagreed on the prefix,
+    /// schema name, or property descriptions. Contains the namespace URI.
     ConflictingNamespace(String),
     /// One prefix was bound to two different namespace URLs. Contains the
     /// prefix.
@@ -224,8 +224,8 @@ pub enum XmpError {
 impl std::fmt::Display for XmpError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            XmpError::ConflictingNamespace(url) => {
-                write!(f, "the namespace {url} was declared inconsistently")
+            XmpError::ConflictingNamespace(uri) => {
+                write!(f, "the namespace {uri} was declared inconsistently")
             }
             XmpError::ConflictingPrefix(prefix) => {
                 write!(

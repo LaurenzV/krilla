@@ -147,8 +147,8 @@ pub enum ValidationError {
     /// A custom XMP property was used in PDF/A export without a matching
     /// PDF/A extension schema description.
     MissingXmpPropertyDescription {
-        /// The namespace URL of the offending property.
-        namespace_url: String,
+        /// The namespace URI of the offending property.
+        namespace_uri: String,
         /// The name of the offending property.
         property_name: String,
     },
