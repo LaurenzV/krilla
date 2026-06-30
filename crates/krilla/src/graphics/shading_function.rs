@@ -102,6 +102,17 @@ impl GradientProperties {
 
         None
     }
+
+    /// Whether this gradient has no stops at all. Such a gradient is not
+    /// renderable and should be skipped rather than fall through to shading
+    /// serialization — the `stops` field on the public gradient structs is
+    /// `pub Vec<Stop>`, so an empty vector is constructible by callers.
+    pub(crate) fn is_empty(&self) -> bool {
+        match self {
+            GradientProperties::RadialAxialGradient(rag) => rag.stops.is_empty(),
+            GradientProperties::PostScriptGradient(psg) => psg.stops.is_empty(),
+        }
+    }
 }
 
 pub(crate) trait GradientPropertiesExt {

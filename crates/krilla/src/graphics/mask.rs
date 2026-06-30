@@ -49,6 +49,13 @@ impl Mask {
         serializer_context: &mut SerializeContext,
         chunk_container: &mut ChunkContainer,
     ) -> Option<Self> {
+        // No stops at all means there is nothing to mask. Callers of
+        // `write_gradient` already skip empty gradients, but guard here too
+        // so `Mask::new_from_shading` has a documented total-function contract.
+        if gradient_properties.is_empty() {
+            return None;
+        }
+        // All-opaque stops need no opacity mask either.
         match &gradient_properties {
             GradientProperties::RadialAxialGradient(rag) => {
                 if rag.stops.iter().all(|s| s.opacity.get() == 1.0) {

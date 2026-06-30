@@ -1052,6 +1052,12 @@ impl ContentBuilder {
              chunk_container: &mut ChunkContainer,
              transform: Transform,
              content_builder: &mut ContentBuilder| {
+                if gradient_props.is_empty() {
+                    // No stops means there's nothing to render. Avoid
+                    // allocating a shading reference that we wouldn't be able
+                    // to serialise.
+                    return;
+                }
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
                     content_builder.set_fill_opacity(opacity);

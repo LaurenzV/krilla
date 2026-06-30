@@ -205,3 +205,103 @@ mod tiling {
         surface.draw_path(&path)
     }
 }
+
+#[cfg(test)]
+mod gradient_robustness {
+    use krilla::geom::PathBuilder;
+    use krilla::num::NormalizedF32;
+    use krilla::paint::{Fill, LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
+    use krilla::{Document, SerializeSettings};
+
+    fn rect_path() -> krilla::geom::Path {
+        let mut b = PathBuilder::new();
+        b.move_to(10.0, 10.0);
+        b.line_to(90.0, 10.0);
+        b.line_to(90.0, 90.0);
+        b.line_to(10.0, 90.0);
+        b.close();
+        b.finish().unwrap()
+    }
+
+    /// An empty `stops` vector on a gradient must not panic the serializer —
+    /// the gradient is simply not emitted.
+    #[test]
+    fn linear_gradient_with_empty_stops_does_not_panic() {
+        let mut document = Document::new_with(SerializeSettings::default());
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        let gradient = LinearGradient {
+            x1: 0.0,
+            y1: 0.0,
+            x2: 100.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: Vec::new(),
+            anti_alias: false,
+        };
+        surface.set_fill(Some(Fill {
+            paint: gradient.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        }));
+        surface.draw_path(&rect_path());
+        surface.finish();
+        page.finish();
+        document.finish().expect("serialisation must succeed");
+    }
+
+    #[test]
+    fn radial_gradient_with_empty_stops_does_not_panic() {
+        let mut document = Document::new_with(SerializeSettings::default());
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        let gradient = RadialGradient {
+            fx: 50.0,
+            fy: 50.0,
+            fr: 0.0,
+            cx: 50.0,
+            cy: 50.0,
+            cr: 50.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: Vec::new(),
+            anti_alias: false,
+        };
+        surface.set_fill(Some(Fill {
+            paint: gradient.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        }));
+        surface.draw_path(&rect_path());
+        surface.finish();
+        page.finish();
+        document.finish().expect("serialisation must succeed");
+    }
+
+    #[test]
+    fn sweep_gradient_with_empty_stops_does_not_panic() {
+        let mut document = Document::new_with(SerializeSettings::default());
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+        let gradient = SweepGradient {
+            cx: 50.0,
+            cy: 50.0,
+            start_angle: 0.0,
+            end_angle: 360.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: Vec::new(),
+            anti_alias: false,
+        };
+        surface.set_fill(Some(Fill {
+            paint: gradient.into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        }));
+        surface.draw_path(&rect_path());
+        surface.finish();
+        page.finish();
+        document.finish().expect("serialisation must succeed");
+    }
+}

@@ -28,7 +28,9 @@ pub struct LinearGradient {
     pub spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
     ///
-    /// Note that all stops need to be in the same color space.
+    /// Note that all stops need to be in the same color space. An empty
+    /// `stops` vector yields no visible gradient (the shading is omitted
+    /// entirely rather than producing a paintless fill).
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
@@ -73,7 +75,8 @@ pub struct RadialGradient {
     pub spread_method: SpreadMethod,
     /// The color stops of the radial gradient.
     ///
-    /// Note that all stops need to be in the same color space.
+    /// Note that all stops need to be in the same color space. An empty
+    /// `stops` vector yields no visible gradient.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
@@ -115,7 +118,8 @@ pub struct SweepGradient {
     pub spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
     ///
-    /// Note that all stops need to be in the same color space.
+    /// Note that all stops need to be in the same color space. An empty
+    /// `stops` vector yields no visible gradient.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
