@@ -404,12 +404,18 @@ pub(crate) fn pdf_date(date_time: DateTime) -> pdf_writer::Date {
 
 /// Converts a datetime to an xmp-writer datetime.
 fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
-    let timezone = match (datetime.utc_offset_hour, datetime.utc_offset_minute) {
-        (Some(h), m) => Some(Timezone::Local {
-            hour: h,
-            minute: m as i8,
-        }),
-        _ => Some(Timezone::Utc),
+    // Mirror `pdf_date` exactly so the Info-dict and XMP dates encode the same
+    // instant: an unset offset hour defaults to 0, keeping any offset minute
+    // (rather than collapsing a minutes-only offset to UTC).
+    let hour = datetime.utc_offset_hour.unwrap_or(0);
+    let minute = datetime.utc_offset_minute;
+    let timezone = if hour == 0 && minute == 0 {
+        Some(Timezone::Utc)
+    } else {
+        Some(Timezone::Local {
+            hour,
+            minute: minute as i8,
+        })
     };
 
     // We always assume a full date with all fields because for some reason
