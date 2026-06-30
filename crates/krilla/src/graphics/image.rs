@@ -374,6 +374,10 @@ impl Image {
                 .pdf_version()
                 .supports_icc(ic.metadata())
                 && self.color_space().matches_icc_profile(&ic)
+                // PDF/X-1a forbids ICCBased (and any CIE-based) image color
+                // spaces; fall back to the device color space below. PDF/X-3/-4
+                // /-6 permit ICCBased, so they keep the embedded profile.
+                && !sc.serialize_settings().validators().requires_cmyk_only()
             {
                 let ref_ = match ic {
                     GenericICCProfile::Luma(l) => {
@@ -395,6 +399,33 @@ impl Image {
             }
         });
 
+        // A DeviceCMYK image (no usable embedded ICC, so `icc_ref` is None) is
+        // characterized by the output intent, exactly like a DeviceCMYK fill, so
+        // that intent must be CMYK. An ICC-tagged image keeps its own profile and
+        // is self-characterizing.
+        if icc_ref.is_none()
+            && matches!(self.color_space(), ImageColorspace::Cmyk)
+            && sc.serialize_settings().validators().is_pdf_x()
+            && sc.serialize_settings().pdfx_output_intent_is_cmyk() == Some(false)
+        {
+            sc.register_validation_error(ValidationError::OutputIntentColorSpaceMismatch(
+                sc.location,
+            ));
+        }
+
+        // A bare DeviceGray image (no embedded ICC) is valid under a CMYK or
+        // grayscale output intent, but not under an RGB one (ISO 15930-7
+        // §6.4.3.2 / ISO 15930-9 §6.6.3.2), mirroring the DeviceGray fill path.
+        if icc_ref.is_none()
+            && matches!(self.color_space(), ImageColorspace::Luma)
+            && sc.serialize_settings().validators().is_pdf_x()
+            && sc.serialize_settings().pdfx_output_intent_is_rgb()
+        {
+            sc.register_validation_error(ValidationError::OutputIntentColorSpaceMismatch(
+                sc.location,
+            ));
+        }
+
         if self.0.interpolate {
             sc.register_validation_error(ValidationError::ImageInterpolation(sc.location));
         }
@@ -404,10 +435,18 @@ impl Image {
         let cs = {
             let cs = match self.color_space() {
                 ImageColorspace::Rgb => {
+                    if sc.serialize_settings().validators().requires_cmyk_only() {
+                        sc.register_validation_error(ValidationError::ContainsRgb(sc.location));
+                    }
                     rgb::color_space(sc.serialize_settings().no_device_cs).into()
                 }
                 ImageColorspace::Luma => {
-                    luma::color_space(sc.serialize_settings().no_device_cs).into()
+                    // Under PDF/X, grayscale stays DeviceGray (characterized by
+                    // the output intent) rather than ICC-wrapped to sGray,
+                    // mirroring the fill path in `RegularColor::color_space`.
+                    let no_device_cs = sc.serialize_settings().no_device_cs
+                        && !sc.serialize_settings().validators().is_pdf_x();
+                    luma::color_space(no_device_cs).into()
                 }
                 ImageColorspace::Cmyk => match cmyk::color_space(&sc.serialize_settings()) {
                     None => {

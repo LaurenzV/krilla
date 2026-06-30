@@ -129,15 +129,55 @@ impl Color {
 impl RegularColor {
     pub(crate) fn color_space(&self, sc: &mut SerializeContext) -> RegularColorSpace {
         match self {
-            Self::Rgb(r) => r.color_space(sc.serialize_settings().no_device_cs),
-            Self::Luma(_) => luma::color_space(sc.serialize_settings().no_device_cs),
-            Self::Cmyk(_) => match cmyk::color_space(&sc.serialize_settings()) {
-                None => {
-                    sc.register_validation_error(ValidationError::MissingCMYKProfile);
-                    DeviceColorSpace::Cmyk.into()
+            Self::Rgb(r) => {
+                if sc.serialize_settings().validators().requires_cmyk_only() {
+                    sc.register_validation_error(ValidationError::ContainsRgb(sc.location));
                 }
-                Some(cs) => cs,
-            },
+                r.color_space(sc.serialize_settings().no_device_cs)
+            }
+            Self::Luma(_) => {
+                // PDF/X: DeviceGray content is characterized by the output
+                // intent, so it stays DeviceGray (matching the DeviceCMYK
+                // treatment) rather than being ICC-wrapped to sGray.
+                //
+                // ISO 15930-7 §6.4.3.2 / ISO 15930-9 §6.6.3.2: a device colour
+                // space may be used only if it matches the output intent, or the
+                // intent is CMYK and the space is DeviceGray. DeviceGray is thus
+                // valid under a CMYK or grayscale intent but not under an RGB one
+                // (which would require a DefaultGray colour space that krilla
+                // does not emit).
+                if sc.serialize_settings().validators().is_pdf_x()
+                    && sc.serialize_settings().pdfx_output_intent_is_rgb()
+                {
+                    sc.register_validation_error(ValidationError::OutputIntentColorSpaceMismatch(
+                        sc.location,
+                    ));
+                }
+                let no_device_cs = sc.serialize_settings().no_device_cs
+                    && !sc.serialize_settings().validators().is_pdf_x();
+                luma::color_space(no_device_cs)
+            }
+            Self::Cmyk(_) => {
+                // PDF/X emits DeviceCMYK, which the GTS_PDFX output intent must
+                // characterize: its profile has to be CMYK. A present-but-non-
+                // CMYK output target (e.g. an external RGB profile for X-4p, or a
+                // 4-channel non-`'CMYK'` profile) leaves the content
+                // uncharacterized. A missing profile is reported separately.
+                if sc.serialize_settings().validators().is_pdf_x()
+                    && sc.serialize_settings().pdfx_output_intent_is_cmyk() == Some(false)
+                {
+                    sc.register_validation_error(ValidationError::OutputIntentColorSpaceMismatch(
+                        sc.location,
+                    ));
+                }
+                match cmyk::color_space(&sc.serialize_settings()) {
+                    None => {
+                        sc.register_validation_error(ValidationError::MissingCMYKProfile);
+                        DeviceColorSpace::Cmyk.into()
+                    }
+                    Some(cs) => cs,
+                }
+            }
         }
     }
 
@@ -279,6 +319,16 @@ pub mod cmyk {
     }
 
     pub(crate) fn color_space(ss: &SerializeSettings) -> Option<RegularColorSpace> {
+        // PDF/X always writes a CMYK output intent that characterizes
+        // `DeviceCMYK` page content. Wrapping CMYK in an ICCBased color space
+        // that duplicates the output-intent profile is disallowed by PDF/X, so
+        // CMYK content remains `DeviceCMYK` regardless of `no_device_cs`. (RGB
+        // and gray still honour `no_device_cs`, since a CMYK output intent does
+        // not characterize them.)
+        if ss.validators().is_pdf_x() {
+            return Some(DeviceColorSpace::Cmyk.into());
+        }
+
         if ss.no_device_cs {
             ss.clone()
                 .cmyk_profile

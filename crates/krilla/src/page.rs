@@ -10,11 +10,11 @@ use pdf_writer::{Chunk, Finish, Ref, TextStr};
 
 use crate::chunk_container::ChunkContainer;
 use crate::configure::validate::VersionedFeature;
-use crate::configure::ValidationError;
+use crate::configure::{PdfVersion, ValidationError};
 use crate::content::ContentBuilder;
 use crate::error::KrillaResult;
 use crate::geom::{Rect, Size, Transform};
-use crate::interactive::annotation::Annotation;
+use crate::interactive::annotation::{Annotation, AnnotationType};
 use crate::interchange::tagging::{Identifier, PageTagIdentifier};
 use crate::resource::ResourceDictionary;
 use crate::serialize::{PageInfo, SerializeContext};
@@ -388,7 +388,37 @@ impl InternalPage {
         let mut annotation_refs = vec![];
 
         if !self.annotations.is_empty() {
+            // PDF/X-3/-4/-4p: annotations must lie wholly outside the print area
+            // — the BleedBox, or the TrimBox/ArtBox if there is no BleedBox.
+            // PDF/X-1a forbids annotations outright, and PDF/X-6/-6p (ISO
+            // 15930-9 §6.12) permit annotations inside the visible area, so
+            // neither imposes this positional rule.
+            let validators = sc.serialize_settings().validators();
+            let print_area = validators
+                .requires_annotations_outside_print_area()
+                .then(|| {
+                    self.page_settings
+                        .bleed_box()
+                        .or_else(|| self.page_settings.trim_box())
+                        .or_else(|| self.page_settings.art_box())
+                })
+                .flatten();
+
             for annotation in &self.annotations {
+                if let Some(area) = print_area {
+                    let AnnotationType::Link(link) = &annotation.annotation_type;
+                    let r = link.rect;
+                    let outside = r.right() <= area.left()
+                        || r.left() >= area.right()
+                        || r.bottom() <= area.top()
+                        || r.top() >= area.bottom();
+                    if !outside {
+                        sc.register_validation_error(ValidationError::AnnotationInsidePrintArea(
+                            annotation.location,
+                        ));
+                    }
+                }
+
                 let annot_ref = sc.new_ref();
 
                 annotation.serialize(
@@ -439,6 +469,124 @@ impl InternalPage {
         if let Some(art_box) = self.page_settings.art_box() {
             let art_box = transform_rect(art_box);
             page.art_box(art_box.to_pdf_rect());
+        }
+
+        // PDF/X-1a/-3/-4/-4p: every page must have a TrimBox or an ArtBox.
+        let validators = sc.serialize_settings().validators();
+        if validators.requires_trim_or_art_box()
+            && self.page_settings.trim_box().is_none()
+            && self.page_settings.art_box().is_none()
+        {
+            sc.register_validation_error(ValidationError::MissingTrimOrArtBox(
+                self.page_index,
+                sc.location,
+            ));
+        }
+
+        // PDF/X-6/-6p: every page must have a TrimBox specifically — an ArtBox
+        // is not an acceptable substitute (ISO 15930-9 §6.9).
+        if validators.requires_trim_box() && self.page_settings.trim_box().is_none() {
+            sc.register_validation_error(ValidationError::MissingTrimBox(
+                self.page_index,
+                sc.location,
+            ));
+        }
+
+        // PDF/X: a page carries exactly one of TrimBox/ArtBox, and the page
+        // boxes must nest (ISO 15930-4 §6.8, ISO 15930-7 §6.12):
+        // MediaBox ⊇ CropBox ⊇ BleedBox ⊇ TrimBox/ArtBox. Every box lies within
+        // the MediaBox; if a CropBox is present, none of the
+        // BleedBox/TrimBox/ArtBox extends beyond it; if a BleedBox is present,
+        // the TrimBox/ArtBox lies within it.
+        if validators.is_pdf_x() {
+            let ps = &self.page_settings;
+
+            // The "a TrimBox or an ArtBox, but not both" rule applies to the PDF
+            // 1.4/1.6-based levels only; PDF/X-6/-6p (ISO 15930-9 §6.9) permit a
+            // TrimBox and an ArtBox to coexist.
+            if validators.requires_trim_or_art_box()
+                && ps.trim_box().is_some()
+                && ps.art_box().is_some()
+            {
+                sc.register_validation_error(ValidationError::BothTrimAndArtBox(
+                    self.page_index,
+                    sc.location,
+                ));
+            }
+
+            // Containment is affine-invariant, so it is checked on the
+            // untransformed boxes. `<=`/`>=` allow coincident edges.
+            let contains = |outer: Rect, inner: Rect| {
+                outer.left() <= inner.left()
+                    && outer.top() <= inner.top()
+                    && outer.right() >= inner.right()
+                    && outer.bottom() >= inner.bottom()
+            };
+            let media = ps.media_box().unwrap_or(self.bbox);
+
+            // Every present box must enclose a region of positive area.
+            let positive = |r: Rect| r.right() > r.left() && r.bottom() > r.top();
+            if [
+                Some(media),
+                ps.crop_box(),
+                ps.bleed_box(),
+                ps.trim_box(),
+                ps.art_box(),
+            ]
+            .into_iter()
+            .flatten()
+            .any(|r| !positive(r))
+            {
+                sc.register_validation_error(ValidationError::DegeneratePageBox(
+                    self.page_index,
+                    sc.location,
+                ));
+            }
+
+            // PDF 1.4 (PDF/X-1a, PDF/X-3) caps each page dimension at 14400 units.
+            const MAX_PDF14_BOX: f32 = 14400.0;
+            if sc.serialize_settings().pdf_version() == PdfVersion::Pdf14
+                && [
+                    Some(media),
+                    ps.crop_box(),
+                    ps.bleed_box(),
+                    ps.trim_box(),
+                    ps.art_box(),
+                ]
+                .into_iter()
+                .flatten()
+                .any(|r| {
+                    r.right() - r.left() > MAX_PDF14_BOX || r.bottom() - r.top() > MAX_PDF14_BOX
+                })
+            {
+                sc.register_validation_error(ValidationError::PageBoxTooLarge(
+                    self.page_index,
+                    sc.location,
+                ));
+            }
+
+            let nested = [ps.crop_box(), ps.bleed_box(), ps.trim_box(), ps.art_box()]
+                .into_iter()
+                .flatten()
+                .all(|inner| contains(media, inner))
+                && ps.crop_box().is_none_or(|crop| {
+                    [ps.bleed_box(), ps.trim_box(), ps.art_box()]
+                        .into_iter()
+                        .flatten()
+                        .all(|inner| contains(crop, inner))
+                })
+                && ps.bleed_box().is_none_or(|bleed| {
+                    [ps.trim_box(), ps.art_box()]
+                        .into_iter()
+                        .flatten()
+                        .all(|inner| contains(bleed, inner))
+                });
+            if !nested {
+                sc.register_validation_error(ValidationError::PageBoxNotNested(
+                    self.page_index,
+                    sc.location,
+                ));
+            }
         }
 
         if let Some(struct_parent) = self.struct_parent {

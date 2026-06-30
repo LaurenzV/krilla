@@ -3,7 +3,7 @@
 pub mod validate;
 mod version;
 
-pub use validate::{Accessibility, Archival, ValidationError, Validator, Validators};
+pub use validate::{Accessibility, Archival, Prepress, ValidationError, Validator, Validators};
 pub use version::PdfVersion;
 
 use crate::configure::validate::ValidatorsBuilder;
@@ -64,12 +64,22 @@ impl ConfigurationBuilder {
         self
     }
 
+    /// Set the PDF/X prepress validator, overwriting the current one if already set.
+    pub fn with_prepress_validator(mut self, prepress: Prepress) -> Self {
+        self.validators = self.validators.with_prepress_validator(prepress);
+        self
+    }
+
     /// Build the [`Configuration`], returning an error if the validators and version are incompatible.
     pub fn finish(self) -> Result<Configuration, ConfigurationError> {
         let validators = self
             .validators
             .finish()
             .map_err(ConfigurationError::NoOverlappingValidatorsRange)?;
+
+        if validators.has_incompatible_output_intents() {
+            return Err(ConfigurationError::IncompatibleOutputIntents(validators));
+        }
 
         let validator_range = validators.min().unwrap_or(PdfVersion::MIN)..=validators.max();
         match self.version {
@@ -103,13 +113,23 @@ pub enum ConfigurationError {
     NoOverlappingValidatorsRange(Validators),
     /// The explicitly set PDF version falls outside the range allowed by the validators.
     VersionDoesNotMatchValidatorsRange(PdfVersion, Validators),
+    /// The selected validators have irreconcilable output-intent requirements.
+    ///
+    /// Every PDF/X level permits additional output intents with a different `S`
+    /// key (ISO 15930-4 §6.2.2, ISO 15930-7 §6.2.2), and PDF/A permits several
+    /// output intents that share one embedded `DestOutputProfile` (ISO 19005-1
+    /// §6.2.2), so PDF/A composes with the embedded-profile PDF/X levels
+    /// (PDF/X-1a, PDF/X-3, PDF/X-4, PDF/X-6). The sole incompatibility is the
+    /// external-profile PDF/X levels (PDF/X-4p, PDF/X-6p), whose
+    /// `DestOutputProfileRef` PDF/A forbids: that combination is rejected.
+    IncompatibleOutputIntents(Validators),
 }
 
 #[cfg(test)]
 mod tests {
     use crate::configure::{
         Accessibility, Archival, Configuration, ConfigurationBuilder, ConfigurationError,
-        PdfVersion,
+        PdfVersion, Prepress,
     };
 
     #[test]
@@ -193,5 +213,131 @@ mod tests {
             ConfigurationBuilder::new().finish().unwrap(),
             Configuration::default()
         );
+    }
+
+    #[test]
+    fn prepress_versions_are_pinned() {
+        let version = |x: Prepress| {
+            ConfigurationBuilder::new()
+                .with_prepress_validator(x)
+                .finish()
+                .unwrap()
+                .version()
+        };
+        assert_eq!(version(Prepress::X1A), PdfVersion::Pdf14);
+        assert_eq!(version(Prepress::X3), PdfVersion::Pdf14);
+        assert_eq!(version(Prepress::X4), PdfVersion::Pdf16);
+        assert_eq!(version(Prepress::X4P), PdfVersion::Pdf16);
+        assert_eq!(version(Prepress::X6), PdfVersion::Pdf20);
+        assert_eq!(version(Prepress::X6P), PdfVersion::Pdf20);
+    }
+
+    #[test]
+    fn prepress_rejects_out_of_range_version() {
+        // PDF/X-4 is pinned to PDF 1.6; PDF 1.7 is out of range.
+        assert!(matches!(
+            ConfigurationBuilder::new()
+                .with_prepress_validator(Prepress::X4)
+                .with_version(PdfVersion::Pdf17)
+                .finish(),
+            Err(ConfigurationError::VersionDoesNotMatchValidatorsRange(
+                PdfVersion::Pdf17,
+                _
+            ))
+        ));
+    }
+
+    #[test]
+    fn combined_archival_prepress_negotiates_version() {
+        // PDF/A-2b (1.4..=1.7) + PDF/X-4 (1.6) -> 1.6.
+        let config = ConfigurationBuilder::new()
+            .with_archival_validator(Archival::A2_B)
+            .with_prepress_validator(Prepress::X4)
+            .finish()
+            .unwrap();
+        assert_eq!(config.version(), PdfVersion::Pdf16);
+        assert_eq!(config.validators().archival(), Some(Archival::A2_B));
+        assert_eq!(config.validators().prepress(), Some(Prepress::X4));
+
+        // PDF/A-4 (2.0) + PDF/X-6 (2.0) -> 2.0.
+        let config = ConfigurationBuilder::new()
+            .with_archival_validator(Archival::A4)
+            .with_prepress_validator(Prepress::X6)
+            .finish()
+            .unwrap();
+        assert_eq!(config.version(), PdfVersion::Pdf20);
+    }
+
+    #[test]
+    fn combined_archival_prepress_without_overlap_is_rejected() {
+        // PDF/A-1b (max 1.4) + PDF/X-4 (1.6) have no overlapping version range.
+        assert!(matches!(
+            ConfigurationBuilder::new()
+                .with_archival_validator(Archival::A1_B)
+                .with_prepress_validator(Prepress::X4)
+                .finish(),
+            Err(ConfigurationError::NoOverlappingValidatorsRange(_))
+        ));
+    }
+
+    #[test]
+    fn pdfa1_with_pdfx1a_x3_is_allowed() {
+        // A PDF/A-1 file may additionally carry a GTS_PDFX output intent
+        // alongside its GTS_PDFA1 one: ISO 19005-1 §6.2.2 permits several output
+        // intents sharing one embedded profile, and ISO 15930-4 §6.2.2 permits
+        // additional output intents with a different S key. Both standards are
+        // PDF 1.4, so the combination resolves to a valid PDF 1.4 configuration.
+        for prepress in [Prepress::X1A, Prepress::X3] {
+            for archival in [Archival::A1_A, Archival::A1_B] {
+                let config = ConfigurationBuilder::new()
+                    .with_archival_validator(archival)
+                    .with_prepress_validator(prepress)
+                    .finish()
+                    .unwrap_or_else(|e| panic!("{archival:?} + {prepress:?} must build: {e:?}"));
+                assert_eq!(config.version(), PdfVersion::Pdf14);
+            }
+        }
+    }
+
+    #[test]
+    fn pdfa2_a3_with_pdfx1a_x3_is_allowed() {
+        // PDF/A-2/3 (which krilla admits down to PDF 1.4) likewise composes with
+        // the embedded-profile PDF/X-1a/X-3: the shared GTS_PDFA1 profile and the
+        // additional GTS_PDFX intent are mutually permitted. The intersection of
+        // the version ranges is PDF 1.4.
+        for prepress in [Prepress::X1A, Prepress::X3] {
+            for archival in [Archival::A2_B, Archival::A2_U, Archival::A3_B] {
+                let config = ConfigurationBuilder::new()
+                    .with_archival_validator(archival)
+                    .with_prepress_validator(prepress)
+                    .finish()
+                    .unwrap_or_else(|e| panic!("{archival:?} + {prepress:?} must build: {e:?}"));
+                assert_eq!(config.version(), PdfVersion::Pdf14);
+            }
+        }
+    }
+
+    #[test]
+    fn pdfa_with_external_output_profile_pdfx_is_rejected() {
+        // PDF/A requires its output profile to be embedded, while PDF/X-4p and
+        // PDF/X-6p reference it externally via DestOutputProfileRef, which PDF/A
+        // forbids. The version ranges overlap (A2/A3 + X-4p at 1.6, A4 + X-6p at
+        // 2.0), so this must be caught as an output-intent conflict.
+        for (archival, prepress) in [
+            (Archival::A2_B, Prepress::X4P),
+            (Archival::A3_B, Prepress::X4P),
+            (Archival::A4, Prepress::X6P),
+        ] {
+            assert!(
+                matches!(
+                    ConfigurationBuilder::new()
+                        .with_archival_validator(archival)
+                        .with_prepress_validator(prepress)
+                        .finish(),
+                    Err(ConfigurationError::IncompatibleOutputIntents(_))
+                ),
+                "{archival:?} + {prepress:?} must be rejected"
+            );
+        }
     }
 }

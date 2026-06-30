@@ -13,8 +13,8 @@ use crate::metadata::metadata_impl;
 use crate::svg::sample_svg;
 use crate::text::simple_text_impl;
 use crate::{
-    load_pdf, load_png_image, loc, rect_to_path, red_fill, settings_16, settings_17, settings_2,
-    validation_errors, youtube_link, NOTO_SANS,
+    load_pdf, load_png_image, loc, metadata_1, rect_to_path, red_fill, settings_16, settings_17,
+    settings_2, validation_errors, youtube_link, NOTO_SANS,
 };
 
 #[snapshot(document)]
@@ -175,6 +175,7 @@ fn pdf_embedded_validated_export() {
     // While it is in principle possible to support embedded PDFs in validated export if the
     // embedded PDF also conforms, for now we outright reject it.
     let mut document = Document::new_with(crate::settings_23());
+    document.set_metadata(metadata_1());
 
     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");
     document.embed_pdf_pages(&pdf, &[0]);

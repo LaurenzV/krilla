@@ -79,12 +79,57 @@ jobs:
           path: ./diffs
 
       - name: Run Arlington PDF tests
+        # The PDF/X snapshots below cannot be validated against the ISO 19005-3
+        # (PDF/A-3) Arlington model: PDF/X-6/-6p are PDF 2.0 and PDF/X-4p uses an
+        # externally referenced output profile. The rationale lives in
+        # crates/krilla/src/configure/PDF_X.md under "Validation tooling notes".
         run: find ./store -name "*.pdf"
-          | xargs /tmp/arlington/arlington-pdf-model-checker --format text -r -v --loglevel 0 -e ISO_19005_3
+          ! -name "validate_pdf_x4p_full_example.pdf"
+          ! -name "validate_pdf_x6_full_example.pdf"
+          ! -name "validate_pdf_x6p_full_example.pdf"
+          -print0
+          | xargs -0 /tmp/arlington/arlington-pdf-model-checker --format text -r -v --loglevel 0 -e ISO_19005_3
 
       - name: Run veraPDF tests
-        run: find store -name "validate*.pdf"
+        # veraPDF has no PDF/X profile; see "Validation tooling notes" in
+        # crates/krilla/src/configure/PDF_X.md for how PDF/X conformance is
+        # covered instead.
+        run: find store -name "validate_pdf_a*.pdf"
           | xargs /tmp/verapdf/verapdf --format text -r -v --loglevel 0
+
+      - name: Verify PDF/X structural markers
+        # Lightweight smoke test: verify that pure PDF/X outputs contain the
+        # expected output intent and XMP identification strings.
+        run: |
+          set -u
+          pdfs=$(find store -name "validate_pdf_x*.pdf")
+          if [ -z "$pdfs" ]; then
+            echo "FAIL: no validate_pdf_x*.pdf files found under store/"
+            exit 1
+          fi
+          failed=0
+          for pdf in $pdfs; do
+            name=$(basename "$pdf")
+            file_failed=0
+            if ! grep -aq "GTS_PDFX" "$pdf"; then
+              echo "FAIL: $name missing GTS_PDFX output intent"
+              file_failed=1
+            fi
+            if ! grep -aq "GTS_PDFXVersion" "$pdf"; then
+              echo "FAIL: $name missing GTS_PDFXVersion in XMP"
+              file_failed=1
+            fi
+            if ! grep -aq "Trapped" "$pdf"; then
+              echo "FAIL: $name missing Trapped marker"
+              file_failed=1
+            fi
+            if [ "$file_failed" -eq 0 ]; then
+              echo "OK: $name"
+            else
+              failed=1
+            fi
+          done
+          exit $failed
 
       - name: Check PDFs with ghostscript
         run: python3 check_gs.py

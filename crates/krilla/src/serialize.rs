@@ -6,8 +6,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use indexmap::IndexMap;
-use pdf_writer::types::{StructRole, StructRole2};
-use pdf_writer::writers::{OutputIntent, StructTreeRoot};
+use pdf_writer::types::{OutputIntentSubtype, StructRole, StructRole2};
+use pdf_writer::writers::{FileSpec, OutputIntent, StructTreeRoot};
 use pdf_writer::{Chunk, Content, Finish, Limits, Name, Pdf, Ref, Settings, Str, TextStr};
 
 use crate::chunk_container::ChunkContainer;
@@ -17,7 +17,7 @@ use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
 use crate::error::{KrillaError, KrillaResult, LimitError};
 use crate::geom::Size;
 use crate::graphics::color::{rgb, ColorSpace};
-use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
+use crate::graphics::icc::{GenericICCProfile, ICCBasedColorSpace, ICCColorSpace, ICCProfile};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
 use crate::graphics::separation::SeparationColorSpace;
@@ -79,6 +79,10 @@ pub struct SerializeSettings {
     ///
     /// This is usually not required, but it is for example required when exporting
     /// to PDF/A and using a CMYK color, since they have to be device-independent.
+    ///
+    /// For PDF/X variants that embed their output intent (PDF/X-1a, PDF/X-3,
+    /// PDF/X-4, PDF/X-6), this profile is also used as the embedded
+    /// printer/output profile for the PDF/X output intent.
     pub cmyk_profile: Option<ICCProfile<4>>,
     /// A validator and PDF version used for export.
     ///
@@ -116,9 +120,252 @@ pub struct SerializeSettings {
     /// just use the default function which doesn't render them at all. If you do want this, it
     /// is recommended that you use the function provided by the `krilla-svg` crate.
     pub render_svg_glyph_fn: RenderSvgGlyphFn,
+    /// An external ICC profile reference used by PDF/X-4p and PDF/X-6p.
+    ///
+    /// This setting is required when exporting with [`Prepress::X4P`] or
+    /// [`Prepress::X6P`]. In those modes, the PDF/X output intent references
+    /// the ICC profile externally instead of embedding it in the PDF.
+    ///
+    /// Supplying this setting when no PDF/X-4p or PDF/X-6p validator is active
+    /// is rejected during validation.
+    ///
+    /// [`Prepress::X4P`]: crate::configure::Prepress::X4P
+    /// [`Prepress::X6P`]: crate::configure::Prepress::X6P
+    pub external_output_profile: Option<ExternalOutputProfile>,
 }
 
 pub type RenderSvgGlyphFn = fn(&[u8], rgb::Color, GlyphId, (f32, f32), &mut Surface) -> Option<()>;
+
+/// A reference to an externally hosted output profile for PDF/X-4p and
+/// PDF/X-6p.
+///
+/// Construction validates the required fields eagerly; the type guarantees by
+/// construction that at least one non-empty URL, a non-empty output condition
+/// identifier, and a non-empty informational string are present.
+#[derive(Clone, Debug)]
+pub struct ExternalOutputProfile {
+    urls: Vec<String>,
+    profile: GenericICCProfile,
+    output_condition_identifier: String,
+    output_condition: Option<String>,
+    registry_name: Option<String>,
+    info: String,
+}
+
+/// Reason construction of an [`ExternalOutputProfile`] failed.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub enum ExternalOutputProfileError {
+    /// The `urls` vector was empty or contained only empty/whitespace strings.
+    EmptyUrls,
+    /// The output condition identifier was empty or only whitespace.
+    EmptyIdentifier,
+    /// The information string was empty or only whitespace.
+    EmptyInfo,
+    /// The profile's ICC data colour space is not the one implied by the
+    /// constructor — i.e. not `GRAY` for [`ExternalOutputProfile::luma`], `RGB `
+    /// for [`ExternalOutputProfile::rgb`], or `CMYK` for
+    /// [`ExternalOutputProfile::cmyk`]. A PDF/X output-intent profile must have a
+    /// `GRAY`/`RGB `/`CMYK` data colour space (ISO 15930-7 §6.4.1, Annex A.2);
+    /// a same-channel-count profile with a different signature (e.g. `Lab `,
+    /// `1CLR`, `4CLR`/DeviceN) is rejected.
+    WrongColorSpace,
+}
+
+impl core::fmt::Display for ExternalOutputProfileError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let reason = match self {
+            ExternalOutputProfileError::EmptyUrls => "at least one non-empty URL must be provided",
+            ExternalOutputProfileError::EmptyIdentifier => {
+                "the output condition identifier must be non-empty"
+            }
+            ExternalOutputProfileError::EmptyInfo => "the informational string must be non-empty",
+            ExternalOutputProfileError::WrongColorSpace => {
+                "the profile's data colour space must be GRAY, RGB or CMYK and match the constructor"
+            }
+        };
+        f.write_str(reason)
+    }
+}
+
+impl std::error::Error for ExternalOutputProfileError {}
+
+impl ExternalOutputProfile {
+    /// Create an external RGB output profile reference.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ExternalOutputProfileError::EmptyUrls`],
+    /// [`ExternalOutputProfileError::EmptyIdentifier`], or
+    /// [`ExternalOutputProfileError::EmptyInfo`] if any of `urls`,
+    /// `output_condition_identifier`, or `info` is empty (or contains only
+    /// whitespace) after trimming; or [`ExternalOutputProfileError::WrongColorSpace`]
+    /// if the profile's ICC data colour space is not the one implied by the
+    /// constructor (`GRAY` for [`luma`](Self::luma), `RGB ` for
+    /// [`rgb`](Self::rgb), `CMYK` for [`cmyk`](Self::cmyk)).
+    pub fn rgb(
+        profile: ICCProfile<3>,
+        urls: Vec<String>,
+        output_condition_identifier: String,
+        info: String,
+    ) -> Result<Self, ExternalOutputProfileError> {
+        Self::new(
+            GenericICCProfile::Rgb(profile),
+            urls,
+            output_condition_identifier,
+            info,
+        )
+    }
+
+    /// Create an external grayscale output profile reference.
+    ///
+    /// # Errors
+    ///
+    /// See [`ExternalOutputProfile::rgb`].
+    pub fn luma(
+        profile: ICCProfile<1>,
+        urls: Vec<String>,
+        output_condition_identifier: String,
+        info: String,
+    ) -> Result<Self, ExternalOutputProfileError> {
+        Self::new(
+            GenericICCProfile::Luma(profile),
+            urls,
+            output_condition_identifier,
+            info,
+        )
+    }
+
+    /// Create an external CMYK output profile reference.
+    ///
+    /// # Errors
+    ///
+    /// See [`ExternalOutputProfile::rgb`].
+    pub fn cmyk(
+        profile: ICCProfile<4>,
+        urls: Vec<String>,
+        output_condition_identifier: String,
+        info: String,
+    ) -> Result<Self, ExternalOutputProfileError> {
+        Self::new(
+            GenericICCProfile::Cmyk(profile),
+            urls,
+            output_condition_identifier,
+            info,
+        )
+    }
+
+    fn new(
+        profile: GenericICCProfile,
+        urls: Vec<String>,
+        output_condition_identifier: String,
+        info: String,
+    ) -> Result<Self, ExternalOutputProfileError> {
+        // ISO 15930-7 §6.4.1 / Annex A.2: a PDF/X output-intent profile shall
+        // have a GRAY, RGB or CMYK data colour space. The typed constructors fix
+        // the channel count, but a same-channel-count profile can still carry a
+        // different signature (e.g. a 3-channel Lab profile), so verify it here.
+        let expected = match &profile {
+            GenericICCProfile::Luma(_) => ICCColorSpace::Gray,
+            GenericICCProfile::Rgb(_) => ICCColorSpace::Rgb,
+            GenericICCProfile::Cmyk(_) => ICCColorSpace::Cmyk,
+        };
+        if profile.metadata().color_space != expected {
+            return Err(ExternalOutputProfileError::WrongColorSpace);
+        }
+        let urls = trim_url_list(urls).ok_or(ExternalOutputProfileError::EmptyUrls)?;
+        let output_condition_identifier = trim_required(output_condition_identifier)
+            .ok_or(ExternalOutputProfileError::EmptyIdentifier)?;
+        let info = trim_required(info).ok_or(ExternalOutputProfileError::EmptyInfo)?;
+        Ok(Self {
+            urls,
+            profile,
+            output_condition_identifier,
+            output_condition: None,
+            registry_name: None,
+            info,
+        })
+    }
+
+    /// Set a human-readable output condition string. Empty or whitespace-only
+    /// values are discarded.
+    pub fn with_output_condition(mut self, output_condition: String) -> Self {
+        self.output_condition = normalize_optional_string(output_condition);
+        self
+    }
+
+    /// Set the registry name for the output condition identifier. Empty or
+    /// whitespace-only values are discarded.
+    pub fn with_registry_name(mut self, registry_name: String) -> Self {
+        self.registry_name = normalize_optional_string(registry_name);
+        self
+    }
+
+    /// Return the referenced profile URLs.
+    pub fn urls(&self) -> &[String] {
+        &self.urls
+    }
+
+    /// Return the output condition identifier.
+    pub fn output_condition_identifier(&self) -> &str {
+        &self.output_condition_identifier
+    }
+
+    /// Return the optional human-readable output condition string.
+    pub fn output_condition(&self) -> Option<&str> {
+        self.output_condition.as_deref()
+    }
+
+    /// Return the optional registry name.
+    pub fn registry_name(&self) -> Option<&str> {
+        self.registry_name.as_deref()
+    }
+
+    /// Return the informational string for the output condition.
+    pub fn info(&self) -> &str {
+        &self.info
+    }
+
+    pub(crate) fn profile(&self) -> &GenericICCProfile {
+        &self.profile
+    }
+}
+
+fn normalize_optional_string(value: String) -> Option<String> {
+    let trimmed = value.trim();
+    (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
+
+fn trim_required(value: String) -> Option<String> {
+    let trimmed = value.trim();
+    (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
+
+fn trim_url_list(urls: Vec<String>) -> Option<Vec<String>> {
+    let trimmed: Vec<String> = urls
+        .into_iter()
+        .filter_map(|url| {
+            let t = url.trim();
+            (!t.is_empty()).then(|| t.to_string())
+        })
+        .collect();
+    (!trimmed.is_empty()).then_some(trimmed)
+}
+
+/// Whether an ICC profile version is too new to be a PDF/X output-intent
+/// profile for the given PDF version.
+///
+/// The PDF 1.4-based levels (PDF/X-1a, PDF/X-3) admit only ICC v2. The PDF
+/// 1.6-based levels (PDF/X-4, PDF/X-4p) admit ICC v4 up to v4.2 (ISO 15930-7
+/// §6.4.2.1, citing ISO 15076-1:2005). The PDF 2.0-based levels (PDF/X-6,
+/// PDF/X-6p) admit ICC v4 up to v4.3 (ISO 15930-9, citing ISO 15076-1:2010).
+fn output_profile_version_too_new(pdf_version: PdfVersion, major: u8, minor: u8) -> bool {
+    match pdf_version {
+        PdfVersion::Pdf14 => major > 2,
+        PdfVersion::Pdf15 => major > 4,
+        PdfVersion::Pdf16 | PdfVersion::Pdf17 => major > 4 || (major == 4 && minor > 2),
+        PdfVersion::Pdf20 => major > 4 || (major == 4 && minor > 3),
+    }
+}
 
 impl SerializeSettings {
     pub(crate) fn pdf_version(&self) -> PdfVersion {
@@ -134,6 +381,37 @@ impl SerializeSettings {
         self.configuration.version().specifies_associated_files()
             || self.configuration.validators().specifies_associated_files()
     }
+
+    /// Whether the PDF/X (`GTS_PDFX`) output intent's profile is a CMYK device
+    /// profile, which is required to characterize the DeviceCMYK content krilla
+    /// emits under PDF/X. `None` if no output-target profile is configured; a
+    /// missing profile is reported separately (`MissingCMYKProfile` /
+    /// `MissingExternalOutputProfile`).
+    pub(crate) fn pdfx_output_intent_is_cmyk(&self) -> Option<bool> {
+        if self.validators().requires_external_output_profile() {
+            // The wrapper variant now matches the ICC data colour space
+            // (validated in `ExternalOutputProfile::new`), so an RGB or
+            // grayscale external intent simply reports a non-CMYK colour space.
+            self.external_output_profile
+                .as_ref()
+                .map(|p| p.profile().metadata().color_space == ICCColorSpace::Cmyk)
+        } else {
+            self.cmyk_profile
+                .as_ref()
+                .map(|p| p.metadata().color_space == ICCColorSpace::Cmyk)
+        }
+    }
+
+    /// Whether the PDF/X (`GTS_PDFX`) output intent's profile is an RGB profile.
+    /// Only the external (`-p`) variants can have an RGB output intent; the
+    /// embedded variants always use the 4-channel `cmyk_profile`.
+    pub(crate) fn pdfx_output_intent_is_rgb(&self) -> bool {
+        self.validators().requires_external_output_profile()
+            && self
+                .external_output_profile
+                .as_ref()
+                .is_some_and(|p| p.profile().metadata().color_space == ICCColorSpace::Rgb)
+    }
 }
 
 impl Default for SerializeSettings {
@@ -148,6 +426,7 @@ impl Default for SerializeSettings {
             configuration: Configuration::default(),
             enable_tagging: true,
             render_svg_glyph_fn: |_, _, _, _, _| None,
+            external_output_profile: None,
         }
     }
 }
@@ -293,7 +572,16 @@ impl SerializeContext {
             pretty: serialize_settings.pretty,
         };
 
-        Self {
+        // An external output profile is only meaningful for PDF/X-4p and
+        // PDF/X-6p. If one was supplied but no active validator makes use of
+        // it, record a validation error.
+        let unsupported_external_output_profile =
+            serialize_settings.external_output_profile.is_some()
+                && !serialize_settings
+                    .validators()
+                    .requires_external_output_profile();
+
+        let mut ctx = Self {
             cached_mappings: HashMap::new(),
             pdf2_ns,
             global_objects: GlobalObjects::default(),
@@ -306,7 +594,15 @@ impl SerializeContext {
             chunk_settings,
             limits: Limits::new(),
             validation_store: ValidationStore::new(),
+        };
+
+        if unsupported_external_output_profile {
+            ctx.register_validation_error(
+                ValidationError::ExternalOutputProfileUnsupportedByValidator,
+            );
         }
+
+        ctx
     }
 
     pub(crate) fn page_infos(&self) -> &[PageInfo] {
@@ -686,38 +982,189 @@ impl SerializeContext {
 impl SerializeContext {
     fn serialize_destination_profiles(&mut self, chunk_container: &mut ChunkContainer) {
         let validators = self.serialize_settings.validators();
-        chunk_container.non_stream.destination_profiles =
-            validators.output_intent().map(|subtype| {
-                let root_ref = self.new_ref();
-                let mut chunk = self.new_chunk();
+        let subtypes = validators.output_intents();
 
-                let oi_ref = self.new_ref();
-                let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
+        if subtypes.is_empty() {
+            return;
+        }
+
+        let root_ref = self.new_ref();
+        let mut chunk = self.new_chunk();
+        let mut oi_refs = Vec::new();
+
+        for subtype in subtypes {
+            let oi_ref = self.new_ref();
+
+            // PDF/X-4p and PDF/X-6p reference the output profile externally
+            // instead of embedding it.
+            if validators.requires_external_output_profile() && subtype == OutputIntentSubtype::PDFX
+            {
+                let Some(external_profile) =
+                    self.serialize_settings.external_output_profile.clone()
+                else {
+                    self.register_validation_error(ValidationError::MissingExternalOutputProfile);
+                    continue;
+                };
+
+                // `ExternalOutputProfile` guarantees non-empty URLs / identifier / info
+                // at construction time, so no runtime validation is needed here.
+                let metadata = external_profile.profile().metadata();
+                // Annex A.1 → §6.4.2.1: the referenced profile must characterize
+                // an output device (Device Class `prtr`) and use an admissible
+                // ICC version (v2, or v4 up to v4.2). Its colour space is
+                // constrained to GRAY/RGB/CMYK by the `ExternalOutputProfile`
+                // constructors.
+                if !metadata.is_output_rendering_device() {
+                    self.register_validation_error(
+                        ValidationError::InvalidOutputProfileDeviceClass(None),
+                    );
+                }
+                if output_profile_version_too_new(
+                    self.serialize_settings.pdf_version(),
+                    metadata.major,
+                    metadata.minor,
+                ) {
+                    self.register_validation_error(
+                        ValidationError::IncompatibleOutputProfileVersion(None),
+                    );
+                }
+                let mut dict = chunk.indirect(oi_ref).dict();
+                dict.pair(Name(b"Type"), Name(b"OutputIntent"));
+                dict.pair(Name(b"S"), Name(b"GTS_PDFX"));
+                dict.pair(
+                    Name(b"OutputConditionIdentifier"),
+                    TextStr(external_profile.output_condition_identifier()),
+                );
+                if let Some(output_condition) = external_profile.output_condition() {
+                    dict.pair(Name(b"OutputCondition"), TextStr(output_condition));
+                }
+                if let Some(registry_name) = external_profile.registry_name() {
+                    dict.pair(Name(b"RegistryName"), TextStr(registry_name));
+                }
+                dict.pair(Name(b"Info"), TextStr(external_profile.info()));
+
+                {
+                    let mut profile_ref = dict.insert(Name(b"DestOutputProfileRef")).dict();
+                    profile_ref.pair(Name(b"CheckSum"), Str(&metadata.checksum));
+                    profile_ref.pair(Name(b"ICCVersion"), Str(&metadata.version_bytes));
+                    profile_ref.pair(Name(b"ProfileCS"), Str(&metadata.color_space_signature));
+                    // ProfileName is required; fall back to the always-present
+                    // output-condition info when the profile carries no parseable
+                    // description tag.
+                    let profile_name = metadata
+                        .profile_name
+                        .as_deref()
+                        .unwrap_or_else(|| external_profile.info());
+                    profile_ref.pair(Name(b"ProfileName"), TextStr(profile_name));
+
+                    let mut urls = profile_ref.insert(Name(b"URLs")).array();
+                    for url in external_profile.urls() {
+                        let mut file_spec = urls.push().start::<FileSpec>();
+                        file_spec
+                            .file_system(Name(b"URL"))
+                            .path(Str(url.as_bytes()));
+                    }
+                }
+
+                dict.finish();
+                oi_refs.push(oi_ref);
+                continue;
+            }
+
+            let cmyk_desc = if validators.uses_cmyk_output_profile_for_subtype(subtype) {
+                match self.serialize_settings.cmyk_profile.clone() {
+                    Some(profile) => {
+                        // The output-intent profile's ICC version must not exceed
+                        // what the target PDF version admits (v2 for PDF 1.4, v4.2
+                        // for PDF 1.6, v4.3 for PDF 2.0 — see
+                        // `output_profile_version_too_new`). The output intent is
+                        // mandatory, so a too-new version is an error (unlike an
+                        // image profile, which is simply dropped).
+                        let m = profile.metadata();
+                        if output_profile_version_too_new(
+                            self.serialize_settings.pdf_version(),
+                            m.major,
+                            m.minor,
+                        ) {
+                            self.register_validation_error(
+                                ValidationError::IncompatibleOutputProfileVersion(None),
+                            );
+                        }
+                        // A PDF/X output intent must characterize an output device
+                        // (Device Class `prtr`).
+                        if !m.is_output_rendering_device() {
+                            self.register_validation_error(
+                                ValidationError::InvalidOutputProfileDeviceClass(None),
+                            );
+                        }
+                        // ISO 15930-7 §6.4.1 / ISO 15930-9 §6.6.1: the
+                        // characterized printing condition must have a
+                        // GRAY/RGB/CMYK data colour space. The embedded
+                        // `cmyk_profile` is the CMYK output target, so a
+                        // four-channel but non-`'CMYK'` profile (e.g. `'4CLR'`
+                        // DeviceN) is not acceptable. The external (-p) path
+                        // performs the equivalent check at construction time.
+                        if m.color_space != ICCColorSpace::Cmyk {
+                            self.register_validation_error(
+                                ValidationError::InvalidOutputProfileColorSpace(None),
+                            );
+                        }
+                        let major = m.major;
+                        let minor = m.minor;
+                        let profile_ref = self.register_cacheable(chunk_container, profile);
+                        Some((profile_ref, major, minor))
+                    }
+                    None => {
+                        // PDF/X requires a CMYK output intent profile. Fall back
+                        // to sRGB so we still produce a structurally valid PDF
+                        // while registering the validation error.
+                        self.register_validation_error(ValidationError::MissingCMYKProfile);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
+            let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
+            if let Some((profile_ref, major, minor)) = cmyk_desc {
+                oi.dest_output_profile(profile_ref)
+                    .subtype(subtype)
+                    // No RegistryName: ISO 15930-7 §6.4.2.1 requires that key
+                    // only when the printing condition is registry-defined, which
+                    // an embedded (unregistered "Custom") profile is not.
+                    .output_condition_identifier(TextStr("Custom"))
+                    .output_condition(TextStr("CMYK"))
+                    .info(TextStr(format!("CMYK v{major}.{minor}").as_str()));
+            } else {
+                // sRGB output intent: PDF/A, or the fallback when a CMYK profile
+                // was required but not supplied.
                 let icc_profile = self.serialize_settings.pdf_version().rgb_icc();
+                let major = icc_profile.metadata().major;
+                let minor = icc_profile.metadata().minor;
+                let profile_ref = self.register_cacheable(chunk_container, icc_profile);
+                oi.dest_output_profile(profile_ref)
+                    .subtype(subtype)
+                    .output_condition_identifier(TextStr("Custom"))
+                    .output_condition(TextStr("sRGB"))
+                    .info(TextStr(format!("sRGB v{major}.{minor}").as_str()));
+            }
 
-                oi.dest_output_profile(
-                    self.register_cacheable(chunk_container, icc_profile.clone()),
-                )
-                .subtype(subtype)
-                .output_condition_identifier(TextStr("Custom"))
-                .output_condition(TextStr("sRGB"))
-                .registry_name(TextStr(""))
-                .info(TextStr(
-                    format!(
-                        "sRGB v{}.{}",
-                        icc_profile.metadata().major,
-                        icc_profile.metadata().minor
-                    )
-                    .as_str(),
-                ));
-                oi.finish();
+            oi.finish();
+            oi_refs.push(oi_ref);
+        }
 
-                let mut array = chunk.indirect(root_ref).array();
-                array.item(oi_ref);
-                array.finish();
+        if oi_refs.is_empty() {
+            return;
+        }
 
-                (root_ref, chunk)
-            });
+        let mut array = chunk.indirect(root_ref).array();
+        for oi_ref in oi_refs {
+            array.item(oi_ref);
+        }
+        array.finish();
+
+        chunk_container.non_stream.destination_profiles = Some((root_ref, chunk));
     }
 
     fn serialize_page_label_tree(&mut self, chunk_container: &mut ChunkContainer) {

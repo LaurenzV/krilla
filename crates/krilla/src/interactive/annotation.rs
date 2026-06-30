@@ -70,6 +70,58 @@ impl Annotation {
         root_ref: Ref,
         page_height: f32,
     ) -> KrillaResult<()> {
+        // PDF/X-1a: only TrapNet and PrinterMark annotations are allowed.
+        // krilla only supports Link annotations, which are forbidden.
+        if sc.serialize_settings().validators().forbids_annotations() {
+            sc.register_validation_error(ValidationError::ContainsAnnotation(self.location));
+        }
+
+        // PDF/X-1a/X-3 forbid interactive actions. A link to an in-document
+        // destination is permitted; one carrying an action (URI, GoTo, …) is not.
+        if sc.serialize_settings().validators().forbids_actions() {
+            let AnnotationType::Link(l) = &self.annotation_type;
+            if matches!(l.target, Target::Action(_)) {
+                sc.register_validation_error(ValidationError::ContainsAction(self.location));
+            }
+        }
+
+        // PDF/X: an annotation's border color is a raw `/C` array
+        // (DeviceGray/RGB/CMYK by length) that cannot be ICC-wrapped, so the
+        // device color must be characterized by the output intent — gray under a
+        // CMYK or grayscale intent, RGB only under an RGB intent, CMYK only under
+        // a CMYK one (ISO 15930-7 §6.4.3.2, ISO 15930-9 §6.6.3.2).
+        if sc.serialize_settings().validators().is_pdf_x() {
+            let AnnotationType::Link(l) = &self.annotation_type;
+            if let Some(border) = &l.border {
+                match border.color.to_regular() {
+                    crate::color::RegularColor::Luma(_) => {
+                        // DeviceGray is not characterized by an RGB output
+                        // intent (it would need a DefaultGray colour space
+                        // krilla does not emit), mirroring the fill/image paths.
+                        if sc.serialize_settings().pdfx_output_intent_is_rgb() {
+                            sc.register_validation_error(
+                                ValidationError::OutputIntentColorSpaceMismatch(self.location),
+                            );
+                        }
+                    }
+                    crate::color::RegularColor::Rgb(_) => {
+                        if !sc.serialize_settings().pdfx_output_intent_is_rgb() {
+                            sc.register_validation_error(ValidationError::AnnotationContainsRgb(
+                                self.location,
+                            ));
+                        }
+                    }
+                    crate::color::RegularColor::Cmyk(_) => {
+                        if sc.serialize_settings().pdfx_output_intent_is_cmyk() == Some(false) {
+                            sc.register_validation_error(
+                                ValidationError::OutputIntentColorSpaceMismatch(self.location),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         let chunk = &mut chunk_container.non_stream.annotations;
         let mut annotation = chunk
             .indirect(root_ref)

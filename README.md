@@ -34,7 +34,7 @@ In addition to that, the library also supports the following PDF features:
 - Adding document metadata.
 - Creating accessible PDFs via tagged PDF.
 - Support for different PDF versions (1.4, 1.5, 1.6, 1.7, 2.0).
-- Support for validated some validated export modes (PDF/A-1, PDF/A-2, PDF/A-3, PDF/A-4, PDF/UA-1).
+- Support for validated export modes (PDF/A-1, PDF/A-2, PDF/A-3, PDF/A-4, PDF/UA-1, PDF/X-1a, PDF/X-3, PDF/X-4, PDF/X-4p, PDF/X-6, PDF/X-6p, and combined PDF/A + PDF/X variants).
 
 ## Scope
 This crate labels itself as a high-level crate, and this is what it is: It abstracts away most

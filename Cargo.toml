@@ -32,6 +32,7 @@ indexmap = "2.10.0"
 krilla = { path = "crates/krilla", version = "0.8.2" }
 krilla-svg = { path = "crates/krilla-svg", version = "0.8.1" }
 krilla-macros = { path = "crates/krilla-macros" }
+md-5 = "0.10.6"
 oxipng = "10.1.0"
 parley = "0.8.0"
 paste = "1.0.15"
@@ -56,4 +57,3 @@ xmp-writer = "0.3.3"
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.18.1"
 zune-jpeg = "0.5.5"
- 

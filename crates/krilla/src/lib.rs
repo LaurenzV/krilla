@@ -176,4 +176,4 @@ pub use document::*;
 pub use graphics::*;
 pub use interactive::*;
 pub use interchange::*;
-pub use serialize::SerializeSettings;
+pub use serialize::{ExternalOutputProfile, ExternalOutputProfileError, SerializeSettings};
