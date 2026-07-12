@@ -3,12 +3,11 @@ use krilla::configure::{PdfVersion, ValidationError};
 use krilla::error::{KrillaError, LimitError};
 use krilla::geom::{Size, Transform};
 use krilla::page::{Page, PageSettings};
-use krilla::pdf::{Pdf, PdfError};
+use krilla::pdf::PdfError;
 use krilla::surface::Surface;
 use krilla::{Document, SerializeSettings};
 use krilla_macros::{snapshot, visreg};
 use krilla_svg::{SurfaceExt, SvgSettings};
-use std::sync::Arc;
 
 use crate::metadata::metadata_impl;
 use crate::svg::sample_svg;
@@ -206,113 +205,18 @@ fn pdf_embedded_consistency() {
     }
 }
 
-fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
-    haystack
-        .windows(needle.len())
-        .any(|window| window == needle)
-}
-
-fn embedded_pdf_xobject_bytes(name: &str) -> Vec<u8> {
-    let mut document = Document::new();
-    let mut page = document.start_page_with(PageSettings::from_wh(300.0, 300.0).unwrap());
+#[snapshot]
+fn pdf_embedded_as_xobject_group_cmyk(page: &mut Page) {
     let mut surface = page.surface();
-    let pdf = load_pdf(name);
-
-    surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 200.0).unwrap(), 0);
-    surface.finish();
-    page.finish();
-
-    document.finish().unwrap()
+    let pdf = load_pdf("xobject_group_explicit_cmyk.pdf");
+    surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 100.0).unwrap(), 0);
 }
 
-fn embedded_xobject_group_dicts(name: &str) -> Vec<Vec<u8>> {
-    let data = embedded_pdf_xobject_bytes(name);
-    let output = Pdf::new(Arc::new(data)).unwrap();
-    let page = output.pages().first().unwrap();
-    let resources = page.resources();
-
-    resources
-        .x_objects
-        .keys()
-        .filter_map(|name| resources.get_x_object(&name))
-        .map(|x_object| x_object.dict().data().to_vec())
-        .filter(|dict| contains_bytes(dict, b"/Group"))
-        .collect()
-}
-
-fn embedded_xobject_group_fragments(name: &str) -> Vec<Vec<u8>> {
-    embedded_xobject_group_dicts(name)
-        .into_iter()
-        .filter_map(|dict| {
-            let group_start = dict
-                .windows(b"/Group".len())
-                .position(|window| window == b"/Group")?;
-            let rest = &dict[group_start..];
-            let group_end = rest
-                .windows(b"/Resources".len())
-                .position(|window| window == b"/Resources")
-                .unwrap_or(rest.len());
-
-            Some(rest[..group_end].to_vec())
-        })
-        .collect()
-}
-
-fn embedded_xobject_group_fragment(name: &str) -> Vec<u8> {
-    let groups = embedded_xobject_group_fragments(name);
-
-    assert_eq!(groups.len(), 1, "expected one embedded PDF XObject group");
-
-    groups[0].clone()
-}
-
-#[test]
-fn pdf_embedded_as_xobject_preserves_explicit_cmyk_group_color_space() {
-    let group = embedded_xobject_group_fragment("xobject_group_explicit_cmyk.pdf");
-
-    assert!(
-        contains_bytes(&group, b"/DeviceCMYK"),
-        "expected explicit CMYK page group to be preserved, got: {}",
-        String::from_utf8_lossy(&group)
-    );
-}
-
-#[test]
-fn pdf_embedded_as_xobject_preserves_explicit_rgb_group_color_space() {
-    let group = embedded_xobject_group_fragment("xobject_group_explicit_rgb.pdf");
-
-    assert!(
-        contains_bytes(&group, b"/DeviceRGB"),
-        "expected explicit RGB page group to be preserved, got: {}",
-        String::from_utf8_lossy(&group)
-    );
-}
-
-#[test]
-fn pdf_embedded_as_xobject_does_not_infer_cmyk_group_from_cmyk_source() {
-    let group = embedded_xobject_group_fragment("xobject_group_cmyk.pdf");
-
-    assert!(
-        !contains_bytes(&group, b"/DeviceRGB") && !contains_bytes(&group, b"/DeviceCMYK"),
-        "expected CMYK content without an explicit page group to keep the group color space unspecified, got: {}",
-        String::from_utf8_lossy(&group)
-    );
-}
-
-#[test]
-fn pdf_embedded_as_xobject_does_not_infer_cmyk_group_from_spot_source() {
-    let data = embedded_pdf_xobject_bytes("xobject_group_spot.pdf");
-    let group = embedded_xobject_group_fragment("xobject_group_spot.pdf");
-
-    assert!(
-        !contains_bytes(&group, b"/DeviceRGB") && !contains_bytes(&group, b"/DeviceCMYK"),
-        "expected spot-color content without an explicit page group to keep the group color space unspecified, got: {}",
-        String::from_utf8_lossy(&group)
-    );
-    assert!(
-        contains_bytes(&data, b"/Separation") && contains_bytes(&data, b"/SpotGreen"),
-        "expected embedded spot-color resources to remain present"
-    );
+#[snapshot]
+fn pdf_embedded_as_xobject_group_rgb(page: &mut Page) {
+    let mut surface = page.surface();
+    let pdf = load_pdf("xobject_group_explicit_rgb.pdf");
+    surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 100.0).unwrap(), 0);
 }
 
 #[visreg]

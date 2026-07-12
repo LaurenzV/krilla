@@ -6,20 +6,17 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
-use hayro_write::hayro_syntax::object::{Dict, Object};
 use hayro_write::hayro_syntax::page::Page;
 use hayro_write::hayro_syntax::PdfVersion as HayroPdfVersion;
 use hayro_write::{ExtractionError, ExtractionQuery};
-use pdf_writer::{Name, Ref};
+use pdf_writer::Ref;
 
 pub use hayro_write::hayro_syntax::Pdf;
 
 use crate::chunk_container::{ChunkContainer, EmbeddedPdfChunk};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
-use crate::graphics::color::{cmyk, rgb, DeviceColorSpace};
-use crate::resource::Resource;
-use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
+use crate::serialize::SerializeContext;
 use crate::surface::Location;
 use crate::util::{Deferred, Prehashed};
 
@@ -90,8 +87,6 @@ pub(crate) struct PdfDocumentInfo {
     query_refs: Vec<Ref>,
     cached_xobjects: HashMap<usize, Ref>,
     queries: Vec<ExtractionQuery>,
-    // hayro-write calls the group callback once for each XObject extraction query.
-    xobject_page_indices: Vec<usize>,
     locations: Vec<Option<Location>>,
 }
 
@@ -153,7 +148,6 @@ impl PdfSerializerContext {
 
         info.query_refs.push(ref_);
         info.queries.push(ExtractionQuery::new_xobject(page_index));
-        info.xobject_page_indices.push(page_index);
         info.locations.push(location);
 
         info.cached_xobjects.insert(page_index, ref_);
@@ -178,59 +172,12 @@ impl PdfSerializerContext {
                 sc.register_validation_error(ValidationError::EmbeddedPDF(*location))
             }
 
-            let xobject_group_color_spaces = explicit_xobject_group_color_spaces(&doc, &info);
-            let uses_cmyk_xobject_group_color_space = xobject_group_color_spaces
-                .iter()
-                .any(|cs| *cs == XObjectGroupColorSpace::Cmyk);
-            let uses_rgb_xobject_group_color_space = xobject_group_color_spaces
-                .iter()
-                .any(|cs| *cs == XObjectGroupColorSpace::Rgb);
-
-            let rgb_xobject_group_color_space = if uses_rgb_xobject_group_color_space {
-                Some(sc.register_colorspace(
-                    chunk_container,
-                    rgb::color_space(sc.serialize_settings().no_device_cs).into(),
-                ))
-            } else {
-                None
-            };
-
-            let cmyk_xobject_group_color_space = if uses_cmyk_xobject_group_color_space {
-                let color_space = match cmyk::color_space(&sc.serialize_settings()) {
-                    Some(cs) => cs.into(),
-                    None => {
-                        sc.register_validation_error(ValidationError::MissingCMYKProfile);
-                        DeviceColorSpace::Cmyk.into()
-                    }
-                };
-
-                Some(sc.register_colorspace(chunk_container, color_space))
-            } else {
-                None
-            };
             let chunk_settings = sc.chunk_settings();
 
             let deferred_chunk = Deferred::new(move || {
                 // We can't share the serializer context between threads, so each PDF has it's own
                 // reference, and we remap it later in `ChunkContainer`.
                 let mut new_ref = Ref::new(1);
-                let mut xobject_group_color_space_mappings = vec![];
-                let rgb_xobject_group_color_space =
-                    rgb_xobject_group_color_space.map(|color_space| {
-                        prepare_xobject_group_color_space(
-                            color_space,
-                            &mut new_ref,
-                            &mut xobject_group_color_space_mappings,
-                        )
-                    });
-                let cmyk_xobject_group_color_space =
-                    cmyk_xobject_group_color_space.map(|color_space| {
-                        prepare_xobject_group_color_space(
-                            color_space,
-                            &mut new_ref,
-                            &mut xobject_group_color_space_mappings,
-                        )
-                    });
 
                 let first_location = info.locations.iter().flatten().next().cloned();
                 let pdf = doc.pdf();
@@ -245,29 +192,10 @@ impl PdfSerializerContext {
                     ));
                 }
 
-                let mut xobject_group_color_spaces = xobject_group_color_spaces.into_iter();
                 let extracted = hayro_write::extract(
                     pdf,
                     Box::new(|| new_ref.bump()),
                     chunk_settings,
-                    |group| match xobject_group_color_spaces
-                        .next()
-                        .unwrap_or(XObjectGroupColorSpace::Unspecified)
-                    {
-                        XObjectGroupColorSpace::Unspecified => {}
-                        XObjectGroupColorSpace::Rgb => {
-                            write_xobject_group_color_space(
-                                group,
-                                rgb_xobject_group_color_space.as_ref().unwrap(),
-                            );
-                        }
-                        XObjectGroupColorSpace::Cmyk => {
-                            write_xobject_group_color_space(
-                                group,
-                                cmyk_xobject_group_color_space.as_ref().unwrap(),
-                            );
-                        }
-                    },
                     &info.queries,
                 );
                 let result = convert_extraction_result(extracted, &doc, first_location.as_ref())?;
@@ -277,12 +205,6 @@ impl PdfSerializerContext {
                 let mut root_ref_mappings = HashMap::new();
 
                 root_ref_mappings.insert(result.page_tree_parent_ref, page_tree_parent_ref);
-
-                for (local_group_color_space_ref, group_color_space_ref) in
-                    xobject_group_color_space_mappings
-                {
-                    root_ref_mappings.insert(local_group_color_space_ref, group_color_space_ref);
-                }
 
                 for ((should_ref, extraction_result), location) in info
                     .query_refs
@@ -310,83 +232,6 @@ impl PdfSerializerContext {
         }
 
         Ok(())
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum XObjectGroupColorSpace {
-    Unspecified,
-    Rgb,
-    Cmyk,
-}
-
-enum PreparedXObjectGroupColorSpace {
-    Device(DeviceColorSpace),
-    ColorSpaceRef(Ref),
-}
-
-fn prepare_xobject_group_color_space(
-    color_space: MaybeDeviceColorSpace,
-    new_ref: &mut Ref,
-    mappings: &mut Vec<(Ref, Ref)>,
-) -> PreparedXObjectGroupColorSpace {
-    match color_space {
-        MaybeDeviceColorSpace::DeviceRgb => {
-            PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Rgb)
-        }
-        MaybeDeviceColorSpace::DeviceCMYK => {
-            PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Cmyk)
-        }
-        MaybeDeviceColorSpace::ColorSpace(cs) => {
-            let local_ref = new_ref.bump();
-            mappings.push((local_ref, cs.get_ref()));
-            PreparedXObjectGroupColorSpace::ColorSpaceRef(local_ref)
-        }
-        MaybeDeviceColorSpace::DeviceGray => unreachable!(),
-    }
-}
-
-fn write_xobject_group_color_space(
-    group: &mut pdf_writer::writers::Group<'_>,
-    color_space: &PreparedXObjectGroupColorSpace,
-) {
-    match color_space {
-        PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Rgb) => {
-            group.color_space().device_rgb();
-        }
-        PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Cmyk) => {
-            group.color_space().device_cmyk();
-        }
-        PreparedXObjectGroupColorSpace::ColorSpaceRef(ref_) => {
-            group.insert(Name(b"CS")).primitive(*ref_);
-        }
-        PreparedXObjectGroupColorSpace::Device(DeviceColorSpace::Gray) => unreachable!(),
-    }
-}
-
-fn explicit_xobject_group_color_spaces(
-    document: &PdfDocument,
-    info: &PdfDocumentInfo,
-) -> Vec<XObjectGroupColorSpace> {
-    info.xobject_page_indices
-        .iter()
-        .map(|page_index| {
-            document
-                .pages()
-                .get(*page_index)
-                .and_then(explicit_page_group_color_space)
-                .unwrap_or(XObjectGroupColorSpace::Unspecified)
-        })
-        .collect()
-}
-
-fn explicit_page_group_color_space(page: &Page<'_>) -> Option<XObjectGroupColorSpace> {
-    let group = page.raw().get::<Dict<'_>>(b"Group")?;
-
-    match group.get::<Object<'_>>(b"CS")? {
-        Object::Name(name) if name.as_ref() == b"DeviceCMYK" => Some(XObjectGroupColorSpace::Cmyk),
-        Object::Name(name) if name.as_ref() == b"DeviceRGB" => Some(XObjectGroupColorSpace::Rgb),
-        _ => None,
     }
 }
 

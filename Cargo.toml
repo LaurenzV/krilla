@@ -24,7 +24,7 @@ flate2 = "1.1.0"
 float-cmp = "0.9.0"
 fontdb = "0.23.0"
 gif = "0.14.2"
-hayro-write = { version = "0.7.0" }
+hayro-write = { git = "https://github.com/LaurenzV/hayro", rev = "d8e24e29eda62581e1ea15497effb2a884fb1608" }
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.14.0"
 image-webp = "0.2.1"

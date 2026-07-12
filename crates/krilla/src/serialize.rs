@@ -224,7 +224,7 @@ enum StructParentElement {
     Annotation(AnnotationIdentifier),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) enum MaybeDeviceColorSpace {
     DeviceRgb,
     DeviceGray,
