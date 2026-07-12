@@ -205,6 +205,20 @@ fn pdf_embedded_consistency() {
     }
 }
 
+#[snapshot]
+fn pdf_embedded_as_xobject_group_cmyk(page: &mut Page) {
+    let mut surface = page.surface();
+    let pdf = load_pdf("xobject_group_explicit_cmyk.pdf");
+    surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 100.0).unwrap(), 0);
+}
+
+#[snapshot]
+fn pdf_embedded_as_xobject_group_rgb(page: &mut Page) {
+    let mut surface = page.surface();
+    let pdf = load_pdf("xobject_group_explicit_rgb.pdf");
+    surface.draw_pdf_page(&pdf, Size::from_wh(200.0, 100.0).unwrap(), 0);
+}
+
 #[visreg]
 fn pdf_embedded_as_xobject_basic(surface: &mut Surface) {
     let pdf = load_pdf("resvg_masking_clipPath_mixed_clip_rule.pdf");

@@ -486,12 +486,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fearless_simd"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76258897e51fd156ee03b6246ea53f3e0eb395d0b327e9961c4fc4c8b2fa151a"
-
-[[package]]
 name = "find-msvc-tools"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -711,38 +705,28 @@ checksum = "4f467dd6dccf739c208452f8014c75c18bb8301b050ad1cfb27153803edb0f51"
 [[package]]
 name = "hayro-ccitt"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f4d0e94ddd48749f06bbe4e5389fb9799a0c45bcaf00495042076ef05e3241a"
+source = "git+https://github.com/LaurenzV/hayro?rev=d8e24e29eda62581e1ea15497effb2a884fb1608#d8e24e29eda62581e1ea15497effb2a884fb1608"
 
 [[package]]
 name = "hayro-jbig2"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69374b3668dd45aeb3d3145cda68f2c7b4f223aaa2511e67d076f1c7d741388d"
+source = "git+https://github.com/LaurenzV/hayro?rev=d8e24e29eda62581e1ea15497effb2a884fb1608#d8e24e29eda62581e1ea15497effb2a884fb1608"
 dependencies = [
- "fearless_simd",
  "hayro-ccitt",
 ]
 
 [[package]]
 name = "hayro-jpeg2000"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c75ab947623ef4ccaa7acf0579edf7cbb5a73838e3839a7be73335e522f433a1"
-dependencies = [
- "fearless_simd",
-]
+version = "0.4.0"
+source = "git+https://github.com/LaurenzV/hayro?rev=d8e24e29eda62581e1ea15497effb2a884fb1608#d8e24e29eda62581e1ea15497effb2a884fb1608"
 
 [[package]]
 name = "hayro-syntax"
 version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0edeafd70aa2db743de8ede8637d07ec87db05efe69cde371d03f1b185fcef27"
+source = "git+https://github.com/LaurenzV/hayro?rev=d8e24e29eda62581e1ea15497effb2a884fb1608#d8e24e29eda62581e1ea15497effb2a884fb1608"
 dependencies = [
- "flate2",
  "hayro-jbig2",
  "hayro-jpeg2000",
- "memchr",
  "rustc-hash",
  "smallvec",
  "zune-jpeg",
@@ -751,12 +735,12 @@ dependencies = [
 [[package]]
 name = "hayro-write"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0b3db92c4917aad24ff30d61413a9a7509ae88b27aee1ae34eff881e1d2723a"
+source = "git+https://github.com/LaurenzV/hayro?rev=d8e24e29eda62581e1ea15497effb2a884fb1608#d8e24e29eda62581e1ea15497effb2a884fb1608"
 dependencies = [
  "flate2",
  "hayro-syntax",
  "pdf-writer",
+ "rustc-hash",
 ]
 
 [[package]]

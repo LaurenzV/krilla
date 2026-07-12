@@ -9,16 +9,14 @@ use std::sync::{Arc, OnceLock};
 use hayro_write::hayro_syntax::page::Page;
 use hayro_write::hayro_syntax::PdfVersion as HayroPdfVersion;
 use hayro_write::{ExtractionError, ExtractionQuery};
-use pdf_writer::{Name, Ref};
+use pdf_writer::Ref;
 
 pub use hayro_write::hayro_syntax::Pdf;
 
 use crate::chunk_container::{ChunkContainer, EmbeddedPdfChunk};
 use crate::configure::{PdfVersion, ValidationError};
 use crate::error::{KrillaError, KrillaResult};
-use crate::graphics::color::rgb;
-use crate::resource::Resource;
-use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
+use crate::serialize::SerializeContext;
 use crate::surface::Location;
 use crate::util::{Deferred, Prehashed};
 
@@ -174,37 +172,12 @@ impl PdfSerializerContext {
                 sc.register_validation_error(ValidationError::EmbeddedPDF(*location))
             }
 
-            // In theory `hayro-write` only requires this for PDFs that are embedded
-            // as XObject's to write the XObject group color space (embedded pages don't need it),
-            // but we just always allocate it if we have at least one PDF,
-            // regardless of how the files are embedded. We can change this in the
-            // future, but it keeps the code simpler.
-            let xobject_group_color_space = sc.register_colorspace(
-                chunk_container,
-                rgb::color_space(sc.serialize_settings().no_device_cs).into(),
-            );
             let chunk_settings = sc.chunk_settings();
 
             let deferred_chunk = Deferred::new(move || {
                 // We can't share the serializer context between threads, so each PDF has it's own
                 // reference, and we remap it later in `ChunkContainer`.
                 let mut new_ref = Ref::new(1);
-                // `local_ref` refers to the Ref that will be assigned to it locally
-                // in the extracted PDF chunk. Note that the colorspace itself
-                // doesn't actually exist in the extracted PDF, i.e. the Ref
-                // points to the null object. It just represents a placeholder Ref.
-                // Later on when actually merging the PDF chunk into the final
-                // krilla PDF, we replace `local_ref` with `cs_ref` such that it
-                // actually points to the colorspace that is embedded in the full PDF.
-                let (assigned_cs_ref, should_cs_ref) = match &xobject_group_color_space {
-                    MaybeDeviceColorSpace::DeviceRgb => (None, None),
-                    MaybeDeviceColorSpace::ColorSpace(cs) => {
-                        (Some(new_ref.bump()), Some(cs.get_ref()))
-                    }
-                    MaybeDeviceColorSpace::DeviceGray | MaybeDeviceColorSpace::DeviceCMYK => {
-                        unreachable!()
-                    }
-                };
 
                 let first_location = info.locations.iter().flatten().next().cloned();
                 let pdf = doc.pdf();
@@ -223,17 +196,6 @@ impl PdfSerializerContext {
                     pdf,
                     Box::new(|| new_ref.bump()),
                     chunk_settings,
-                    |group| {
-                        if let Some(local_group_color_space_ref) = assigned_cs_ref {
-                            group
-                                .insert(Name(b"CS"))
-                                .primitive(local_group_color_space_ref);
-                        } else {
-                            // If we aren't using an ICC color space, just use
-                            // the device RGB color space.
-                            group.color_space().device_rgb();
-                        }
-                    },
                     &info.queries,
                 );
                 let result = convert_extraction_result(extracted, &doc, first_location.as_ref())?;
@@ -243,12 +205,6 @@ impl PdfSerializerContext {
                 let mut root_ref_mappings = HashMap::new();
 
                 root_ref_mappings.insert(result.page_tree_parent_ref, page_tree_parent_ref);
-
-                if let (Some(local_group_color_space_ref), Some(group_color_space_ref)) =
-                    (assigned_cs_ref, should_cs_ref)
-                {
-                    root_ref_mappings.insert(local_group_color_space_ref, group_color_space_ref);
-                }
 
                 for ((should_ref, extraction_result), location) in info
                     .query_refs
