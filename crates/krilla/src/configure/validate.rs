@@ -167,7 +167,7 @@ impl VersionedFeature {
 }
 
 /// Collection of validators with at most one validator for each standard.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Validators {
     a: Option<Archival>,
     ua: Option<Accessibility>,
