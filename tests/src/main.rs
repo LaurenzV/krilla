@@ -56,6 +56,7 @@ mod page;
 mod path;
 mod pattern;
 mod pdf;
+mod png;
 mod separation;
 mod stream;
 mod svg;

@@ -5,6 +5,10 @@ pub fn is_supported_in_pdf(info: &png::Info) -> bool {
         return false;
     }
 
+    if info.bit_depth != png::BitDepth::Eight {
+        return false;
+    }
+
     if i32::try_from(info.width).is_err() {
         return false; // width needs to be stored as a PDF integer
     }
