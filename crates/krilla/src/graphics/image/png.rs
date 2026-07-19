@@ -4,6 +4,7 @@ pub(super) struct PngData {
     pub(super) idat: Vec<u8>,
     pub(super) bit_depth: png::BitDepth,
     pub(super) color_type: png::ColorType,
+    pub(super) palette: Option<Vec<u8>>,
 }
 
 impl PngData {
@@ -16,11 +17,17 @@ impl PngData {
 
         let header = Header::new(ihdr.data)?;
 
-        if !is_supported(&header) {
+        if header.interlaced
+            || !matches!(
+                header.color_type,
+                png::ColorType::Grayscale | png::ColorType::Rgb | png::ColorType::Indexed
+            )
+        {
             return None;
         }
 
         let mut idat = None;
+        let mut palette = None;
         let mut reached_iend = false;
 
         for png_chunk in chunks {
@@ -31,7 +38,21 @@ impl PngData {
             }
 
             match png_chunk.kind {
-                chunk::IHDR | chunk::PLTE | chunk::tRNS => return None,
+                chunk::IHDR | chunk::tRNS => return None,
+                chunk::PLTE => {
+                    let max_len = 3 * (1 << header.bit_depth as usize);
+                    if header.color_type != png::ColorType::Indexed
+                        || palette.is_some()
+                        || idat.is_some()
+                        || png_chunk.data.is_empty()
+                        || png_chunk.data.len() % 3 != 0
+                        || png_chunk.data.len() > max_len
+                    {
+                        return None;
+                    }
+
+                    palette = Some(png_chunk.data.to_vec());
+                }
                 chunk::IDAT => {
                     idat.get_or_insert_with(Vec::new)
                         .extend_from_slice(png_chunk.data);
@@ -45,6 +66,10 @@ impl PngData {
             }
         }
 
+        if header.color_type == png::ColorType::Indexed && palette.is_none() {
+            return None;
+        }
+
         reached_iend.then_some(Self {
             // Note: For performance reasons we don't inflate and validate whether
             // the actual length of the data is correct. This does mean that
@@ -53,6 +78,7 @@ impl PngData {
             idat: idat?,
             bit_depth: header.bit_depth,
             color_type: header.color_type,
+            palette,
         })
     }
 }
@@ -87,24 +113,6 @@ impl Header {
             interlaced,
         })
     }
-}
-
-fn is_supported(header: &Header) -> bool {
-    use png::BitDepth::*;
-    use png::ColorType::*;
-
-    // Indexed can be supported in the future.
-    let kind_supported = matches!(header.color_type, Grayscale | Rgb);
-    let depth_supported = matches!(
-        (header.color_type, header.bit_depth),
-        (Grayscale, One | Two | Four | Eight | Sixteen) | (Rgb, Eight | Sixteen)
-    );
-
-    if !kind_supported || !depth_supported || header.interlaced {
-        return false;
-    }
-
-    true
 }
 
 const PNG_MAGIC: &[u8] = b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A";

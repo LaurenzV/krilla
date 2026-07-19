@@ -8,7 +8,7 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 use pdf_writer::types::{StructRole, StructRole2};
 use pdf_writer::writers::{OutputIntent, StructTreeRoot};
-use pdf_writer::{Chunk, Content, Finish, Limits, Name, Pdf, Ref, Settings, Str, TextStr};
+use pdf_writer::{Chunk, Content, Finish, Limits, Name, Obj, Pdf, Ref, Settings, Str, TextStr};
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
@@ -16,7 +16,7 @@ use crate::configure::validate::ValidationStore;
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
 use crate::error::{KrillaError, KrillaResult, LimitError};
 use crate::geom::Size;
-use crate::graphics::color::{rgb, ColorSpace};
+use crate::graphics::color::{rgb, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
@@ -230,6 +230,17 @@ pub(crate) enum MaybeDeviceColorSpace {
     DeviceGray,
     DeviceCMYK,
     ColorSpace(resource::ColorSpace),
+}
+
+impl MaybeDeviceColorSpace {
+    pub(crate) fn write(&self, target: Obj<'_>) {
+        match self {
+            Self::DeviceRgb => target.primitive(Name(DEVICE_RGB.as_bytes())),
+            Self::DeviceGray => target.primitive(Name(DEVICE_GRAY.as_bytes())),
+            Self::DeviceCMYK => target.primitive(Name(DEVICE_CMYK.as_bytes())),
+            Self::ColorSpace(cs) => target.primitive(cs.get_ref()),
+        }
+    }
 }
 
 /// The serializer context is more or less the core piece of krilla. It is passed around

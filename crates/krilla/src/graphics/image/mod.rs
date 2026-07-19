@@ -17,7 +17,7 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 
 use ::png::{BitDepth, ColorType, Transformations};
-use pdf_writer::{Finish, Name, Ref};
+use pdf_writer::{Dict, Finish, Name, Ref, Str};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
 
@@ -27,9 +27,9 @@ use crate::error::KrillaError;
 use crate::graphics::color::DEVICE_GRAY;
 use crate::graphics::color::{cmyk, luma, rgb};
 use crate::graphics::icc::{GenericICCProfile, ICCBasedColorSpace, ICCProfile};
-use crate::serialize::SerializeContext;
+use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{deflate_encode, FilterStreamBuilder};
-use crate::util::{set_colorspace, Deferred, NameExt, SipHashable};
+use crate::util::{Deferred, NameExt, SipHashable};
 use crate::Data;
 
 /// The number of bits per color component.
@@ -112,6 +112,7 @@ struct PngRepr {
     data: Vec<u8>,
     bit_depth: BitDepth,
     color_type: ColorType,
+    palette: Option<Vec<u8>>,
 }
 
 enum Repr {
@@ -495,10 +496,17 @@ impl Image {
             image_x_object.width(self.size().0 as i32);
             image_x_object.height(self.size().1 as i32);
 
-            if let Some(icc_ref) = icc_ref {
+            if let Repr::Png(PngRepr {
+                color_type: ColorType::Indexed,
+                palette: Some(palette),
+                ..
+            }) = repr
+            {
+                set_indexed_colorspace(icc_ref, &cs, palette, image_x_object.deref_mut());
+            } else if let Some(icc_ref) = icc_ref {
                 image_x_object.pair(Name(b"ColorSpace"), icc_ref);
             } else {
-                set_colorspace(cs, image_x_object.deref_mut());
+                cs.write(image_x_object.deref_mut().insert(Name(b"ColorSpace")));
             }
 
             if self.0.interpolate {
@@ -585,6 +593,7 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
             data: png_data.idat,
             bit_depth: png_data.bit_depth,
             color_type: png_data.color_type,
+            palette: png_data.palette,
         }));
     }
 
@@ -613,6 +622,26 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
         alpha_channel,
         bits_per_component,
     }))
+}
+
+fn set_indexed_colorspace(
+    icc_ref: Option<Ref>,
+    base: &MaybeDeviceColorSpace,
+    palette: &[u8],
+    target: &mut Dict,
+) {
+    let mut color_space = target.insert(Name(b"ColorSpace")).array();
+    color_space.item(Name(b"Indexed"));
+
+    if let Some(icc_ref) = icc_ref {
+        color_space.item(icc_ref);
+    } else {
+        base.write(color_space.push());
+    }
+
+    color_space.item((palette.len() / 3 - 1) as i32);
+    color_space.item(Str(palette));
+    color_space.finish();
 }
 
 fn jpeg_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
