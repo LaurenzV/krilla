@@ -100,6 +100,46 @@ fn png_rgb_16(surface: &mut Surface) {
 }
 
 #[snapshot]
+fn png_rgb_indexed_1(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_1.png");
+}
+
+#[visreg]
+fn png_rgb_indexed_1(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_1.png");
+}
+
+#[snapshot]
+fn png_rgb_indexed_2(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_2.png");
+}
+
+#[visreg]
+fn png_rgb_indexed_2(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_2.png");
+}
+
+#[snapshot]
+fn png_rgb_indexed_4(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_4.png");
+}
+
+#[visreg]
+fn png_rgb_indexed_4(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_4.png");
+}
+
+#[snapshot]
+fn png_rgb_indexed_8(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_8.png");
+}
+
+#[visreg]
+fn png_rgb_indexed_8(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_8.png");
+}
+
+#[snapshot]
 fn png_grayscale_alpha_8(page: &mut Page) {
     png_impl(&mut page.surface(), "grayscale_alpha_8.png");
 }

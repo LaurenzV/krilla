@@ -3,6 +3,7 @@
 import argparse
 import struct
 import zlib
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -50,6 +51,10 @@ OUTPUT_SPECS = (
     OutputSpec("grayscale_8_interlaced.png", 0, 8, interlaced=True),
     OutputSpec("rgb_8.png", 2, 8),
     OutputSpec("rgb_16.png", 2, 16),
+    OutputSpec("rgb_indexed_1.png", 3, 1),
+    OutputSpec("rgb_indexed_2.png", 3, 2),
+    OutputSpec("rgb_indexed_4.png", 3, 4),
+    OutputSpec("rgb_indexed_8.png", 3, 8),
     OutputSpec("grayscale_alpha_8.png", 4, 8),
     OutputSpec("grayscale_alpha_16.png", 4, 16),
     OutputSpec("rgba_8.png", 6, 8),
@@ -278,6 +283,67 @@ def filter_rows(rows, bytes_per_pixel, forced_filter_type=None):
     return bytes(output)
 
 
+def split_color_box(colors):
+    ranges = [
+        max(color[channel] for color, _ in colors)
+        - min(color[channel] for color, _ in colors)
+        for channel in range(3)
+    ]
+    channel = max(range(3), key=lambda index: (ranges[index], -index))
+    colors = sorted(colors, key=lambda item: (item[0][channel], item[0]))
+    halfway = sum(count for _, count in colors) / 2
+    accumulated = 0
+    split_at = 1
+    for split_at, (_, count) in enumerate(colors, start=1):
+        accumulated += count
+        if accumulated >= halfway:
+            break
+    split_at = min(max(split_at, 1), len(colors) - 1)
+    return colors[:split_at], colors[split_at:]
+
+
+def quantize_palette(pixels, maximum_colors):
+    boxes = [list(Counter(pixels).items())]
+    while len(boxes) < maximum_colors:
+        candidates = [
+            (index, box)
+            for index, box in enumerate(boxes)
+            if len(box) > 1
+        ]
+        if not candidates:
+            break
+
+        def split_priority(item):
+            _, box = item
+            ranges = [
+                max(color[channel] for color, _ in box)
+                - min(color[channel] for color, _ in box)
+                for channel in range(3)
+            ]
+            population = sum(count for _, count in box)
+            return max(ranges) * population, max(ranges), population, len(box)
+
+        index, box = max(candidates, key=split_priority)
+        first, second = split_color_box(box)
+        boxes[index : index + 1] = [first, second]
+
+    palette = []
+    color_indices = {}
+    for palette_index, box in enumerate(boxes):
+        population = sum(count for _, count in box)
+        palette.append(
+            tuple(
+                (sum(color[channel] * count for color, count in box) + population // 2)
+                // population
+                for channel in range(3)
+            )
+        )
+        for color, _ in box:
+            color_indices[color] = palette_index
+
+    return palette, tuple(color_indices[pixel] for pixel in pixels)
+
+
 def alpha_at(x, width, bit_depth):
     maximum = (1 << bit_depth) - 1
     minimum = (maximum + 1) // 2
@@ -288,6 +354,14 @@ def alpha_at(x, width, bit_depth):
 def build_rows(spec, luma, rgb):
     source = luma if spec.color_type in (0, 4) else rgb
     rows = []
+    palette = None
+
+    if spec.color_type == 3:
+        palette, indices = quantize_palette(rgb.pixels, 1 << spec.bit_depth)
+        for y in range(rgb.height):
+            start = y * rgb.width
+            rows.append(encode_samples(indices[start : start + rgb.width], spec.bit_depth))
+        return rows, palette, 1
 
     channels = {0: 1, 2: 3, 4: 2, 6: 4}[spec.color_type]
     for y in range(source.height):
@@ -306,7 +380,7 @@ def build_rows(spec, luma, rgb):
         rows.append(encode_samples(samples, spec.bit_depth))
 
     bytes_per_pixel = max(1, (channels * spec.bit_depth + 7) // 8)
-    return rows, bytes_per_pixel
+    return rows, palette, bytes_per_pixel
 
 
 def make_chunk(chunk_type, payload):
@@ -325,7 +399,7 @@ def filter_adam7_grayscale8(rows, width, height, forced_filter_type=None):
     return bytes(output)
 
 
-def write_png(path, spec, width, height, rows, bytes_per_pixel):
+def write_png(path, spec, width, height, rows, palette, bytes_per_pixel):
     interlace = int(spec.interlaced)
     ihdr = struct.pack(
         ">IIBBBBB",
@@ -338,6 +412,10 @@ def write_png(path, spec, width, height, rows, bytes_per_pixel):
         interlace,
     )
     chunks = [make_chunk(b"IHDR", ihdr)]
+    if palette is not None:
+        chunks.append(
+            make_chunk(b"PLTE", bytes(channel for color in palette for channel in color))
+        )
     if spec.interlaced:
         if (spec.color_type, spec.bit_depth) != (0, 8):
             raise ValueError("Adam7 generation currently supports only 8-bit grayscale")
@@ -370,7 +448,7 @@ def verify_png(path, expected_spec, width, height):
         payload for chunk_type, payload in chunks if chunk_type == b"IDAT"
     )
     filtered = zlib.decompress(compressed)
-    channels = {0: 1, 2: 3, 4: 2, 6: 4}[expected_spec.color_type]
+    channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[expected_spec.color_type]
     row_size = (width * channels * expected_spec.bit_depth + 7) // 8
     if expected_spec.interlaced:
         offset = 0
@@ -431,7 +509,7 @@ def main():
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for spec in OUTPUT_SPECS:
-        rows, bytes_per_pixel = build_rows(spec, luma, rgb)
+        rows, palette, bytes_per_pixel = build_rows(spec, luma, rgb)
         output_path = args.output_dir / spec.name
         write_png(
             output_path,
@@ -439,6 +517,7 @@ def main():
             luma.width,
             luma.height,
             rows,
+            palette,
             bytes_per_pixel,
         )
         verify_png(output_path, spec, luma.width, luma.height)
