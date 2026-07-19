@@ -35,12 +35,6 @@ use crate::Data;
 /// The number of bits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum BitsPerComponent {
-    /// One bit per component.
-    One,
-    /// Two bits per component.
-    Two,
-    /// Four bits per component.
-    Four,
     /// Eight bits per component.
     Eight,
     /// Sixteen bits per component.
@@ -50,23 +44,8 @@ pub enum BitsPerComponent {
 impl BitsPerComponent {
     fn as_u8(&self) -> u8 {
         match self {
-            BitsPerComponent::One => 1,
-            BitsPerComponent::Two => 2,
-            BitsPerComponent::Four => 4,
             BitsPerComponent::Eight => 8,
             BitsPerComponent::Sixteen => 16,
-        }
-    }
-}
-
-impl From<BitDepth> for BitsPerComponent {
-    fn from(value: BitDepth) -> Self {
-        match value {
-            BitDepth::One => Self::One,
-            BitDepth::Two => Self::Two,
-            BitDepth::Four => Self::Four,
-            BitDepth::Eight => Self::Eight,
-            BitDepth::Sixteen => Self::Sixteen,
         }
     }
 }
@@ -131,7 +110,7 @@ struct JpegRepr {
 
 struct PngRepr {
     data: Vec<u8>,
-    bits_per_component: BitsPerComponent,
+    bit_depth: BitDepth,
     color_type: ColorType,
 }
 
@@ -142,11 +121,11 @@ enum Repr {
 }
 
 impl Repr {
-    fn bits_per_component(&self) -> BitsPerComponent {
+    fn bits_per_component(&self) -> u8 {
         match self {
-            Repr::Sampled(s) => s.bits_per_component,
-            Repr::Jpeg(j) => j.bits_per_component,
-            Repr::Png(p) => p.bits_per_component,
+            Repr::Sampled(s) => s.bits_per_component.as_u8(),
+            Repr::Jpeg(j) => j.bits_per_component.as_u8(),
+            Repr::Png(p) => p.bit_depth as u8,
         }
     }
 }
@@ -163,9 +142,6 @@ pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
     /// Return the raw bytes of the alpha channel, if available.
     fn alpha_channel(&self) -> Option<&[u8]>;
     /// Return the bits per component of the image.
-    ///
-    /// Custom images currently only support [`BitsPerComponent::Eight`] and
-    /// [`BitsPerComponent::Sixteen`].
     fn bits_per_component(&self) -> BitsPerComponent;
     /// Return the dimensions of the image.
     fn size(&self) -> (u32, u32);
@@ -312,13 +288,6 @@ impl Image {
     /// data doesn't match.
     pub fn from_custom<T: CustomImage>(image: T, interpolate: bool) -> Result<Image, String> {
         let bits_per_component = image.bits_per_component();
-
-        if !matches!(
-            bits_per_component,
-            BitsPerComponent::Eight | BitsPerComponent::Sixteen
-        ) {
-            return Err("custom images only support 8 or 16 bits per component".to_string());
-        }
 
         let hash = (image.clone(), interpolate).sip_hash();
         let metadata = ImageMetadata {
@@ -503,7 +472,7 @@ impl Image {
                         s_mask.interpolate(true);
                     }
 
-                    s_mask.bits_per_component(repr.bits_per_component().as_u8() as i32);
+                    s_mask.bits_per_component(repr.bits_per_component() as i32);
                     soft_mask_id
                 }),
                 Repr::Jpeg(_) | Repr::Png(_) => None,
@@ -517,7 +486,7 @@ impl Image {
                 Repr::Png(p) => FilterStreamBuilder::new_from_png_data(
                     p.data.as_ref(),
                     p.color_type.samples() as i32,
-                    p.bits_per_component.as_u8() as i32,
+                    p.bit_depth as i32,
                     self.size().0 as i32,
                 )
                 .finish(&serialize_settings),
@@ -551,7 +520,7 @@ impl Image {
                 }
             }
 
-            image_x_object.bits_per_component(repr.bits_per_component().as_u8() as i32);
+            image_x_object.bits_per_component(repr.bits_per_component() as i32);
 
             if let Some(soft_mask_id) = alpha_mask {
                 image_x_object.s_mask(soft_mask_id);
@@ -619,7 +588,7 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
     if let Some(png_data) = png::PngData::new(data) {
         return Ok(Repr::Png(PngRepr {
             data: png_data.idat,
-            bits_per_component: png_data.bit_depth.into(),
+            bit_depth: png_data.bit_depth,
             color_type: png_data.color_type,
         }));
     }
@@ -908,23 +877,6 @@ mod tests {
 
         fn color_space(&self) -> ImageColorspace {
             ImageColorspace::Luma
-        }
-    }
-
-    #[test]
-    fn custom_image_validates_bit_depths() {
-        for bits_per_component in [
-            BitsPerComponent::One,
-            BitsPerComponent::Two,
-            BitsPerComponent::Four,
-        ] {
-            assert!(
-                Image::from_custom(CustomImageWithBitDepth(bits_per_component), false).is_err()
-            );
-        }
-
-        for bits_per_component in [BitsPerComponent::Eight, BitsPerComponent::Sixteen] {
-            assert!(Image::from_custom(CustomImageWithBitDepth(bits_per_component), false).is_ok());
         }
     }
 

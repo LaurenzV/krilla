@@ -29,7 +29,9 @@ use std::ops::DerefMut;
 
 use flate2::write::ZlibEncoder;
 use flate2::Compression;
-use pdf_writer::{Array, Dict, Finish, Name, Null};
+use pdf_writer::{Array, Dict, Name};
+#[cfg(feature = "raster-images")]
+use pdf_writer::{Finish, Null};
 
 use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
@@ -144,6 +146,7 @@ pub(crate) enum StreamFilter {
 #[derive(Debug, Copy, Clone)]
 struct Filter {
     kind: StreamFilter,
+    #[cfg(feature = "raster-images")]
     decode_params: Option<DecodeParams>,
 }
 
@@ -151,10 +154,12 @@ impl Filter {
     fn new(kind: StreamFilter) -> Self {
         Self {
             kind,
+            #[cfg(feature = "raster-images")]
             decode_params: None,
         }
     }
 
+    #[cfg(feature = "raster-images")]
     fn with_decode_params(mut self, decode_params: DecodeParams) -> Self {
         self.decode_params = Some(decode_params);
         self
@@ -162,6 +167,7 @@ impl Filter {
 }
 
 #[derive(Debug, Copy, Clone)]
+#[cfg(feature = "raster-images")]
 enum DecodeParams {
     PngPredictor {
         colors: i32,
@@ -170,6 +176,7 @@ enum DecodeParams {
     },
 }
 
+#[cfg(feature = "raster-images")]
 impl DecodeParams {
     fn write(self, mut dict: Dict<'_>) {
         match self {
@@ -395,6 +402,7 @@ impl FilterStream<'_> {
                 dict.deref_mut()
                     .pair(Name(b"Filter"), filter.kind.to_name());
 
+                #[cfg(feature = "raster-images")]
                 if let Some(params) = filter.decode_params {
                     params.write(dict.deref_mut().insert(Name(b"DecodeParms")).dict());
                 }
@@ -405,6 +413,7 @@ impl FilterStream<'_> {
                     .start::<Array>()
                     .items(filters.iter().rev().map(|filter| filter.kind.to_name()));
 
+                #[cfg(feature = "raster-images")]
                 if filters.iter().any(|filter| filter.decode_params.is_some()) {
                     let mut decode_params = dict.deref_mut().insert(Name(b"DecodeParms")).array();
 
