@@ -244,6 +244,16 @@ fn png_rgb_indexed_8(surface: &mut Surface) {
     png_impl(surface, "rgb_indexed_8");
 }
 
+#[snapshot(settings_2)]
+fn png_rgb_indexed_no_device_cs(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_4");
+}
+
+#[visreg(settings_2)]
+fn png_rgb_indexed_no_device_cs(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_4");
+}
+
 #[snapshot]
 fn png_rgb_indexed_trns_1(page: &mut Page) {
     png_impl(&mut page.surface(), "rgb_indexed_trns_1");
