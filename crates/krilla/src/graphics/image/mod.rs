@@ -16,7 +16,7 @@ use std::io::Cursor;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
-use ::png::{BitDepth, ColorType, Decoder, SrgbRenderingIntent, Transformations};
+use ::png::{BitDepth, ColorType, Decoder, Transformations};
 use pdf_writer::{Finish, Name, Ref};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
@@ -133,7 +133,6 @@ struct PngRepr {
     data: Vec<u8>,
     bits_per_component: BitsPerComponent,
     color_type: ColorType,
-    rendering_intent: Option<SrgbRenderingIntent>,
 }
 
 enum Repr {
@@ -542,23 +541,6 @@ impl Image {
 
             image_x_object.bits_per_component(repr.bits_per_component().as_u8() as i32);
 
-            if let Repr::Png(PngRepr {
-                rendering_intent: Some(intent),
-                ..
-            }) = repr
-            {
-                use SrgbRenderingIntent::*;
-                image_x_object.pair(
-                    Name(b"Intent"),
-                    Name(match intent {
-                        Perceptual => b"Perceptual",
-                        RelativeColorimetric => b"RelativeColorimetric",
-                        Saturation => b"Saturation",
-                        AbsoluteColorimetric => b"AbsoluteColorimetric",
-                    }),
-                );
-            }
-
             if let Some(soft_mask_id) = alpha_mask {
                 image_x_object.s_mask(soft_mask_id);
             }
@@ -620,7 +602,6 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let mut reader = decoder
         .read_info()
         .map_err(|e| e.to_string().to_ascii_lowercase())?;
-    let info = reader.info();
     let (color_type, bit_depth) = reader.output_color_type();
 
     if let Some(png_data) = png::PngData::new(data) {
@@ -628,7 +609,6 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
             data: png_data.idat,
             bits_per_component: png_data.bit_depth.into(),
             color_type: png_data.color_type,
-            rendering_intent: info.srgb,
         }));
     }
 
