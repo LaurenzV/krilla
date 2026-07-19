@@ -40,6 +40,7 @@ class OutputSpec:
     bit_depth: int
     filter_type: Optional[int] = None
     interlaced: bool = False
+    transparency: bool = False
 
 
 OUTPUT_SPECS = (
@@ -48,13 +49,24 @@ OUTPUT_SPECS = (
     OutputSpec("grayscale_4.png", 0, 4),
     OutputSpec("grayscale_8.png", 0, 8),
     OutputSpec("grayscale_16.png", 0, 16),
+    OutputSpec("grayscale_trns_1.png", 0, 1, transparency=True),
+    OutputSpec("grayscale_trns_2.png", 0, 2, transparency=True),
+    OutputSpec("grayscale_trns_4.png", 0, 4, transparency=True),
+    OutputSpec("grayscale_trns_8.png", 0, 8, transparency=True),
+    OutputSpec("grayscale_trns_16.png", 0, 16, transparency=True),
     OutputSpec("grayscale_8_interlaced.png", 0, 8, interlaced=True),
     OutputSpec("rgb_8.png", 2, 8),
     OutputSpec("rgb_16.png", 2, 16),
+    OutputSpec("rgb_trns_8.png", 2, 8, transparency=True),
+    OutputSpec("rgb_trns_16.png", 2, 16, transparency=True),
     OutputSpec("rgb_indexed_1.png", 3, 1),
     OutputSpec("rgb_indexed_2.png", 3, 2),
     OutputSpec("rgb_indexed_4.png", 3, 4),
     OutputSpec("rgb_indexed_8.png", 3, 8),
+    OutputSpec("rgb_indexed_trns_1.png", 3, 1, transparency=True),
+    OutputSpec("rgb_indexed_trns_2.png", 3, 2, transparency=True),
+    OutputSpec("rgb_indexed_trns_4.png", 3, 4, transparency=True),
+    OutputSpec("rgb_indexed_trns_8.png", 3, 8, transparency=True),
     OutputSpec("grayscale_alpha_8.png", 4, 8),
     OutputSpec("grayscale_alpha_16.png", 4, 16),
     OutputSpec("rgba_8.png", 6, 8),
@@ -351,17 +363,26 @@ def alpha_at(x, width, bit_depth):
     return minimum + (gradient * (maximum - minimum) + 127) // 255
 
 
+def inside_center_square(x, y, width, height, size=50):
+    x_start = (width - size) // 2
+    y_start = (height - size) // 2
+    return x_start <= x < x_start + size and y_start <= y < y_start + size
+
+
 def build_rows(spec, luma, rgb):
     source = luma if spec.color_type in (0, 4) else rgb
     rows = []
     palette = None
+    transparency = None
 
     if spec.color_type == 3:
         palette, indices = quantize_palette(rgb.pixels, 1 << spec.bit_depth)
         for y in range(rgb.height):
             start = y * rgb.width
             rows.append(encode_samples(indices[start : start + rgb.width], spec.bit_depth))
-        return rows, palette, 1
+        if spec.transparency:
+            transparency = bytes(alpha_at(color[0], 256, 8) for color in palette)
+        return rows, palette, transparency, 1
 
     channels = {0: 1, 2: 3, 4: 2, 6: 4}[spec.color_type]
     for y in range(source.height):
@@ -369,6 +390,10 @@ def build_rows(spec, luma, rgb):
         for x in range(source.width):
             pixel = source.pixels[y * source.width + x]
             values = (pixel,) if isinstance(pixel, int) else pixel
+            if spec.transparency and inside_center_square(
+                x, y, source.width, source.height
+            ):
+                values = (0,) * len(values)
             if spec.bit_depth == 16:
                 values = tuple(value * 257 for value in values)
             elif spec.bit_depth < 8:
@@ -379,8 +404,14 @@ def build_rows(spec, luma, rgb):
             samples.extend(values)
         rows.append(encode_samples(samples, spec.bit_depth))
 
+    if spec.transparency:
+        if spec.color_type == 0:
+            transparency = struct.pack(">H", 0)
+        elif spec.color_type == 2:
+            transparency = struct.pack(">HHH", 0, 0, 0)
+
     bytes_per_pixel = max(1, (channels * spec.bit_depth + 7) // 8)
-    return rows, palette, bytes_per_pixel
+    return rows, palette, transparency, bytes_per_pixel
 
 
 def make_chunk(chunk_type, payload):
@@ -399,7 +430,9 @@ def filter_adam7_grayscale8(rows, width, height, forced_filter_type=None):
     return bytes(output)
 
 
-def write_png(path, spec, width, height, rows, palette, bytes_per_pixel):
+def write_png(
+    path, spec, width, height, rows, palette, transparency, bytes_per_pixel
+):
     interlace = int(spec.interlaced)
     ihdr = struct.pack(
         ">IIBBBBB",
@@ -416,6 +449,8 @@ def write_png(path, spec, width, height, rows, palette, bytes_per_pixel):
         chunks.append(
             make_chunk(b"PLTE", bytes(channel for color in palette for channel in color))
         )
+    if transparency is not None:
+        chunks.append(make_chunk(b"tRNS", transparency))
     if spec.interlaced:
         if (spec.color_type, spec.bit_depth) != (0, 8):
             raise ValueError("Adam7 generation currently supports only 8-bit grayscale")
@@ -444,6 +479,22 @@ def verify_png(path, expected_spec, width, height):
     )
     if actual != expected:
         raise ValueError(f"{path} has IHDR {actual}, expected {expected}")
+    transparency = [
+        payload for chunk_type, payload in chunks if chunk_type == b"tRNS"
+    ]
+    if len(transparency) != int(expected_spec.transparency):
+        raise ValueError(f"{path} has an unexpected number of tRNS chunks")
+    if expected_spec.transparency:
+        if expected_spec.color_type == 0 and transparency[0] != b"\0\0":
+            raise ValueError(f"{path} does not mark black as transparent")
+        if expected_spec.color_type == 2 and transparency[0] != b"\0\0\0\0\0\0":
+            raise ValueError(f"{path} does not mark black as transparent")
+        if expected_spec.color_type == 3:
+            palette = next(
+                payload for chunk_type, payload in chunks if chunk_type == b"PLTE"
+            )
+            if len(transparency[0]) != len(palette) // 3:
+                raise ValueError(f"{path} does not define alpha for every palette entry")
     compressed = b"".join(
         payload for chunk_type, payload in chunks if chunk_type == b"IDAT"
     )
@@ -509,7 +560,7 @@ def main():
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for spec in OUTPUT_SPECS:
-        rows, palette, bytes_per_pixel = build_rows(spec, luma, rgb)
+        rows, palette, transparency, bytes_per_pixel = build_rows(spec, luma, rgb)
         output_path = args.output_dir / spec.name
         write_png(
             output_path,
@@ -518,6 +569,7 @@ def main():
             luma.height,
             rows,
             palette,
+            transparency,
             bytes_per_pixel,
         )
         verify_png(output_path, spec, luma.width, luma.height)

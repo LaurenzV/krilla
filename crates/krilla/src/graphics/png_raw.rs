@@ -9,6 +9,10 @@ pub fn is_supported_in_pdf(info: &png::Info) -> bool {
         return false;
     }
 
+    if info.trns.is_some() {
+        return false;
+    }
+
     if i32::try_from(info.width).is_err() {
         return false; // width needs to be stored as a PDF integer
     }

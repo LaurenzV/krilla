@@ -70,6 +70,56 @@ fn png_grayscale_16(surface: &mut Surface) {
 }
 
 #[snapshot]
+fn png_grayscale_trns_1(page: &mut Page) {
+    png_impl(&mut page.surface(), "grayscale_trns_1.png");
+}
+
+#[visreg]
+fn png_grayscale_trns_1(surface: &mut Surface) {
+    png_impl(surface, "grayscale_trns_1.png");
+}
+
+#[snapshot]
+fn png_grayscale_trns_2(page: &mut Page) {
+    png_impl(&mut page.surface(), "grayscale_trns_2.png");
+}
+
+#[visreg]
+fn png_grayscale_trns_2(surface: &mut Surface) {
+    png_impl(surface, "grayscale_trns_2.png");
+}
+
+#[snapshot]
+fn png_grayscale_trns_4(page: &mut Page) {
+    png_impl(&mut page.surface(), "grayscale_trns_4.png");
+}
+
+#[visreg]
+fn png_grayscale_trns_4(surface: &mut Surface) {
+    png_impl(surface, "grayscale_trns_4.png");
+}
+
+#[snapshot]
+fn png_grayscale_trns_8(page: &mut Page) {
+    png_impl(&mut page.surface(), "grayscale_trns_8.png");
+}
+
+#[visreg]
+fn png_grayscale_trns_8(surface: &mut Surface) {
+    png_impl(surface, "grayscale_trns_8.png");
+}
+
+#[snapshot]
+fn png_grayscale_trns_16(page: &mut Page) {
+    png_impl(&mut page.surface(), "grayscale_trns_16.png");
+}
+
+#[visreg]
+fn png_grayscale_trns_16(surface: &mut Surface) {
+    png_impl(surface, "grayscale_trns_16.png");
+}
+
+#[snapshot]
 fn png_grayscale_8_interlaced(page: &mut Page) {
     png_impl(&mut page.surface(), "grayscale_8_interlaced.png");
 }
@@ -97,6 +147,26 @@ fn png_rgb_16(page: &mut Page) {
 #[visreg]
 fn png_rgb_16(surface: &mut Surface) {
     png_impl(surface, "rgb_16.png");
+}
+
+#[snapshot]
+fn png_rgb_trns_8(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_trns_8.png");
+}
+
+#[visreg]
+fn png_rgb_trns_8(surface: &mut Surface) {
+    png_impl(surface, "rgb_trns_8.png");
+}
+
+#[snapshot]
+fn png_rgb_trns_16(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_trns_16.png");
+}
+
+#[visreg]
+fn png_rgb_trns_16(surface: &mut Surface) {
+    png_impl(surface, "rgb_trns_16.png");
 }
 
 #[snapshot]
@@ -137,6 +207,46 @@ fn png_rgb_indexed_8(page: &mut Page) {
 #[visreg]
 fn png_rgb_indexed_8(surface: &mut Surface) {
     png_impl(surface, "rgb_indexed_8.png");
+}
+
+#[snapshot]
+fn png_rgb_indexed_trns_1(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_trns_1.png");
+}
+
+#[visreg]
+fn png_rgb_indexed_trns_1(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_trns_1.png");
+}
+
+#[snapshot]
+fn png_rgb_indexed_trns_2(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_trns_2.png");
+}
+
+#[visreg]
+fn png_rgb_indexed_trns_2(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_trns_2.png");
+}
+
+#[snapshot]
+fn png_rgb_indexed_trns_4(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_trns_4.png");
+}
+
+#[visreg]
+fn png_rgb_indexed_trns_4(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_trns_4.png");
+}
+
+#[snapshot]
+fn png_rgb_indexed_trns_8(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_trns_8.png");
+}
+
+#[visreg]
+fn png_rgb_indexed_trns_8(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_trns_8.png");
 }
 
 #[snapshot]
