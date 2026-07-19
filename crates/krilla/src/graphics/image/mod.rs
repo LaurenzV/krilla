@@ -8,14 +8,16 @@
 //! - WEBP
 //! - Custom image formats via [`CustomImage`]
 
+mod png;
+
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::io::Cursor;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
+use ::png::{BitDepth, ColorType, Transformations};
 use pdf_writer::{Finish, Name, Ref};
-use png::{BitDepth, ColorType, Transformations};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
 
@@ -106,16 +108,24 @@ struct JpegRepr {
     invert_cmyk: bool,
 }
 
+struct PngRepr {
+    data: Vec<u8>,
+    bit_depth: BitDepth,
+    color_type: ColorType,
+}
+
 enum Repr {
     Sampled(SampledRepr),
     Jpeg(JpegRepr),
+    Png(PngRepr),
 }
 
 impl Repr {
-    fn bits_per_component(&self) -> BitsPerComponent {
+    fn bits_per_component(&self) -> u8 {
         match self {
-            Repr::Sampled(s) => s.bits_per_component,
-            Repr::Jpeg(j) => j.bits_per_component,
+            Repr::Sampled(s) => s.bits_per_component.as_u8(),
+            Repr::Jpeg(j) => j.bits_per_component.as_u8(),
+            Repr::Png(p) => p.bit_depth as u8,
         }
     }
 }
@@ -460,10 +470,10 @@ impl Image {
                         s_mask.interpolate(true);
                     }
 
-                    s_mask.bits_per_component(repr.bits_per_component().as_u8() as i32);
+                    s_mask.bits_per_component(repr.bits_per_component() as i32);
                     soft_mask_id
                 }),
-                Repr::Jpeg(_) => None,
+                Repr::Jpeg(_) | Repr::Png(_) => None,
             };
 
             let filter_stream = match repr {
@@ -471,6 +481,13 @@ impl Image {
                     .finish(&serialize_settings),
                 Repr::Jpeg(j) => FilterStreamBuilder::new_from_jpeg_data(j.data.as_ref())
                     .finish(&serialize_settings),
+                Repr::Png(p) => FilterStreamBuilder::new_from_png_data(
+                    p.data.as_ref(),
+                    p.color_type.samples() as i32,
+                    p.bit_depth as i32,
+                    self.size().0 as i32,
+                )
+                .finish(&serialize_settings),
             };
 
             let mut image_x_object = chunk.image_xobject(root_ref, filter_stream.encoded_data());
@@ -500,7 +517,7 @@ impl Image {
                 }
             }
 
-            image_x_object.bits_per_component(repr.bits_per_component().as_u8() as i32);
+            image_x_object.bits_per_component(repr.bits_per_component() as i32);
             if let Some(soft_mask_id) = alpha_mask {
                 image_x_object.s_mask(soft_mask_id);
             }
@@ -517,7 +534,7 @@ const PNG_TRANSFORMATIONS: Transformations = Transformations::EXPAND;
 
 fn png_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
     let cursor = Cursor::new(data);
-    let mut decoder = png::Decoder::new(cursor);
+    let mut decoder = ::png::Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let reader = decoder
         .read_info()
@@ -557,11 +574,20 @@ fn png_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
 
 fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let cursor = Cursor::new(data);
-    let mut decoder = png::Decoder::new(cursor);
+    let mut decoder = ::png::Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let mut reader = decoder
         .read_info()
         .map_err(|e| e.to_string().to_ascii_lowercase())?;
+
+    if let Some(png_data) = png::PngData::new(data) {
+        return Ok(Repr::Png(PngRepr {
+            data: png_data.idat,
+            bit_depth: png_data.bit_depth,
+            color_type: png_data.color_type,
+        }));
+    }
+
     let mut img_data = vec![0; reader.output_buffer_size().ok_or("image is too large")?];
     let _ = reader
         .next_frame(&mut img_data)
