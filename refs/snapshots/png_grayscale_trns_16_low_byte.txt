@@ -55,7 +55,7 @@ endobj
   /Width 151
   /Height 151
   /ColorSpace /DeviceGray
-  /Mask [0 0]
+  /Mask [1 1]
   /BitsPerComponent 16
 >>
 stream
@@ -90,7 +90,7 @@ trailer
 <<
   /Size 7
   /Root 6 0 R
-  /ID [(1yusr3m1pjBoOg1GDs8jXw==) (1yusr3m1pjBoOg1GDs8jXw==)]
+  /ID [(s73GRixQdwJiTfUAz+u0iw==) (s73GRixQdwJiTfUAz+u0iw==)]
 >>
 startxref
 1255

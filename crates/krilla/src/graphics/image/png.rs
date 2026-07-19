@@ -5,6 +5,12 @@ pub(super) struct PngData {
     pub(super) bit_depth: png::BitDepth,
     pub(super) color_type: png::ColorType,
     pub(super) palette: Option<Vec<u8>>,
+    pub(super) transparency: Option<Transparency>,
+}
+
+pub(super) enum Transparency {
+    ColorKey(Vec<i32>),
+    Indexed(Vec<u8>),
 }
 
 impl PngData {
@@ -29,6 +35,7 @@ impl PngData {
         let mut idat = None;
         let mut palette = None;
         let mut palette_seen = false;
+        let mut transparency = None;
         let mut reached_iend = false;
 
         for png_chunk in chunks {
@@ -39,7 +46,7 @@ impl PngData {
             }
 
             match png_chunk.kind {
-                chunk::IHDR | chunk::tRNS => return None,
+                chunk::IHDR => return None,
                 chunk::PLTE => {
                     let max_len = match header.color_type {
                         png::ColorType::Indexed => 3 * (1 << header.bit_depth as usize),
@@ -48,6 +55,8 @@ impl PngData {
                     };
 
                     if palette_seen
+                        // See comment below, tRNS must appear after PLTE.
+                        || transparency.is_some()
                         || idat.is_some()
                         || png_chunk.data.is_empty()
                         || png_chunk.data.len() % 3 != 0
@@ -63,6 +72,19 @@ impl PngData {
                     if header.color_type == png::ColorType::Indexed {
                         palette = Some(png_chunk.data.to_vec());
                     }
+                }
+                chunk::tRNS => {
+                    // 4.1.2: When present, the tRNS chunk must precede the 
+                    // first IDAT chunk, and must follow the PLTE chunk, if any.
+                    if transparency.is_some() || idat.is_some() || !png_chunk.has_valid_crc() {
+                        return None;
+                    }
+
+                    transparency = Some(parse_transparency(
+                        &header,
+                        palette.as_deref(),
+                        png_chunk.data,
+                    )?);
                 }
                 chunk::IDAT => {
                     idat.get_or_insert_with(Vec::new)
@@ -90,7 +112,44 @@ impl PngData {
             bit_depth: header.bit_depth,
             color_type: header.color_type,
             palette,
+            transparency,
         })
+    }
+}
+
+fn parse_transparency(
+    header: &Header,
+    palette: Option<&[u8]>,
+    data: &[u8],
+) -> Option<Transparency> {
+    let maximum = (1_u32 << header.bit_depth as u8) - 1;
+
+    match header.color_type {
+        png::ColorType::Grayscale => {
+            let sample = u16::from_be_bytes(data.try_into().ok()?);
+            (sample as u32 <= maximum)
+                .then(|| Transparency::ColorKey(vec![sample as i32, sample as i32]))
+        }
+        png::ColorType::Rgb => {
+            let data: &[u8; 6] = data.try_into().ok()?;
+            let mut color_key = Vec::with_capacity(6);
+
+            for sample in data.chunks_exact(2) {
+                let sample = u16::from_be_bytes(sample.try_into().unwrap());
+                if sample as u32 > maximum {
+                    return None;
+                }
+                color_key.extend([sample as i32, sample as i32]);
+            }
+
+            Some(Transparency::ColorKey(color_key))
+        }
+        png::ColorType::Indexed => {
+            let palette_entries = palette?.len() / 3;
+            (!data.is_empty() && data.len() <= palette_entries)
+                .then(|| Transparency::Indexed(data.to_vec()))
+        }
+        _ => None,
     }
 }
 

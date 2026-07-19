@@ -129,9 +129,21 @@ fn png_grayscale_trns_16(page: &mut Page) {
     png_impl(&mut page.surface(), "grayscale_trns_16");
 }
 
-#[visreg]
+// Chromium's PDFium does not correctly render 16-bit color-key masks.
+#[visreg(ghostscript)]
 fn png_grayscale_trns_16(surface: &mut Surface) {
     png_impl(surface, "grayscale_trns_16");
+}
+
+#[snapshot]
+fn png_grayscale_trns_16_low_byte(page: &mut Page) {
+    png_impl(&mut page.surface(), "grayscale_trns_16_low_byte");
+}
+
+// Chromium's PDFium does not correctly render 16-bit color-key masks.
+#[visreg(ghostscript)]
+fn png_grayscale_trns_16_low_byte(surface: &mut Surface) {
+    png_impl(surface, "grayscale_trns_16_low_byte");
 }
 
 #[snapshot]
@@ -219,9 +231,21 @@ fn png_rgb_trns_16(page: &mut Page) {
     png_impl(&mut page.surface(), "rgb_trns_16");
 }
 
-#[visreg]
+// Chromium's PDFium does not correctly render 16-bit color-key masks.
+#[visreg(ghostscript)]
 fn png_rgb_trns_16(surface: &mut Surface) {
     png_impl(surface, "rgb_trns_16");
+}
+
+#[snapshot]
+fn png_rgb_trns_16_low_byte(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_trns_16_low_byte");
+}
+
+// Chromium's PDFium does not correctly render 16-bit color-key masks.
+#[visreg(ghostscript)]
+fn png_rgb_trns_16_low_byte(surface: &mut Surface) {
+    png_impl(surface, "rgb_trns_16_low_byte");
 }
 
 #[snapshot]

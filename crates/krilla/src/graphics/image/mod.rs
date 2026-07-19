@@ -113,6 +113,12 @@ struct PngRepr {
     bit_depth: BitDepth,
     color_type: ColorType,
     palette: Option<Vec<u8>>,
+    transparency: Option<PngTransparency>,
+}
+
+enum PngTransparency {
+    ColorKey(Vec<i32>),
+    SoftMask(Vec<u8>),
 }
 
 enum Repr {
@@ -452,30 +458,39 @@ impl Image {
                 .as_ref()
                 .map_err(|e| KrillaError::Image(self.clone(), location, e.clone()))?;
 
-            let alpha_mask = match repr {
-                Repr::Sampled(sampled) => sampled.alpha_channel.as_ref().map(|mask_data| {
-                    let soft_mask_id = soft_mask_id.unwrap();
-                    let mask_stream = FilterStreamBuilder::new_from_deflated(mask_data)
-                        .finish(&serialize_settings);
-                    let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
-                    mask_stream.write_filters(s_mask.deref_mut().deref_mut());
-                    s_mask.width(self.size().0 as i32);
-                    s_mask.height(self.size().1 as i32);
-                    s_mask.pair(
-                        Name(b"ColorSpace"),
-                        // Mask color space must be device gray -- see Table 145.
-                        DEVICE_GRAY.to_pdf_name(),
-                    );
-
-                    if self.0.interpolate {
-                        s_mask.interpolate(true);
-                    }
-
-                    s_mask.bits_per_component(repr.bits_per_component() as i32);
-                    soft_mask_id
-                }),
+            let alpha_mask_data = match repr {
+                Repr::Sampled(sampled) => sampled
+                    .alpha_channel
+                    .as_deref()
+                    .map(|data| (data, sampled.bits_per_component.as_u8())),
+                Repr::Png(PngRepr {
+                    transparency: Some(PngTransparency::SoftMask(data)),
+                    ..
+                }) => Some((data.as_slice(), 8)),
                 Repr::Jpeg(_) | Repr::Png(_) => None,
             };
+
+            let alpha_mask = alpha_mask_data.map(|(mask_data, bits_per_component)| {
+                let soft_mask_id = soft_mask_id.unwrap();
+                let mask_stream =
+                    FilterStreamBuilder::new_from_deflated(mask_data).finish(&serialize_settings);
+                let mut s_mask = chunk.image_xobject(soft_mask_id, mask_stream.encoded_data());
+                mask_stream.write_filters(s_mask.deref_mut().deref_mut());
+                s_mask.width(self.size().0 as i32);
+                s_mask.height(self.size().1 as i32);
+                s_mask.pair(
+                    Name(b"ColorSpace"),
+                    // Mask color space must be device gray -- see Table 145.
+                    DEVICE_GRAY.to_pdf_name(),
+                );
+
+                if self.0.interpolate {
+                    s_mask.interpolate(true);
+                }
+
+                s_mask.bits_per_component(bits_per_component as i32);
+                soft_mask_id
+            });
 
             let filter_stream = match repr {
                 Repr::Sampled(s) => FilterStreamBuilder::new_from_deflated(&s.color_channel)
@@ -511,6 +526,14 @@ impl Image {
 
             if self.0.interpolate {
                 image_x_object.interpolate(true);
+            }
+
+            if let Repr::Png(PngRepr {
+                transparency: Some(PngTransparency::ColorKey(color_key)),
+                ..
+            }) = repr
+            {
+                image_x_object.color_mask(color_key.iter().copied());
             }
 
             // Photoshop CMYK images need to be inverted, see
@@ -589,11 +612,54 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
         .map_err(|e| e.to_string().to_ascii_lowercase())?;
 
     if let Some(png_data) = png::PngData::new(data) {
+        let png::PngData {
+            idat,
+            bit_depth,
+            color_type,
+            palette,
+            transparency,
+        } = png_data;
+
+        let transparency = match transparency {
+            None => None,
+            Some(png::Transparency::ColorKey(color_key)) => {
+                Some(PngTransparency::ColorKey(color_key))
+            }
+            Some(png::Transparency::Indexed(alpha)) => {
+                let palette_entries = palette.as_ref().unwrap().len() / 3;
+                match indexed_transparency(&alpha, palette_entries) {
+                    IndexedTransparency::Opaque => None,
+                    IndexedTransparency::ColorKey(color_key) => {
+                        Some(PngTransparency::ColorKey(color_key))
+                    }
+                    IndexedTransparency::SoftMask => {
+                        let mut img_data =
+                            vec![0; reader.output_buffer_size().ok_or("image is too large")?];
+                        let output = reader
+                            .next_frame(&mut img_data)
+                            .map_err(|e| e.to_string())?;
+                        if (output.color_type, output.bit_depth)
+                            != (ColorType::Rgba, BitDepth::Eight)
+                        {
+                            return Err("image has unsupported indexed transparency".to_string());
+                        }
+
+                        let alpha = img_data[..output.buffer_size()]
+                            .chunks_exact(4)
+                            .map(|pixel| pixel[3])
+                            .collect::<Vec<_>>();
+                        Some(PngTransparency::SoftMask(deflate_encode(&alpha)))
+                    }
+                }
+            }
+        };
+
         return Ok(Repr::Png(PngRepr {
-            data: png_data.idat,
-            bit_depth: png_data.bit_depth,
-            color_type: png_data.color_type,
-            palette: png_data.palette,
+            data: idat,
+            bit_depth,
+            color_type,
+            palette,
+            transparency,
         }));
     }
 
@@ -622,6 +688,36 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
         alpha_channel,
         bits_per_component,
     }))
+}
+
+enum IndexedTransparency {
+    Opaque,
+    ColorKey(Vec<i32>),
+    SoftMask,
+}
+
+fn indexed_transparency(alpha: &[u8], palette_entries: usize) -> IndexedTransparency {
+    let mut first_transparent = None;
+    let mut last_transparent = None;
+
+    for index in 0..palette_entries {
+        match alpha.get(index).copied().unwrap_or(255) {
+            255 => {}
+            0 => {
+                if last_transparent.is_some_and(|last| index != last + 1) {
+                    return IndexedTransparency::SoftMask;
+                }
+                first_transparent.get_or_insert(index);
+                last_transparent = Some(index);
+            }
+            _ => return IndexedTransparency::SoftMask,
+        }
+    }
+
+    match (first_transparent, last_transparent) {
+        (Some(first), Some(last)) => IndexedTransparency::ColorKey(vec![first as i32, last as i32]),
+        _ => IndexedTransparency::Opaque,
+    }
 }
 
 fn set_indexed_colorspace(

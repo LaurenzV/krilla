@@ -41,6 +41,7 @@ class OutputSpec:
     filter_type: Optional[int] = None
     interlaced: bool = False
     transparency: bool = False
+    transparent_sample: int = 0
     binary_transparency: bool = False
     idat_chunks: int = 1
     icc_profile: Optional[str] = None
@@ -59,6 +60,13 @@ OUTPUT_SPECS = (
     OutputSpec("grayscale_trns_4.png", 0, 4, transparency=True),
     OutputSpec("grayscale_trns_8.png", 0, 8, transparency=True),
     OutputSpec("grayscale_trns_16.png", 0, 16, transparency=True),
+    OutputSpec(
+        "grayscale_trns_16_low_byte.png",
+        0,
+        16,
+        transparency=True,
+        transparent_sample=1,
+    ),
     OutputSpec("grayscale_8_interlaced.png", 0, 8, interlaced=True),
     OutputSpec("rgb_8.png", 2, 8),
     OutputSpec("rgb_8_plte.png", 2, 8, suggested_palette=True),
@@ -68,6 +76,13 @@ OUTPUT_SPECS = (
     OutputSpec("rgb_8_multiple_idat.png", 2, 8, idat_chunks=3),
     OutputSpec("rgb_trns_8.png", 2, 8, transparency=True),
     OutputSpec("rgb_trns_16.png", 2, 16, transparency=True),
+    OutputSpec(
+        "rgb_trns_16_low_byte.png",
+        2,
+        16,
+        transparency=True,
+        transparent_sample=1,
+    ),
     OutputSpec("rgb_indexed_1.png", 3, 1),
     OutputSpec("rgb_indexed_2.png", 3, 2),
     OutputSpec("rgb_indexed_4.png", 3, 4),
@@ -426,9 +441,9 @@ def build_rows(spec, luma, rgb):
 
     if spec.transparency:
         if spec.color_type == 0:
-            transparency = struct.pack(">H", 0)
+            transparency = struct.pack(">H", spec.transparent_sample)
         elif spec.color_type == 2:
-            transparency = struct.pack(">HHH", 0, 0, 0)
+            transparency = struct.pack(">HHH", *([spec.transparent_sample] * 3))
 
     if spec.suggested_palette:
         if spec.color_type not in (2, 6):
@@ -525,10 +540,14 @@ def verify_png(path, expected_spec, width, height):
     if len(transparency) != int(expected_spec.transparency):
         raise ValueError(f"{path} has an unexpected number of tRNS chunks")
     if expected_spec.transparency:
-        if expected_spec.color_type == 0 and transparency[0] != b"\0\0":
-            raise ValueError(f"{path} does not mark black as transparent")
-        if expected_spec.color_type == 2 and transparency[0] != b"\0\0\0\0\0\0":
-            raise ValueError(f"{path} does not mark black as transparent")
+        if expected_spec.color_type == 0:
+            expected = struct.pack(">H", expected_spec.transparent_sample)
+            if transparency[0] != expected:
+                raise ValueError(f"{path} has an unexpected transparent sample")
+        if expected_spec.color_type == 2:
+            expected = struct.pack(">HHH", *([expected_spec.transparent_sample] * 3))
+            if transparency[0] != expected:
+                raise ValueError(f"{path} has an unexpected transparent color")
         if expected_spec.color_type == 3:
             palette = palettes[0]
             if expected_spec.binary_transparency:
