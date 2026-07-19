@@ -19,7 +19,8 @@ fn png_impl(surface: &mut Surface, name: &str) {
     )
     .unwrap();
     let (width, height) = image.size();
-    let size = Size::from_wh(width as f32, height as f32).unwrap();
+    let scale = 200.0 / width as f32;
+    let size = Size::from_wh(200.0, height as f32 * scale).unwrap();
     surface.draw_image(image, size);
 }
 
