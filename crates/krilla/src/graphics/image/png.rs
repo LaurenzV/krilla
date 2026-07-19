@@ -28,6 +28,7 @@ impl PngData {
 
         let mut idat = None;
         let mut palette = None;
+        let mut palette_seen = false;
         let mut reached_iend = false;
 
         for png_chunk in chunks {
@@ -40,9 +41,13 @@ impl PngData {
             match png_chunk.kind {
                 chunk::IHDR | chunk::tRNS => return None,
                 chunk::PLTE => {
-                    let max_len = 3 * (1 << header.bit_depth as usize);
-                    if header.color_type != png::ColorType::Indexed
-                        || palette.is_some()
+                    let max_len = match header.color_type {
+                        png::ColorType::Indexed => 3 * (1 << header.bit_depth as usize),
+                        png::ColorType::Rgb => 3 * 256,
+                        _ => return None,
+                    };
+
+                    if palette_seen
                         || idat.is_some()
                         || png_chunk.data.is_empty()
                         || png_chunk.data.len() % 3 != 0
@@ -51,7 +56,13 @@ impl PngData {
                         return None;
                     }
 
-                    palette = Some(png_chunk.data.to_vec());
+                    palette_seen = true;
+
+                    // See 4.1.2: https://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html
+                    // For RGB images, we can safely ignore it.
+                    if header.color_type == png::ColorType::Indexed {
+                        palette = Some(png_chunk.data.to_vec());
+                    }
                 }
                 chunk::IDAT => {
                     idat.get_or_insert_with(Vec::new)

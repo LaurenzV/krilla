@@ -44,6 +44,7 @@ class OutputSpec:
     binary_transparency: bool = False
     idat_chunks: int = 1
     icc_profile: Optional[str] = None
+    suggested_palette: bool = False
 
 
 OUTPUT_SPECS = (
@@ -60,7 +61,9 @@ OUTPUT_SPECS = (
     OutputSpec("grayscale_trns_16.png", 0, 16, transparency=True),
     OutputSpec("grayscale_8_interlaced.png", 0, 8, interlaced=True),
     OutputSpec("rgb_8.png", 2, 8),
+    OutputSpec("rgb_8_plte.png", 2, 8, suggested_palette=True),
     OutputSpec("rgb_16.png", 2, 16),
+    OutputSpec("rgb_16_plte.png", 2, 16, suggested_palette=True),
     OutputSpec("rgb_8_icc.png", 2, 8, icc_profile="sRGB-v4.icc"),
     OutputSpec("rgb_8_multiple_idat.png", 2, 8, idat_chunks=3),
     OutputSpec("rgb_trns_8.png", 2, 8, transparency=True),
@@ -427,6 +430,11 @@ def build_rows(spec, luma, rgb):
         elif spec.color_type == 2:
             transparency = struct.pack(">HHH", 0, 0, 0)
 
+    if spec.suggested_palette:
+        if spec.color_type not in (2, 6):
+            raise ValueError("suggested palettes require an RGB color type")
+        palette, _ = quantize_palette(rgb.pixels, 256)
+
     bytes_per_pixel = max(1, (channels * spec.bit_depth + 7) // 8)
     return rows, palette, transparency, bytes_per_pixel
 
@@ -505,6 +513,12 @@ def verify_png(path, expected_spec, width, height):
     )
     if actual != expected:
         raise ValueError(f"{path} has IHDR {actual}, expected {expected}")
+    palettes = [payload for chunk_type, payload in chunks if chunk_type == b"PLTE"]
+    expected_palette_count = int(
+        expected_spec.color_type == 3 or expected_spec.suggested_palette
+    )
+    if len(palettes) != expected_palette_count:
+        raise ValueError(f"{path} has an unexpected number of PLTE chunks")
     transparency = [
         payload for chunk_type, payload in chunks if chunk_type == b"tRNS"
     ]
@@ -516,9 +530,7 @@ def verify_png(path, expected_spec, width, height):
         if expected_spec.color_type == 2 and transparency[0] != b"\0\0\0\0\0\0":
             raise ValueError(f"{path} does not mark black as transparent")
         if expected_spec.color_type == 3:
-            palette = next(
-                payload for chunk_type, payload in chunks if chunk_type == b"PLTE"
-            )
+            palette = palettes[0]
             if expected_spec.binary_transparency:
                 if transparency[0][-1] != 0 or any(
                     alpha != 255 for alpha in transparency[0][:-1]

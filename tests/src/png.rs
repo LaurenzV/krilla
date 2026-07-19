@@ -155,6 +155,16 @@ fn png_rgb_8(surface: &mut Surface) {
 }
 
 #[snapshot]
+fn png_rgb_8_plte(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_8_plte");
+}
+
+#[visreg]
+fn png_rgb_8_plte(surface: &mut Surface) {
+    png_impl(surface, "rgb_8_plte");
+}
+
+#[snapshot]
 fn png_rgb_16(page: &mut Page) {
     png_impl(&mut page.surface(), "rgb_16");
 }
@@ -162,6 +172,16 @@ fn png_rgb_16(page: &mut Page) {
 #[visreg]
 fn png_rgb_16(surface: &mut Surface) {
     png_impl(surface, "rgb_16");
+}
+
+#[snapshot]
+fn png_rgb_16_plte(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_16_plte");
+}
+
+#[visreg]
+fn png_rgb_16_plte(surface: &mut Surface) {
+    png_impl(surface, "rgb_16_plte");
 }
 
 #[snapshot]
