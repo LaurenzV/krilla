@@ -85,7 +85,10 @@ impl PdfVersion {
     #[cfg(feature = "raster-images")]
     pub(crate) fn supports_bit_depth(&self, bits_per_component: BitsPerComponent) -> bool {
         match bits_per_component {
-            BitsPerComponent::Eight => true,
+            BitsPerComponent::One
+            | BitsPerComponent::Two
+            | BitsPerComponent::Four
+            | BitsPerComponent::Eight => true,
             BitsPerComponent::Sixteen => *self >= PdfVersion::Pdf15,
         }
     }

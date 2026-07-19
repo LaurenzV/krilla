@@ -36,6 +36,12 @@ use crate::Data;
 /// The number of bits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum BitsPerComponent {
+    /// One bit per component.
+    One,
+    /// Two bits per component.
+    Two,
+    /// Four bits per component.
+    Four,
     /// Eight bits per component.
     Eight,
     /// Sixteen bits per component.
@@ -45,21 +51,24 @@ pub enum BitsPerComponent {
 impl BitsPerComponent {
     fn as_u8(&self) -> u8 {
         match self {
+            BitsPerComponent::One => 1,
+            BitsPerComponent::Two => 2,
+            BitsPerComponent::Four => 4,
             BitsPerComponent::Eight => 8,
             BitsPerComponent::Sixteen => 16,
         }
     }
 }
 
-impl TryFrom<BitDepth> for BitsPerComponent {
-    type Error = ();
-
-    fn try_from(value: BitDepth) -> Result<Self, Self::Error> {
-        Ok(match value {
+impl From<BitDepth> for BitsPerComponent {
+    fn from(value: BitDepth) -> Self {
+        match value {
+            BitDepth::One => Self::One,
+            BitDepth::Two => Self::Two,
+            BitDepth::Four => Self::Four,
             BitDepth::Eight => Self::Eight,
             BitDepth::Sixteen => Self::Sixteen,
-            _ => return Err(()),
-        })
+        }
     }
 }
 
@@ -629,27 +638,24 @@ fn decode_png(data: Data) -> Result<Repr, String> {
     let info = reader.info();
     let (color_type, bit_depth) = reader.output_color_type();
 
-    if let Some(png_data) = png::PngData::new(data.as_ref(), reader.info()) {
-        // While PDF itself supports all bit depth, the reencoding logic only handles 8 and 16 for now
-        if let Ok(bits_per_component) = BitsPerComponent::try_from(bit_depth) {
-            let idat = match png_data.idat {
-                Cow::Borrowed(idat) => {
-                    let start = idat.as_ptr() as usize - data.as_ref().as_ptr() as usize;
-                    IdatData::Slice {
-                        data: data.clone(),
-                        range: start..start + idat.len(),
-                    }
+    if let Some(png_data) = png::PngData::new(data.as_ref()) {
+        let idat = match png_data.idat {
+            Cow::Borrowed(idat) => {
+                let start = idat.as_ptr() as usize - data.as_ref().as_ptr() as usize;
+                IdatData::Slice {
+                    data: data.clone(),
+                    range: start..start + idat.len(),
                 }
-                Cow::Owned(idat) => IdatData::Owned(idat),
-            };
+            }
+            Cow::Owned(idat) => IdatData::Owned(idat),
+        };
 
-            return Ok(Repr::Png(PngRepr {
-                data: idat,
-                bits_per_component,
-                color_type,
-                rendering_intent: info.srgb,
-            }));
-        }
+        return Ok(Repr::Png(PngRepr {
+            data: idat,
+            bits_per_component: png_data.bit_depth.into(),
+            color_type: png_data.color_type,
+            rendering_intent: info.srgb,
+        }));
     }
 
     let mut img_data = vec![0; reader.output_buffer_size().ok_or("image is too large")?];

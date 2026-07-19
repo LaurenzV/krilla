@@ -4,18 +4,28 @@ use png::chunk;
 
 pub(super) struct PngData<'a> {
     pub(super) idat: Cow<'a, [u8]>,
+    pub(super) bit_depth: png::BitDepth,
+    pub(super) color_type: png::ColorType,
 }
 
 impl<'a> PngData<'a> {
-    pub(super) fn new(data: &'a [u8], info: &png::Info) -> Option<Self> {
-        if !is_supported(info) {
+    pub(super) fn new(data: &'a [u8]) -> Option<Self> {
+        let mut chunks = Chunks::new(data).ok()?;
+        let ihdr = chunks.next()?.ok()?;
+        if ihdr.kind != chunk::IHDR || !ihdr.has_valid_crc() {
+            return None;
+        }
+        
+        let header = Header::new(ihdr.data)?;
+
+        if !is_supported(&header) {
             return None;
         }
 
         let mut idat = None;
         let mut reached_iend = false;
 
-        for png_chunk in Chunks::new(data).ok()? {
+        for png_chunk in chunks {
             let png_chunk = png_chunk.ok()?;
 
             if png_chunk.is_critical && !png_chunk.has_valid_crc() {
@@ -23,8 +33,7 @@ impl<'a> PngData<'a> {
             }
 
             match png_chunk.kind {
-                chunk::IHDR => {}
-                chunk::PLTE => return None,
+                chunk::IHDR | chunk::PLTE | chunk::tRNS => return None,
                 chunk::IDAT => append_idat(&mut idat, png_chunk.data),
                 chunk::IEND => {
                     reached_iend = true;
@@ -35,21 +44,58 @@ impl<'a> PngData<'a> {
             }
         }
 
-        reached_iend.then_some(Self { idat: idat? })
+        reached_iend.then_some(Self {
+            idat: idat?,
+            bit_depth: header.bit_depth,
+            color_type: header.color_type,
+        })
     }
 }
 
-fn is_supported(info: &png::Info) -> bool {
-    use png::ColorType::*;
-    // Indexed can be supported in the future.
-    let kind_supported = matches!(info.color_type, Grayscale | Rgb);
+struct Header {
+    bit_depth: png::BitDepth,
+    color_type: png::ColorType,
+    interlaced: bool,
+}
 
-    if !kind_supported
-        || info.interlaced
-        // Those can also be supported in the future.
-        || info.bit_depth != png::BitDepth::Eight
-        || info.trns.is_some()
-    {
+impl Header {
+    fn new(data: &[u8]) -> Option<Self> {
+        let data: &[u8; 13] = data.try_into().ok()?;
+        let width = u32::from_be_bytes(data[0..4].try_into().unwrap());
+        let height = u32::from_be_bytes(data[4..8].try_into().unwrap());
+        let bit_depth = png::BitDepth::from_u8(data[8])?;
+        let color_type = png::ColorType::from_u8(data[9])?;
+
+        if width == 0 || height == 0 || data[10] != 0 || data[11] != 0 {
+            return None;
+        }
+
+        let interlaced = match data[12] {
+            0 => false,
+            1 => true,
+            _ => return None,
+        };
+
+        Some(Self {
+            bit_depth,
+            color_type,
+            interlaced,
+        })
+    }
+}
+
+fn is_supported(header: &Header) -> bool {
+    use png::BitDepth::*;
+    use png::ColorType::*;
+
+    // Indexed can be supported in the future.
+    let kind_supported = matches!(header.color_type, Grayscale | Rgb);
+    let depth_supported = matches!(
+        (header.color_type, header.bit_depth),
+        (Grayscale, One | Two | Four | Eight | Sixteen) | (Rgb, Eight | Sixteen)
+    );
+
+    if !kind_supported || !depth_supported || header.interlaced {
         return false;
     }
 
