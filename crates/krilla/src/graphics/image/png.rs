@@ -46,6 +46,10 @@ impl PngData {
         }
 
         reached_iend.then_some(Self {
+            // Note: For performance reasons we don't inflate and validate whether
+            // the actual length of the data is correct. This does mean that
+            // invalid data might be embedded in case the original PNG was
+            // corrupted.
             idat: idat?,
             bit_depth: header.bit_depth,
             color_type: header.color_type,
