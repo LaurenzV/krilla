@@ -1,21 +1,19 @@
-use std::borrow::Cow;
-
 use png::chunk;
 
-pub(super) struct PngData<'a> {
-    pub(super) idat: Cow<'a, [u8]>,
+pub(super) struct PngData {
+    pub(super) idat: Vec<u8>,
     pub(super) bit_depth: png::BitDepth,
     pub(super) color_type: png::ColorType,
 }
 
-impl<'a> PngData<'a> {
-    pub(super) fn new(data: &'a [u8]) -> Option<Self> {
+impl PngData {
+    pub(super) fn new(data: &[u8]) -> Option<Self> {
         let mut chunks = Chunks::new(data).ok()?;
         let ihdr = chunks.next()?.ok()?;
         if ihdr.kind != chunk::IHDR || !ihdr.has_valid_crc() {
             return None;
         }
-        
+
         let header = Header::new(ihdr.data)?;
 
         if !is_supported(&header) {
@@ -34,7 +32,10 @@ impl<'a> PngData<'a> {
 
             match png_chunk.kind {
                 chunk::IHDR | chunk::PLTE | chunk::tRNS => return None,
-                chunk::IDAT => append_idat(&mut idat, png_chunk.data),
+                chunk::IDAT => {
+                    idat.get_or_insert_with(Vec::new)
+                        .extend_from_slice(png_chunk.data);
+                }
                 chunk::IEND => {
                     reached_iend = true;
                     break;
@@ -100,22 +101,6 @@ fn is_supported(header: &Header) -> bool {
     }
 
     true
-}
-
-fn append_idat<'a>(idat: &mut Option<Cow<'a, [u8]>>, data: &'a [u8]) {
-    *idat = Some(match idat.take() {
-        None => Cow::Borrowed(data),
-        Some(Cow::Borrowed(previous)) => {
-            let mut combined = Vec::with_capacity(previous.len() + data.len());
-            combined.extend_from_slice(previous);
-            combined.extend_from_slice(data);
-            Cow::Owned(combined)
-        }
-        Some(Cow::Owned(mut combined)) => {
-            combined.extend_from_slice(data);
-            Cow::Owned(combined)
-        }
-    });
 }
 
 const PNG_MAGIC: &[u8] = b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A";
@@ -203,29 +188,5 @@ impl<'a> Reader<'a> {
     fn read_u32(&mut self) -> Option<u32> {
         let bytes = self.read(size_of::<u32>())?;
         Some(u32::from_be_bytes(bytes.try_into().unwrap()))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::append_idat;
-    use std::borrow::Cow;
-
-    #[test]
-    fn single_idat_is_borrowed() {
-        let data = [1, 2, 3];
-        let mut idat = None;
-        append_idat(&mut idat, &data);
-
-        assert!(matches!(idat, Some(Cow::Borrowed(_))));
-    }
-
-    #[test]
-    fn multiple_idats_are_concatenated() {
-        let mut idat = None;
-        append_idat(&mut idat, &[1, 2]);
-        append_idat(&mut idat, &[3, 4]);
-
-        assert_eq!(idat, Some(Cow::Owned(vec![1, 2, 3, 4])));
     }
 }

@@ -10,11 +10,10 @@
 
 mod png;
 
-use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::io::Cursor;
-use std::ops::{DerefMut, Range};
+use std::ops::DerefMut;
 use std::sync::Arc;
 
 use ::png::{BitDepth, ColorType, Decoder, SrgbRenderingIntent, Transformations};
@@ -131,24 +130,10 @@ struct JpegRepr {
 }
 
 struct PngRepr {
-    data: IdatData,
+    data: Vec<u8>,
     bits_per_component: BitsPerComponent,
     color_type: ColorType,
     rendering_intent: Option<SrgbRenderingIntent>,
-}
-
-enum IdatData {
-    Slice { data: Data, range: Range<usize> },
-    Owned(Vec<u8>),
-}
-
-impl AsRef<[u8]> for IdatData {
-    fn as_ref(&self) -> &[u8] {
-        match self {
-            Self::Slice { data, range } => &data.as_ref()[range.clone()],
-            Self::Owned(data) => data,
-        }
-    }
 }
 
 enum Repr {
@@ -250,7 +235,7 @@ impl Image {
         let metadata = png_metadata(data.as_ref())?;
 
         Ok(Self(Arc::new(ImageRepr {
-            inner: Deferred::new(move || decode_png(data)),
+            inner: Deferred::new(move || decode_png(data.as_ref())),
             metadata,
             sip: hash,
             interpolate,
@@ -628,8 +613,8 @@ fn png_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
     })
 }
 
-fn decode_png(data: Data) -> Result<Repr, String> {
-    let cursor = Cursor::new(data.as_ref());
+fn decode_png(data: &[u8]) -> Result<Repr, String> {
+    let cursor = Cursor::new(data);
     let mut decoder = Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let mut reader = decoder
@@ -638,20 +623,9 @@ fn decode_png(data: Data) -> Result<Repr, String> {
     let info = reader.info();
     let (color_type, bit_depth) = reader.output_color_type();
 
-    if let Some(png_data) = png::PngData::new(data.as_ref()) {
-        let idat = match png_data.idat {
-            Cow::Borrowed(idat) => {
-                let start = idat.as_ptr() as usize - data.as_ref().as_ptr() as usize;
-                IdatData::Slice {
-                    data: data.clone(),
-                    range: start..start + idat.len(),
-                }
-            }
-            Cow::Owned(idat) => IdatData::Owned(idat),
-        };
-
+    if let Some(png_data) = png::PngData::new(data) {
         return Ok(Repr::Png(PngRepr {
-            data: idat,
+            data: png_data.idat,
             bits_per_component: png_data.bit_depth.into(),
             color_type: png_data.color_type,
             rendering_intent: info.srgb,
