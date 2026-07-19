@@ -41,6 +41,9 @@ class OutputSpec:
     filter_type: Optional[int] = None
     interlaced: bool = False
     transparency: bool = False
+    binary_transparency: bool = False
+    idat_chunks: int = 1
+    icc_profile: Optional[str] = None
 
 
 OUTPUT_SPECS = (
@@ -49,6 +52,7 @@ OUTPUT_SPECS = (
     OutputSpec("grayscale_4.png", 0, 4),
     OutputSpec("grayscale_8.png", 0, 8),
     OutputSpec("grayscale_16.png", 0, 16),
+    OutputSpec("grayscale_8_icc.png", 0, 8, icc_profile="sGrey-v4.icc"),
     OutputSpec("grayscale_trns_1.png", 0, 1, transparency=True),
     OutputSpec("grayscale_trns_2.png", 0, 2, transparency=True),
     OutputSpec("grayscale_trns_4.png", 0, 4, transparency=True),
@@ -57,6 +61,8 @@ OUTPUT_SPECS = (
     OutputSpec("grayscale_8_interlaced.png", 0, 8, interlaced=True),
     OutputSpec("rgb_8.png", 2, 8),
     OutputSpec("rgb_16.png", 2, 16),
+    OutputSpec("rgb_8_icc.png", 2, 8, icc_profile="sRGB-v4.icc"),
+    OutputSpec("rgb_8_multiple_idat.png", 2, 8, idat_chunks=3),
     OutputSpec("rgb_trns_8.png", 2, 8, transparency=True),
     OutputSpec("rgb_trns_16.png", 2, 16, transparency=True),
     OutputSpec("rgb_indexed_1.png", 3, 1),
@@ -67,6 +73,13 @@ OUTPUT_SPECS = (
     OutputSpec("rgb_indexed_trns_2.png", 3, 2, transparency=True),
     OutputSpec("rgb_indexed_trns_4.png", 3, 4, transparency=True),
     OutputSpec("rgb_indexed_trns_8.png", 3, 8, transparency=True),
+    OutputSpec(
+        "rgb_indexed_trns_binary_8.png",
+        3,
+        8,
+        transparency=True,
+        binary_transparency=True,
+    ),
     OutputSpec("grayscale_alpha_8.png", 4, 8),
     OutputSpec("grayscale_alpha_16.png", 4, 16),
     OutputSpec("rgba_8.png", 6, 8),
@@ -381,7 +394,11 @@ def build_rows(spec, luma, rgb):
             start = y * rgb.width
             rows.append(encode_samples(indices[start : start + rgb.width], spec.bit_depth))
         if spec.transparency:
-            transparency = bytes(alpha_at(color[0], 256, 8) for color in palette)
+            if spec.binary_transparency:
+                transparent_index = len(palette) // 2
+                transparency = bytes([255] * transparent_index + [0])
+            else:
+                transparency = bytes(alpha_at(color[0], 256, 8) for color in palette)
         return rows, palette, transparency, 1
 
     channels = {0: 1, 2: 3, 4: 2, 6: 4}[spec.color_type]
@@ -445,6 +462,11 @@ def write_png(
         interlace,
     )
     chunks = [make_chunk(b"IHDR", ihdr)]
+    if spec.icc_profile is not None:
+        profile = (ROOT / "crates" / "krilla" / "icc" / spec.icc_profile).read_bytes()
+        chunks.append(
+            make_chunk(b"iCCP", b"ICC Profile\0\0" + zlib.compress(profile, level=9))
+        )
     if palette is not None:
         chunks.append(
             make_chunk(b"PLTE", bytes(channel for color in palette for channel in color))
@@ -459,7 +481,11 @@ def write_png(
         )
     else:
         filtered = filter_rows(rows, bytes_per_pixel, spec.filter_type)
-    chunks.append(make_chunk(b"IDAT", zlib.compress(filtered, level=9)))
+    compressed = zlib.compress(filtered, level=9)
+    for index in range(spec.idat_chunks):
+        start = len(compressed) * index // spec.idat_chunks
+        end = len(compressed) * (index + 1) // spec.idat_chunks
+        chunks.append(make_chunk(b"IDAT", compressed[start:end]))
     chunks.append(make_chunk(b"IEND", b""))
     path.write_bytes(PNG_SIGNATURE + b"".join(chunks))
 
@@ -493,11 +519,33 @@ def verify_png(path, expected_spec, width, height):
             palette = next(
                 payload for chunk_type, payload in chunks if chunk_type == b"PLTE"
             )
-            if len(transparency[0]) != len(palette) // 3:
+            if expected_spec.binary_transparency:
+                if transparency[0][-1] != 0 or any(
+                    alpha != 255 for alpha in transparency[0][:-1]
+                ):
+                    raise ValueError(f"{path} does not contain binary transparency")
+            elif len(transparency[0]) != len(palette) // 3:
                 raise ValueError(f"{path} does not define alpha for every palette entry")
+    icc_profiles = [
+        payload for chunk_type, payload in chunks if chunk_type == b"iCCP"
+    ]
+    if len(icc_profiles) != int(expected_spec.icc_profile is not None):
+        raise ValueError(f"{path} has an unexpected number of iCCP chunks")
+    if expected_spec.icc_profile is not None:
+        name, encoded_profile = icc_profiles[0].split(b"\0", 1)
+        if name != b"ICC Profile" or encoded_profile[0] != 0:
+            raise ValueError(f"{path} has an invalid iCCP chunk")
+        expected_profile = (
+            ROOT / "crates" / "krilla" / "icc" / expected_spec.icc_profile
+        ).read_bytes()
+        if zlib.decompress(encoded_profile[1:]) != expected_profile:
+            raise ValueError(f"{path} has an unexpected ICC profile")
     compressed = b"".join(
         payload for chunk_type, payload in chunks if chunk_type == b"IDAT"
     )
+    idat_count = sum(chunk_type == b"IDAT" for chunk_type, _ in chunks)
+    if idat_count != expected_spec.idat_chunks:
+        raise ValueError(f"{path} has {idat_count} IDAT chunks")
     filtered = zlib.decompress(compressed)
     channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[expected_spec.color_type]
     row_size = (width * channels * expected_spec.bit_depth + 7) // 8

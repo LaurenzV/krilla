@@ -70,6 +70,16 @@ fn png_grayscale_16(surface: &mut Surface) {
 }
 
 #[snapshot]
+fn png_grayscale_8_icc(page: &mut Page) {
+    png_impl(&mut page.surface(), "grayscale_8_icc.png");
+}
+
+#[visreg]
+fn png_grayscale_8_icc(surface: &mut Surface) {
+    png_impl(surface, "grayscale_8_icc.png");
+}
+
+#[snapshot]
 fn png_grayscale_trns_1(page: &mut Page) {
     png_impl(&mut page.surface(), "grayscale_trns_1.png");
 }
@@ -147,6 +157,26 @@ fn png_rgb_16(page: &mut Page) {
 #[visreg]
 fn png_rgb_16(surface: &mut Surface) {
     png_impl(surface, "rgb_16.png");
+}
+
+#[snapshot]
+fn png_rgb_8_icc(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_8_icc.png");
+}
+
+#[visreg]
+fn png_rgb_8_icc(surface: &mut Surface) {
+    png_impl(surface, "rgb_8_icc.png");
+}
+
+#[snapshot]
+fn png_rgb_8_multiple_idat(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_8_multiple_idat.png");
+}
+
+#[visreg]
+fn png_rgb_8_multiple_idat(surface: &mut Surface) {
+    png_impl(surface, "rgb_8_multiple_idat.png");
 }
 
 #[snapshot]
@@ -247,6 +277,16 @@ fn png_rgb_indexed_trns_8(page: &mut Page) {
 #[visreg]
 fn png_rgb_indexed_trns_8(surface: &mut Surface) {
     png_impl(surface, "rgb_indexed_trns_8.png");
+}
+
+#[snapshot]
+fn png_rgb_indexed_trns_binary_8(page: &mut Page) {
+    png_impl(&mut page.surface(), "rgb_indexed_trns_binary_8.png");
+}
+
+#[visreg]
+fn png_rgb_indexed_trns_binary_8(surface: &mut Surface) {
+    png_impl(surface, "rgb_indexed_trns_binary_8.png");
 }
 
 #[snapshot]
