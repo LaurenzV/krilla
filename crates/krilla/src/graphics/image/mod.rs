@@ -163,6 +163,9 @@ pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
     /// Return the raw bytes of the alpha channel, if available.
     fn alpha_channel(&self) -> Option<&[u8]>;
     /// Return the bits per component of the image.
+    ///
+    /// Custom images currently only support [`BitsPerComponent::Eight`] and
+    /// [`BitsPerComponent::Sixteen`]. 
     fn bits_per_component(&self) -> BitsPerComponent;
     /// Return the dimensions of the image.
     fn size(&self) -> (u32, u32);
@@ -308,12 +311,21 @@ impl Image {
     /// Panics if the dimensions of the image and the length of the
     /// data doesn't match.
     pub fn from_custom<T: CustomImage>(image: T, interpolate: bool) -> Result<Image, String> {
+        let bits_per_component = image.bits_per_component();
+        
+        if !matches!(
+            bits_per_component,
+            BitsPerComponent::Eight | BitsPerComponent::Sixteen
+        ) {
+            return Err("custom images only support 8 or 16 bits per component".to_string());
+        }
+
         let hash = (image.clone(), interpolate).sip_hash();
         let metadata = ImageMetadata {
             size: image.size(),
             color_space: image.color_space(),
             has_alpha: image.alpha_channel().is_some(),
-            bits_per_component: image.bits_per_component(),
+            bits_per_component,
             icc: image
                 .icc_profile()
                 .and_then(|d| get_icc_profile_type(d, image.color_space())),
@@ -321,7 +333,7 @@ impl Image {
 
         Ok(Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || {
-                let bytes_per_component = (image.bits_per_component().as_u8() / 8) as u32;
+                let bytes_per_component = (bits_per_component.as_u8() / 8) as u32;
                 let color_channel_len = bytes_per_component
                     * image.color_space().num_components() as u32
                     * metadata.size.0
@@ -338,7 +350,7 @@ impl Image {
                 Ok(Repr::Sampled(SampledRepr {
                     color_channel: deflate_encode(color_channel),
                     alpha_channel: image.alpha_channel().map(deflate_encode),
-                    bits_per_component: image.bits_per_component(),
+                    bits_per_component,
                 }))
             }),
             metadata,
@@ -867,8 +879,54 @@ fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<Gen
 
 #[cfg(test)]
 mod tests {
-    use crate::image::Image;
+    use crate::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
     use std::sync::Arc;
+
+    #[derive(Clone, Hash)]
+    struct CustomImageWithBitDepth(BitsPerComponent);
+
+    impl CustomImage for CustomImageWithBitDepth {
+        fn color_channel(&self) -> &[u8] {
+            &[]
+        }
+
+        fn alpha_channel(&self) -> Option<&[u8]> {
+            None
+        }
+
+        fn bits_per_component(&self) -> BitsPerComponent {
+            self.0
+        }
+
+        fn size(&self) -> (u32, u32) {
+            (0, 0)
+        }
+
+        fn icc_profile(&self) -> Option<&[u8]> {
+            None
+        }
+
+        fn color_space(&self) -> ImageColorspace {
+            ImageColorspace::Luma
+        }
+    }
+
+    #[test]
+    fn custom_image_validates_bit_depths() {
+        for bits_per_component in [
+            BitsPerComponent::One,
+            BitsPerComponent::Two,
+            BitsPerComponent::Four,
+        ] {
+            assert!(
+                Image::from_custom(CustomImageWithBitDepth(bits_per_component), false).is_err()
+            );
+        }
+
+        for bits_per_component in [BitsPerComponent::Eight, BitsPerComponent::Sixteen] {
+            assert!(Image::from_custom(CustomImageWithBitDepth(bits_per_component), false).is_ok());
+        }
+    }
 
     #[test]
     fn invalid_png_image() {
