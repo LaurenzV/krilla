@@ -1,78 +1,146 @@
+use std::borrow::Cow;
+
 use png::chunk;
 
-pub fn is_supported_in_pdf(info: &png::Info) -> bool {
-    if info.interlaced {
-        return false;
-    }
+pub(super) struct PngData<'a> {
+    pub(super) idat: Cow<'a, [u8]>,
+}
 
-    if info.bit_depth != png::BitDepth::Eight {
-        return false;
-    }
+impl<'a> PngData<'a> {
+    pub(super) fn new(data: &'a [u8], info: &png::Info) -> Option<Self> {
+        if !is_supported(info) {
+            return None;
+        }
 
-    if info.trns.is_some() {
-        return false;
-    }
+        let mut idat = None;
+        let mut reached_iend = false;
 
-    if i32::try_from(info.width).is_err() {
-        return false; // width needs to be stored as a PDF integer
-    }
+        for png_chunk in Chunks::new(data).ok()? {
+            let png_chunk = png_chunk.ok()?;
 
+            if png_chunk.is_critical && !png_chunk.has_valid_crc() {
+                return None;
+            }
+
+            match png_chunk.kind {
+                chunk::IHDR => {}
+                chunk::PLTE => return None,
+                chunk::IDAT => append_idat(&mut idat, png_chunk.data),
+                chunk::IEND => {
+                    reached_iend = true;
+                    break;
+                }
+                _ if png_chunk.is_critical => return None,
+                _ => {}
+            }
+        }
+
+        reached_iend.then_some(Self { idat: idat? })
+    }
+}
+
+fn is_supported(info: &png::Info) -> bool {
     use png::ColorType::*;
-    match info.color_type {
-        Grayscale | Rgb => true,
-        GrayscaleAlpha | Rgba => false,
-        Indexed => false, // Can be embedded in PDF but not implemented yet
+    // Indexed can be supported in the future.
+    let kind_supported = matches!(info.color_type, Grayscale | Rgb);
+
+    if !kind_supported
+        || info.interlaced
+        // Those can also be supported in the future.
+        || info.bit_depth != png::BitDepth::Eight
+        || info.trns.is_some()
+    {
+        return false;
     }
+
+    true
+}
+
+fn append_idat<'a>(idat: &mut Option<Cow<'a, [u8]>>, data: &'a [u8]) {
+    *idat = Some(match idat.take() {
+        None => Cow::Borrowed(data),
+        Some(Cow::Borrowed(previous)) => {
+            let mut combined = Vec::with_capacity(previous.len() + data.len());
+            combined.extend_from_slice(previous);
+            combined.extend_from_slice(data);
+            Cow::Owned(combined)
+        }
+        Some(Cow::Owned(mut combined)) => {
+            combined.extend_from_slice(data);
+            Cow::Owned(combined)
+        }
+    });
 }
 
 const PNG_MAGIC: &[u8] = b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A";
 
-pub fn extract_idat(data: &[u8]) -> Result<Vec<u8>, &'static str> {
-    let mut reader = Reader { data };
+struct PngChunk<'a> {
+    kind: chunk::ChunkType,
+    data: &'a [u8],
+    crc: u32,
+    is_critical: bool,
+}
 
-    let magic = reader.read(PNG_MAGIC.len());
-    if magic != Some(PNG_MAGIC) {
-        return Err("invalid PNG signature");
+impl PngChunk<'_> {
+    fn has_valid_crc(&self) -> bool {
+        let mut hasher = crc32fast::Hasher::new();
+        hasher.update(&self.kind.0);
+        hasher.update(self.data);
+        hasher.finalize() == self.crc
     }
+}
 
-    // Estimate minimum starting capacity; very unscientific
-    let mut idat = Vec::with_capacity((data.len() / 2).next_multiple_of(8));
+struct Chunks<'a> {
+    reader: Reader<'a>,
+    failed: bool,
+}
 
-    // [Chunk Len] [Chunk Type] [Chunk Payload...] [CRC]
-    while let Some(chunk_len) = reader.read_u32() {
-        let chunk_type = match reader.read_u32() {
-            Some(n) => chunk::ChunkType(u32::to_be_bytes(n)),
-            None => break,
-        };
+impl<'a> Chunks<'a> {
+    fn new(data: &'a [u8]) -> Result<Self, &'static str> {
+        let mut reader = Reader { data };
 
-        let Some(payload) = reader.read(chunk_len as usize) else {
-            return Err("chunk is too short");
-        };
-
-        let Some(crc) = reader.read_u32() else {
-            return Err("chunk is too short");
-        };
-
-        if chunk::is_critical(chunk_type) {
-            let mut hasher = crc32fast::Hasher::new();
-            hasher.update(&chunk_type.0);
-            hasher.update(payload);
-            if hasher.finalize() != crc {
-                return Err("CRC checksum mismatch");
-            }
+        if reader.read(PNG_MAGIC.len()) != Some(PNG_MAGIC) {
+            return Err("invalid PNG signature");
         }
 
-        match chunk_type {
-            chunk::IHDR => (),
-            chunk::PLTE => return Err("indexed color is not supported"),
-            chunk::IDAT => idat.extend_from_slice(payload),
-            chunk::IEND => break,
-            ty if chunk::is_critical(ty) => return Err("unrecognized critical chunk type"),
-            _ => (),
-        }
+        Ok(Self {
+            reader,
+            failed: false,
+        })
     }
 
-    Ok(idat)
+    fn read_chunk(&mut self) -> Result<PngChunk<'a>, &'static str> {
+        let chunk_len = self.reader.read_u32().ok_or("chunk is too short")?;
+        let kind = self.reader.read_u32().ok_or("chunk is too short")?;
+        let data = self
+            .reader
+            .read(chunk_len as usize)
+            .ok_or("chunk is too short")?;
+        let crc = self.reader.read_u32().ok_or("chunk is too short")?;
+
+        let kind = chunk::ChunkType(kind.to_be_bytes());
+
+        Ok(PngChunk {
+            kind,
+            data,
+            crc,
+            is_critical: chunk::is_critical(kind),
+        })
+    }
+}
+
+impl<'a> Iterator for Chunks<'a> {
+    type Item = Result<PngChunk<'a>, &'static str>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.failed || self.reader.data.is_empty() {
+            return None;
+        }
+
+        let chunk = self.read_chunk();
+        self.failed = chunk.is_err();
+        Some(chunk)
+    }
 }
 
 struct Reader<'a> {
@@ -80,14 +148,38 @@ struct Reader<'a> {
 }
 
 impl<'a> Reader<'a> {
-    pub fn read(&mut self, len: usize) -> Option<&'a [u8]> {
+    fn read(&mut self, len: usize) -> Option<&'a [u8]> {
         let (bytes, rest) = self.data.split_at_checked(len)?;
         self.data = rest;
         Some(bytes)
     }
 
-    pub fn read_u32(&mut self) -> Option<u32> {
+    fn read_u32(&mut self) -> Option<u32> {
         let bytes = self.read(size_of::<u32>())?;
         Some(u32::from_be_bytes(bytes.try_into().unwrap()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::append_idat;
+    use std::borrow::Cow;
+
+    #[test]
+    fn single_idat_is_borrowed() {
+        let data = [1, 2, 3];
+        let mut idat = None;
+        append_idat(&mut idat, &data);
+
+        assert!(matches!(idat, Some(Cow::Borrowed(_))));
+    }
+
+    #[test]
+    fn multiple_idats_are_concatenated() {
+        let mut idat = None;
+        append_idat(&mut idat, &[1, 2]);
+        append_idat(&mut idat, &[3, 4]);
+
+        assert_eq!(idat, Some(Cow::Owned(vec![1, 2, 3, 4])));
     }
 }

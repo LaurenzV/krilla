@@ -10,14 +10,15 @@
 
 mod png;
 
+use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::io::Cursor;
-use std::ops::DerefMut;
+use std::ops::{DerefMut, Range};
 use std::sync::Arc;
 
 use ::png::{BitDepth, ColorType, Decoder, SrgbRenderingIntent, Transformations};
-use pdf_writer::{Finish, Name, Null, Ref};
+use pdf_writer::{Finish, Name, Ref};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
 
@@ -121,10 +122,24 @@ struct JpegRepr {
 }
 
 struct PngRepr {
-    data: Data,
+    data: IdatData,
     bits_per_component: BitsPerComponent,
     color_type: ColorType,
     rendering_intent: Option<SrgbRenderingIntent>,
+}
+
+enum IdatData {
+    Slice { data: Data, range: Range<usize> },
+    Owned(Vec<u8>),
+}
+
+impl AsRef<[u8]> for IdatData {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            Self::Slice { data, range } => &data.as_ref()[range.clone()],
+            Self::Owned(data) => data,
+        }
+    }
 }
 
 enum Repr {
@@ -226,7 +241,7 @@ impl Image {
         let metadata = png_metadata(data.as_ref())?;
 
         Ok(Self(Arc::new(ImageRepr {
-            inner: Deferred::new(move || decode_png(data.as_ref())),
+            inner: Deferred::new(move || decode_png(data)),
             metadata,
             sip: hash,
             interpolate,
@@ -494,42 +509,17 @@ impl Image {
                     .finish(&serialize_settings),
                 Repr::Jpeg(j) => FilterStreamBuilder::new_from_jpeg_data(j.data.as_ref())
                     .finish(&serialize_settings),
-                Repr::Png(p) => FilterStreamBuilder::new_from_deflated(p.data.as_ref())
-                    .finish(&serialize_settings),
+                Repr::Png(p) => FilterStreamBuilder::new_from_png_data(
+                    p.data.as_ref(),
+                    p.color_type.samples() as i32,
+                    p.bits_per_component.as_u8() as i32,
+                    self.size().0 as i32,
+                )
+                .finish(&serialize_settings),
             };
 
             let mut image_x_object = chunk.image_xobject(root_ref, filter_stream.encoded_data());
-            let num_filters = filter_stream.write_filters(image_x_object.deref_mut().deref_mut());
-
-            if let Repr::Png(PngRepr {
-                bits_per_component,
-                color_type,
-                ..
-            }) = repr
-            {
-                let params = image_x_object.insert(Name(b"DecodeParms"));
-                debug_assert_ne!(num_filters, 0);
-
-                // Set decode params for the last applicable filter
-                let mut array;
-                let mut flate_params = match num_filters {
-                    0 | 1 => params.dict(),
-                    n => {
-                        array = params.array();
-                        for _ in 0..(n - 1) {
-                            array.push().primitive(Null);
-                        }
-                        array.push().dict()
-                    }
-                };
-
-                // Any integer >= 10 indicates PNG predictor. Specifically, 15 means "PNG optimum" when encoding.
-                flate_params.pair(Name(b"Predictor"), 15);
-                flate_params.pair(Name(b"Colors"), color_type.samples() as i32);
-                flate_params.pair(Name(b"BitsPerComponent"), bits_per_component.as_u8() as i32);
-                flate_params.pair(Name(b"Columns"), self.size().0 as i32);
-                flate_params.finish();
-            }
+            filter_stream.write_filters(image_x_object.deref_mut().deref_mut());
 
             image_x_object.width(self.size().0 as i32);
             image_x_object.height(self.size().1 as i32);
@@ -629,8 +619,8 @@ fn png_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
     })
 }
 
-fn decode_png(data: &[u8]) -> Result<Repr, String> {
-    let cursor = Cursor::new(data);
+fn decode_png(data: Data) -> Result<Repr, String> {
+    let cursor = Cursor::new(data.as_ref());
     let mut decoder = Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let mut reader = decoder
@@ -639,19 +629,26 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let info = reader.info();
     let (color_type, bit_depth) = reader.output_color_type();
 
-    if png::is_supported_in_pdf(reader.info()) {
+    if let Some(png_data) = png::PngData::new(data.as_ref(), reader.info()) {
         // While PDF itself supports all bit depth, the reencoding logic only handles 8 and 16 for now
         if let Ok(bits_per_component) = BitsPerComponent::try_from(bit_depth) {
-            if let Ok(raw_data) = png::extract_idat(data) {
-                return Ok(Repr::Png(PngRepr {
-                    data: Data::from(raw_data),
-                    bits_per_component,
-                    color_type,
-                    rendering_intent: info.srgb,
-                }));
-            } else {
-                // Fall back to decoding & reencoding
-            }
+            let idat = match png_data.idat {
+                Cow::Borrowed(idat) => {
+                    let start = idat.as_ptr() as usize - data.as_ref().as_ptr() as usize;
+                    IdatData::Slice {
+                        data: data.clone(),
+                        range: start..start + idat.len(),
+                    }
+                }
+                Cow::Owned(idat) => IdatData::Owned(idat),
+            };
+
+            return Ok(Repr::Png(PngRepr {
+                data: idat,
+                bits_per_component,
+                color_type,
+                rendering_intent: info.srgb,
+            }));
         }
     }
 

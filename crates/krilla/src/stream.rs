@@ -29,7 +29,7 @@ use std::ops::DerefMut;
 
 use flate2::write::ZlibEncoder;
 use flate2::Compression;
-use pdf_writer::{Array, Dict, Name};
+use pdf_writer::{Array, Dict, Finish, Name, Null};
 
 use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
@@ -141,6 +141,54 @@ pub(crate) enum StreamFilter {
     Dct,
 }
 
+#[derive(Debug, Copy, Clone)]
+struct Filter {
+    kind: StreamFilter,
+    decode_params: Option<DecodeParams>,
+}
+
+impl Filter {
+    fn new(kind: StreamFilter) -> Self {
+        Self {
+            kind,
+            decode_params: None,
+        }
+    }
+
+    fn with_decode_params(mut self, decode_params: DecodeParams) -> Self {
+        self.decode_params = Some(decode_params);
+        self
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+enum DecodeParams {
+    PngPredictor {
+        colors: i32,
+        bits_per_component: i32,
+        columns: i32,
+    },
+}
+
+impl DecodeParams {
+    fn write(self, mut dict: Dict<'_>) {
+        match self {
+            Self::PngPredictor {
+                colors,
+                bits_per_component,
+                columns,
+            } => {
+                dict.pair(Name(b"Predictor"), 15);
+                dict.pair(Name(b"Colors"), colors);
+                dict.pair(Name(b"BitsPerComponent"), bits_per_component);
+                dict.pair(Name(b"Columns"), columns);
+            }
+        }
+
+        dict.finish();
+    }
+}
+
 impl StreamFilter {
     pub(crate) fn to_name(self) -> Name<'static> {
         match self {
@@ -182,28 +230,26 @@ impl StreamFilter {
 /// Allows us to keep track of the filters that a stream has and
 /// apply them in an orderly fashion.
 #[derive(Debug, Clone)]
-pub(crate) enum StreamFilters {
+enum StreamFilters {
     None,
-    Single(StreamFilter),
-    Multiple(Vec<StreamFilter>),
+    Single(Filter),
+    Multiple(Vec<Filter>),
 }
 
 impl StreamFilters {
-    pub(crate) fn add(&mut self, stream_filter: StreamFilter) {
+    fn add(&mut self, filter: Filter) {
         match self {
-            StreamFilters::None => *self = StreamFilters::Single(stream_filter),
-            StreamFilters::Single(cur) => {
-                *self = StreamFilters::Multiple(vec![*cur, stream_filter])
-            }
-            StreamFilters::Multiple(cur) => cur.push(stream_filter),
+            StreamFilters::None => *self = StreamFilters::Single(filter),
+            StreamFilters::Single(cur) => *self = StreamFilters::Multiple(vec![*cur, filter]),
+            StreamFilters::Multiple(cur) => cur.push(filter),
         }
     }
 
-    pub(crate) fn is_binary(&self) -> bool {
+    fn is_binary(&self) -> bool {
         match self {
             StreamFilters::None => false,
-            StreamFilters::Single(s) => s.is_binary(),
-            StreamFilters::Multiple(m) => m.last().unwrap().is_binary(),
+            StreamFilters::Single(filter) => filter.kind.is_binary(),
+            StreamFilters::Multiple(filters) => filters.last().unwrap().kind.is_binary(),
         }
     }
 }
@@ -246,6 +292,27 @@ impl<'a> FilterStreamBuilder<'a> {
     pub(crate) fn new_from_deflated(content: &'a [u8]) -> Self {
         let mut filter_stream = Self::empty(content);
         filter_stream.add_unapplied_filter(StreamFilter::Flate);
+
+        filter_stream
+    }
+
+    #[cfg(feature = "raster-images")]
+    pub(crate) fn new_from_png_data(
+        content: &'a [u8],
+        colors: i32,
+        bits_per_component: i32,
+        columns: i32,
+    ) -> Self {
+        let mut filter_stream = Self::empty(content);
+        filter_stream
+            .filters
+            .add(
+                Filter::new(StreamFilter::Flate).with_decode_params(DecodeParams::PngPredictor {
+                    colors,
+                    bits_per_component,
+                    columns,
+                }),
+            );
 
         filter_stream
     }
@@ -300,11 +367,11 @@ impl<'a> FilterStreamBuilder<'a> {
 
     fn add_filter(&mut self, filter: StreamFilter) {
         self.content = Cow::Owned(filter.apply(&self.content));
-        self.filters.add(filter);
+        self.filters.add(Filter::new(filter));
     }
 
     fn add_unapplied_filter(&mut self, filter: StreamFilter) {
-        self.filters.add(filter);
+        self.filters.add(Filter::new(filter));
     }
 }
 
@@ -318,22 +385,38 @@ impl FilterStream<'_> {
         &self.content
     }
 
-    pub(crate) fn write_filters<'b, T>(&self, mut dict: T) -> usize
+    pub(crate) fn write_filters<'b, T>(&self, mut dict: T)
     where
         T: DerefMut<Target = Dict<'b>>,
     {
         match &self.filters {
-            StreamFilters::None => 0,
+            StreamFilters::None => {}
             StreamFilters::Single(filter) => {
-                dict.deref_mut().pair(Name(b"Filter"), filter.to_name());
-                1
+                dict.deref_mut()
+                    .pair(Name(b"Filter"), filter.kind.to_name());
+
+                if let Some(params) = filter.decode_params {
+                    params.write(dict.deref_mut().insert(Name(b"DecodeParms")).dict());
+                }
             }
             StreamFilters::Multiple(filters) => {
                 dict.deref_mut()
                     .insert(Name(b"Filter"))
                     .start::<Array>()
-                    .items(filters.iter().map(|f| f.to_name()).rev());
-                filters.len()
+                    .items(filters.iter().rev().map(|filter| filter.kind.to_name()));
+
+                if filters.iter().any(|filter| filter.decode_params.is_some()) {
+                    let mut decode_params = dict.deref_mut().insert(Name(b"DecodeParms")).array();
+
+                    for filter in filters.iter().rev() {
+                        match filter.decode_params {
+                            Some(params) => params.write(decode_params.push().dict()),
+                            None => decode_params.push().primitive(Null),
+                        }
+                    }
+
+                    decode_params.finish();
+                }
             }
         }
     }
