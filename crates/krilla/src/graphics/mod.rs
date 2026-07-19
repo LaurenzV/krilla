@@ -7,8 +7,6 @@ pub mod icc;
 pub mod image;
 pub mod mask;
 pub mod paint;
-#[cfg(feature = "raster-images")]
-pub(crate) mod png_raw;
 pub(crate) mod separation;
 pub(crate) mod shading_function;
 pub(crate) mod shading_pattern;

@@ -8,14 +8,16 @@
 //! - WEBP
 //! - Custom image formats via [`CustomImage`]
 
+mod png;
+
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::io::Cursor;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
+use ::png::{BitDepth, ColorType, Decoder, SrgbRenderingIntent, Transformations};
 use pdf_writer::{Finish, Name, Null, Ref};
-use png::{BitDepth, ColorType, Transformations};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
 
@@ -28,7 +30,7 @@ use crate::graphics::icc::{GenericICCProfile, ICCBasedColorSpace, ICCProfile};
 use crate::serialize::SerializeContext;
 use crate::stream::{deflate_encode, FilterStreamBuilder};
 use crate::util::{set_colorspace, Deferred, NameExt, SipHashable};
-use crate::{png_raw, Data};
+use crate::Data;
 
 /// The number of bits per color component.
 #[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
@@ -121,8 +123,8 @@ struct JpegRepr {
 struct PngRepr {
     data: Data,
     bits_per_component: BitsPerComponent,
-    color_type: png::ColorType,
-    rendering_intent: Option<png::SrgbRenderingIntent>,
+    color_type: ColorType,
+    rendering_intent: Option<SrgbRenderingIntent>,
 }
 
 enum Repr {
@@ -561,7 +563,7 @@ impl Image {
                 ..
             }) = repr
             {
-                use png::SrgbRenderingIntent::*;
+                use SrgbRenderingIntent::*;
                 image_x_object.pair(
                     Name(b"Intent"),
                     Name(match intent {
@@ -589,7 +591,7 @@ const PNG_TRANSFORMATIONS: Transformations = Transformations::EXPAND;
 
 fn png_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
     let cursor = Cursor::new(data);
-    let mut decoder = png::Decoder::new(cursor);
+    let mut decoder = Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let reader = decoder
         .read_info()
@@ -629,7 +631,7 @@ fn png_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
 
 fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let cursor = Cursor::new(data);
-    let mut decoder = png::Decoder::new(cursor);
+    let mut decoder = Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let mut reader = decoder
         .read_info()
@@ -637,10 +639,10 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let info = reader.info();
     let (color_type, bit_depth) = reader.output_color_type();
 
-    if png_raw::is_supported_in_pdf(reader.info()) {
+    if png::is_supported_in_pdf(reader.info()) {
         // While PDF itself supports all bit depth, the reencoding logic only handles 8 and 16 for now
         if let Ok(bits_per_component) = BitsPerComponent::try_from(bit_depth) {
-            if let Ok(raw_data) = png_raw::extract_idat(data) {
+            if let Ok(raw_data) = png::extract_idat(data) {
                 return Ok(Repr::Png(PngRepr {
                     data: Data::from(raw_data),
                     bits_per_component,
