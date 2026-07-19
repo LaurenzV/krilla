@@ -16,7 +16,7 @@ use std::io::Cursor;
 use std::ops::DerefMut;
 use std::sync::Arc;
 
-use ::png::{BitDepth, ColorType, Decoder, Transformations};
+use ::png::{BitDepth, ColorType, Transformations};
 use pdf_writer::{Finish, Name, Ref};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
@@ -287,14 +287,12 @@ impl Image {
     /// Panics if the dimensions of the image and the length of the
     /// data doesn't match.
     pub fn from_custom<T: CustomImage>(image: T, interpolate: bool) -> Result<Image, String> {
-        let bits_per_component = image.bits_per_component();
-
         let hash = (image.clone(), interpolate).sip_hash();
         let metadata = ImageMetadata {
             size: image.size(),
             color_space: image.color_space(),
             has_alpha: image.alpha_channel().is_some(),
-            bits_per_component,
+            bits_per_component: image.bits_per_component(),
             icc: image
                 .icc_profile()
                 .and_then(|d| get_icc_profile_type(d, image.color_space())),
@@ -302,7 +300,7 @@ impl Image {
 
         Ok(Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || {
-                let bytes_per_component = (bits_per_component.as_u8() / 8) as u32;
+                let bytes_per_component = (image.bits_per_component().as_u8() / 8) as u32;
                 let color_channel_len = bytes_per_component
                     * image.color_space().num_components() as u32
                     * metadata.size.0
@@ -319,7 +317,7 @@ impl Image {
                 Ok(Repr::Sampled(SampledRepr {
                     color_channel: deflate_encode(color_channel),
                     alpha_channel: image.alpha_channel().map(deflate_encode),
-                    bits_per_component,
+                    bits_per_component: image.bits_per_component(),
                 }))
             }),
             metadata,
@@ -494,7 +492,6 @@ impl Image {
 
             let mut image_x_object = chunk.image_xobject(root_ref, filter_stream.encoded_data());
             filter_stream.write_filters(image_x_object.deref_mut().deref_mut());
-
             image_x_object.width(self.size().0 as i32);
             image_x_object.height(self.size().1 as i32);
 
@@ -521,7 +518,6 @@ impl Image {
             }
 
             image_x_object.bits_per_component(repr.bits_per_component() as i32);
-
             if let Some(soft_mask_id) = alpha_mask {
                 image_x_object.s_mask(soft_mask_id);
             }
@@ -538,7 +534,7 @@ const PNG_TRANSFORMATIONS: Transformations = Transformations::EXPAND;
 
 fn png_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
     let cursor = Cursor::new(data);
-    let mut decoder = Decoder::new(cursor);
+    let mut decoder = ::png::Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let reader = decoder
         .read_info()
@@ -578,12 +574,11 @@ fn png_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
 
 fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let cursor = Cursor::new(data);
-    let mut decoder = Decoder::new(cursor);
+    let mut decoder = ::png::Decoder::new(cursor);
     decoder.set_transformations(PNG_TRANSFORMATIONS);
     let mut reader = decoder
         .read_info()
         .map_err(|e| e.to_string().to_ascii_lowercase())?;
-    let (color_type, bit_depth) = reader.output_color_type();
 
     if let Some(png_data) = png::PngData::new(data) {
         return Ok(Repr::Png(PngRepr {
@@ -597,6 +592,7 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
     let _ = reader
         .next_frame(&mut img_data)
         .map_err(|e| e.to_string())?;
+    let (color_type, bit_depth) = reader.output_color_type();
 
     let color_space = match color_type {
         ColorType::Rgb => ColorSpace::RGB,
@@ -848,37 +844,8 @@ fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<Gen
 
 #[cfg(test)]
 mod tests {
-    use crate::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
+    use crate::image::Image;
     use std::sync::Arc;
-
-    #[derive(Clone, Hash)]
-    struct CustomImageWithBitDepth(BitsPerComponent);
-
-    impl CustomImage for CustomImageWithBitDepth {
-        fn color_channel(&self) -> &[u8] {
-            &[]
-        }
-
-        fn alpha_channel(&self) -> Option<&[u8]> {
-            None
-        }
-
-        fn bits_per_component(&self) -> BitsPerComponent {
-            self.0
-        }
-
-        fn size(&self) -> (u32, u32) {
-            (0, 0)
-        }
-
-        fn icc_profile(&self) -> Option<&[u8]> {
-            None
-        }
-
-        fn color_space(&self) -> ImageColorspace {
-            ImageColorspace::Luma
-        }
-    }
 
     #[test]
     fn invalid_png_image() {
