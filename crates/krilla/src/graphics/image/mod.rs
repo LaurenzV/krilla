@@ -27,10 +27,9 @@ use crate::error::KrillaError;
 use crate::graphics::color::DEVICE_GRAY;
 use crate::graphics::color::{cmyk, luma, rgb};
 use crate::graphics::icc::{GenericICCProfile, ICCBasedColorSpace, ICCProfile};
-use crate::resource::Resource;
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{deflate_encode, FilterStreamBuilder};
-use crate::util::{set_colorspace, Deferred, NameExt, SipHashable};
+use crate::util::{Deferred, NameExt, SipHashable};
 use crate::Data;
 
 /// The number of bits per color component.
@@ -507,7 +506,7 @@ impl Image {
             } else if let Some(icc_ref) = icc_ref {
                 image_x_object.pair(Name(b"ColorSpace"), icc_ref);
             } else {
-                set_colorspace(cs, image_x_object.deref_mut());
+                cs.write(image_x_object.deref_mut().insert(Name(b"ColorSpace")));
             }
 
             if self.0.interpolate {
@@ -637,12 +636,7 @@ fn set_indexed_colorspace(
     if let Some(icc_ref) = icc_ref {
         color_space.item(icc_ref);
     } else {
-        match base {
-            MaybeDeviceColorSpace::DeviceRgb => color_space.item(Name(b"DeviceRGB")),
-            MaybeDeviceColorSpace::DeviceGray => color_space.item(Name(b"DeviceGray")),
-            MaybeDeviceColorSpace::DeviceCMYK => color_space.item(Name(b"DeviceCMYK")),
-            MaybeDeviceColorSpace::ColorSpace(cs) => color_space.item(cs.get_ref()),
-        };
+        base.write(color_space.push());
     }
 
     color_space.item((palette.len() / 3 - 1) as i32);
