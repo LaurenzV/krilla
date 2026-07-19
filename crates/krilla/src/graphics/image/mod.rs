@@ -165,7 +165,7 @@ pub trait CustomImage: Hash + Clone + Send + Sync + 'static {
     /// Return the bits per component of the image.
     ///
     /// Custom images currently only support [`BitsPerComponent::Eight`] and
-    /// [`BitsPerComponent::Sixteen`]. 
+    /// [`BitsPerComponent::Sixteen`].
     fn bits_per_component(&self) -> BitsPerComponent;
     /// Return the dimensions of the image.
     fn size(&self) -> (u32, u32);
@@ -312,7 +312,7 @@ impl Image {
     /// data doesn't match.
     pub fn from_custom<T: CustomImage>(image: T, interpolate: bool) -> Result<Image, String> {
         let bits_per_component = image.bits_per_component();
-        
+
         if !matches!(
             bits_per_component,
             BitsPerComponent::Eight | BitsPerComponent::Sixteen
