@@ -486,6 +486,10 @@ impl SerializeContext {
         if !self.validation_errors.is_empty() {
             // Deduplicate errors, while still preserving order.
             let mut errors = vec![];
+            #[allow(
+                clippy::mutable_key_type,
+                reason = "HarfRust's shaper cache uses atomics, but Font's hash and equality only depend on its immutable, prehashed FontInfo"
+            )]
             let mut seen = HashSet::new();
 
             for error in self.validation_errors {

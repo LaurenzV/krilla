@@ -20,7 +20,7 @@ default = ["raster-images", "simple-text"]
 # Allow for multi-threaded PDF creation.
 "rayon" = ["dep:rayon"]
 # Allow for rendering simple text without having to shape it yourself.
-"simple-text" = ["dep:rustybuzz"]
+"simple-text" = ["dep:harfrust"]
 # Allow for adding raster images to your document.
 "raster-images" = ["dep:png", "dep:zune-jpeg", "dep:gif", "dep:image-webp", "dep:imagesize", "dep:crc32fast"]
 # Allow embedding pages from other PDF documents.
@@ -41,7 +41,7 @@ indexmap = { workspace = true }
 pdf-writer = { workspace = true }
 rayon = { workspace = true, optional = true }
 rustc-hash =  { workspace = true }
-rustybuzz = { workspace = true, optional = true }
+harfrust = { workspace = true, optional = true }
 siphasher = { workspace = true }
 subsetter = { workspace = true }
 skrifa = { workspace = true }
