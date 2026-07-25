@@ -43,10 +43,10 @@ quote = "1.0.37"
 rayon = "1.10.0"
 resvg = "0.47.0"
 rustc-hash = "2.1.1"
-rustybuzz = "0.20.1"
+harfrust = "0.12.0"
 siphasher = "1.0.1"
 sitro = { git = "https://github.com/LaurenzV/sitro", rev = "78cc364", default-features = false }
-skrifa = "0.42.0"
+skrifa = "0.44.0"
 smallvec = { version = "1.15.1", features = ["union", "const_new", "write"] }
 subsetter = { version = "0.2.6", features = ["variable-fonts"] }
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
