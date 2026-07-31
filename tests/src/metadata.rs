@@ -49,6 +49,17 @@ fn metadata_full_with_xmp(document: &mut Document) {
     metadata_impl(document);
 }
 
+#[snapshot(document)]
+fn metadata_custom_fields(document: &mut Document) {
+    let metadata = Metadata::new()
+        .title("Standard title".to_string())
+        .custom_field("Title".to_string(), "Custom title".to_string())
+        .custom_field("CustomField".to_string(), "old value".to_string())
+        .custom_field("CustomField".to_string(), "new value".to_string())
+        .custom_field("Custom/Key".to_string(), "Custom value".to_string());
+    document.set_metadata(metadata);
+}
+
 #[snapshot(document, settings_30)]
 fn metadata_pdf_20_author(document: &mut Document) {
     let metadata = Metadata::new()

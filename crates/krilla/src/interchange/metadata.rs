@@ -5,8 +5,8 @@
 //! in the document via [`Document::set_metadata`].
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
-use pdf_writer::{Finish, Pdf, Ref, TextStr};
-use std::cell::LazyCell;
+use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
+use std::{cell::LazyCell, collections::BTreeMap};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
 use crate::configure::{Configuration, PdfVersion, ValidationError};
@@ -26,6 +26,7 @@ pub struct Metadata {
     pub(crate) creation_date: Option<DateTime>,
     pub(crate) text_direction: Option<TextDirection>,
     pub(crate) page_layout: Option<PageLayout>,
+    pub(crate) custom_fields: BTreeMap<String, String>,
 }
 
 impl Metadata {
@@ -122,6 +123,21 @@ impl Metadata {
         self
     }
 
+    /// Add a custom field to the document information dictionary.
+    ///
+    /// If a field with the same name was already added, its value will be
+    /// replaced. Empty names and names reserved for standard document
+    /// information fields are ignored. Custom fields are not included in the
+    /// XMP metadata. PDF/A-2 and PDF/A-3 readers may ignore the document
+    /// information dictionary, and export modes that prohibit the dictionary
+    /// will omit these fields.
+    pub fn custom_field(mut self, name: String, value: String) -> Self {
+        if !name.is_empty() && !is_standard_document_info_field(&name) {
+            self.custom_fields.insert(name, value);
+        }
+        self
+    }
+
     pub(crate) fn has_document_info(&self) -> bool {
         self.title.is_some()
             || self.producer.is_some()
@@ -130,6 +146,7 @@ impl Metadata {
             || self.creator.is_some()
             || self.creation_date.is_some()
             || self.description.is_some()
+            || !self.custom_fields.is_empty()
     }
 
     pub(crate) fn serialize_xmp_metadata(
@@ -292,8 +309,27 @@ impl Metadata {
                 document_info.modified_date(pdf_date(date_time));
                 document_info.creation_date(pdf_date(date_time));
             }
+
+            for (name, value) in &self.custom_fields {
+                document_info.pair(Name(name.as_bytes()), TextStr(value));
+            }
         }
     }
+}
+
+fn is_standard_document_info_field(name: &str) -> bool {
+    matches!(
+        name,
+        "Title"
+            | "Author"
+            | "Subject"
+            | "Keywords"
+            | "Creator"
+            | "Producer"
+            | "CreationDate"
+            | "ModDate"
+            | "Trapped"
+    )
 }
 
 /// A datetime. Invalid values will be clamped.
