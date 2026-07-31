@@ -20,6 +20,9 @@ use krilla::surface::Surface;
 use krilla::text::GlyphId;
 use usvg::{fontdb, roxmltree, Node, Tree};
 
+/// Re-export of `usvg`.
+pub use usvg;
+
 use crate::text::Fonts;
 use crate::util::RectExt;
 
