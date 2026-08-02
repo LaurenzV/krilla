@@ -10,6 +10,7 @@ use std::sync::Arc;
 use crate::configure::{ValidationError, Validators};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
+use crate::interchange::metadata::xmp::XmpError;
 #[cfg(feature = "pdf")]
 use crate::pdf::{PdfDocument, PdfError};
 use crate::surface::Location;
@@ -42,6 +43,11 @@ pub enum KrillaError {
     ///
     /// [`TagTree`]: crate::interchange::tagging::TagTree
     UnknownTagId(TagId, Option<Location>),
+    /// An invalid set of custom XMP properties was provided in the
+    /// [`Metadata`].
+    ///
+    /// [`Metadata`]: crate::metadata::Metadata
+    Xmp(XmpError),
     /// An image couldn't be processed properly.
     ///
     /// The third argument contains the error message.
@@ -80,6 +86,9 @@ impl Display for KrillaError {
                 write!(f, "unknown tag id {id:?}")?;
                 write_location(f, *location)
             }
+            KrillaError::Xmp(error) => {
+                write!(f, "invalid custom XMP metadata: {error}")
+            }
             #[cfg(feature = "raster-images")]
             KrillaError::Image(_, location, message) => {
                 write!(f, "failed to process image")?;
@@ -108,6 +117,7 @@ impl Error for KrillaError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             KrillaError::Limit(error) => Some(error),
+            KrillaError::Xmp(error) => Some(error),
             #[cfg(feature = "pdf")]
             KrillaError::Pdf(_, error, _) => Some(error),
             _ => None,

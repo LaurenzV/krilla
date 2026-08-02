@@ -1,16 +1,22 @@
 //! Setting document metadata.
 //!
 //! PDF allows for the inclusion of metadata in a PDF document. To do so in krilla,
-//! you can simply create a [`Metadata`] object, set the data, and then include it
+//! create a [`Metadata`] object, set the data, and then include it
 //! in the document via [`Document::set_metadata`].
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
+pub mod xmp;
+
 use pdf_writer::{Finish, Pdf, Ref, TextStr};
 use std::cell::LazyCell;
-use xmp_writer::{LangId, Timezone, XmpWriter};
+use xmp_writer::{
+    CustomNamespace, LangId, Namespace as XmpNamespace, RdfCollectionType, Timezone, XmpWriter,
+};
 
-use crate::configure::{Configuration, PdfVersion, ValidationError};
+use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
 use crate::serialize::SerializeContext;
+
+use self::xmp::{Category, Namespace, Property, StructField, Value, XmpError};
 
 /// Metadata for a PDF document.
 #[derive(Default, Clone, Debug)]
@@ -26,6 +32,7 @@ pub struct Metadata {
     pub(crate) creation_date: Option<DateTime>,
     pub(crate) text_direction: Option<TextDirection>,
     pub(crate) page_layout: Option<PageLayout>,
+    pub(crate) custom_xmp_properties: Vec<Property>,
 }
 
 impl Metadata {
@@ -122,6 +129,13 @@ impl Metadata {
         self
     }
 
+    /// The custom XMP properties, each written under its user-defined
+    /// namespace.
+    pub fn custom_xmp_properties(mut self, properties: Vec<Property>) -> Self {
+        self.custom_xmp_properties = properties;
+        self
+    }
+
     pub(crate) fn has_document_info(&self) -> bool {
         self.title.is_some()
             || self.producer.is_some()
@@ -132,9 +146,9 @@ impl Metadata {
             || self.description.is_some()
     }
 
-    pub(crate) fn serialize_xmp_metadata(
-        &self,
-        xmp: &mut XmpWriter,
+    pub(crate) fn serialize_xmp_metadata<'n>(
+        &'n self,
+        xmp: &mut XmpWriter<'n>,
         sc: &mut SerializeContext,
         instance_id: &str,
     ) {
@@ -242,6 +256,131 @@ impl Metadata {
         } else {
             sc.register_validation_error(ValidationError::MissingDocumentDate);
         }
+
+        self.serialize_custom_xmp_properties(xmp, sc);
+    }
+
+    fn serialize_custom_xmp_properties<'n>(
+        &'n self,
+        xmp: &mut XmpWriter<'n>,
+        sc: &mut SerializeContext,
+    ) {
+        if self.custom_xmp_properties.is_empty() {
+            return;
+        }
+
+        let validators = sc.serialize_settings().validators();
+        let check_descriptions = validators.requires_xmp_metadata_extension_schema();
+        let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
+
+        for property in &self.custom_xmp_properties {
+            if check_descriptions
+                && !is_predefined_pdfa_schema(&property.namespace.uri, xmp_2005)
+                && !property
+                    .namespace
+                    .property_descriptions
+                    .iter()
+                    .any(|desc| desc.name == property.name)
+            {
+                sc.register_validation_error(ValidationError::MissingXmpPropertyDescription {
+                    namespace_uri: property.namespace.uri.clone(),
+                    property_name: property.name.clone(),
+                });
+            }
+
+            let element = xmp.element(&property.name, build_xmp_namespace(&property.namespace));
+            write_value(element, &property.value);
+        }
+    }
+
+    /// Calls `f` on every namespace referenced by the custom XMP properties,
+    /// including those of struct fields, in insertion order.
+    fn visit_custom_xmp_namespaces<'a>(&'a self, f: &mut impl FnMut(&'a Namespace)) {
+        fn visit_value<'a>(value: &'a Value, f: &mut impl FnMut(&'a Namespace)) {
+            match value {
+                Value::OrderedArray(items)
+                | Value::UnorderedArray(items)
+                | Value::AlternativeArray(items) => {
+                    for item in items {
+                        visit_value(item, f);
+                    }
+                }
+                Value::Struct(fields) => {
+                    for field in fields {
+                        f(&field.namespace);
+                        visit_value(&field.value, f);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        for property in &self.custom_xmp_properties {
+            f(&property.namespace);
+            visit_value(&property.value, f);
+        }
+    }
+
+    /// Returns the user-defined XMP namespaces that need a PDF/A extension
+    /// schema, deduplicated by URI in insertion order. Only predefined PDF/A
+    /// schemas (version-dependent, see [`is_predefined_pdfa_schema`]) are
+    /// excluded.
+    pub(crate) fn deduped_custom_xmp_namespaces(&self, validators: Validators) -> Vec<&Namespace> {
+        let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
+        let mut seen = std::collections::HashSet::new();
+        let mut result = Vec::new();
+
+        self.visit_custom_xmp_namespaces(&mut |ns| {
+            if !is_predefined_pdfa_schema(&ns.uri, xmp_2005) && seen.insert(ns.uri.as_str()) {
+                result.push(ns);
+            }
+        });
+
+        result
+    }
+
+    /// Checks the custom XMP properties for problems that would corrupt the
+    /// output regardless of the validator: namespace conflicts that produce
+    /// invalid XML (one prefix bound to two URIs) or silently drop data (one
+    /// URI declared with different definitions), and non-finite reals.
+    pub(crate) fn check_custom_xmp_properties(&self) -> Result<(), XmpError> {
+        let mut namespaces = Vec::new();
+        self.visit_custom_xmp_namespaces(&mut |ns| namespaces.push(ns));
+
+        let mut by_uri = std::collections::HashMap::new();
+        let mut by_prefix = std::collections::HashMap::new();
+
+        for ns in namespaces {
+            // Predefined schemas are always serialized under their canonical
+            // prefix, so the user-supplied fields can't conflict.
+            if builtin_xmp_namespace(&ns.uri).is_some() {
+                continue;
+            }
+
+            if is_reserved_xmp_prefix(&ns.prefix) {
+                return Err(XmpError::ReservedPrefix(ns.prefix.clone()));
+            }
+
+            if *by_uri.entry(ns.uri.as_str()).or_insert(ns) != ns {
+                return Err(XmpError::ConflictingNamespace(ns.uri.clone()));
+            }
+
+            if *by_prefix
+                .entry(ns.prefix.as_str())
+                .or_insert(ns.uri.as_str())
+                != ns.uri
+            {
+                return Err(XmpError::ConflictingPrefix(ns.prefix.clone()));
+            }
+        }
+
+        for property in &self.custom_xmp_properties {
+            if has_non_finite_real(&property.value) {
+                return Err(XmpError::NonFiniteReal(property.name.clone()));
+            }
+        }
+
+        Ok(())
     }
 
     pub(crate) fn serialize_document_info(
@@ -472,6 +611,187 @@ impl PageLayout {
             PageLayout::TwoColumnRight => pdf_writer::types::PageLayout::TwoColumnRight,
             PageLayout::TwoPageLeft => pdf_writer::types::PageLayout::TwoPageLeft,
             PageLayout::TwoPageRight => pdf_writer::types::PageLayout::TwoPageRight,
+        }
+    }
+}
+
+/// The namespaces xmp-writer can serialize natively. A user-supplied namespace
+/// with one of these URIs must be mapped to the corresponding built-in variant,
+/// since xmp-writer would otherwise declare the same namespace twice.
+static BUILTIN_XMP_NAMESPACES: &[XmpNamespace<'static>] = &[
+    XmpNamespace::Rdf,
+    XmpNamespace::DublinCore,
+    XmpNamespace::Xmp,
+    XmpNamespace::XmpRights,
+    XmpNamespace::XmpResourceRef,
+    XmpNamespace::XmpResourceEvent,
+    XmpNamespace::XmpVersion,
+    XmpNamespace::XmpJob,
+    XmpNamespace::XmpJobManagement,
+    XmpNamespace::XmpColorant,
+    XmpNamespace::XmpFont,
+    XmpNamespace::XmpDimensions,
+    XmpNamespace::XmpMedia,
+    XmpNamespace::XmpPaged,
+    XmpNamespace::XmpDynamicMedia,
+    XmpNamespace::XmpImage,
+    XmpNamespace::XmpIdq,
+    XmpNamespace::AdobePdf,
+    XmpNamespace::PdfAId,
+    XmpNamespace::PdfUAId,
+    XmpNamespace::PdfXId,
+    XmpNamespace::PdfAExtension,
+    XmpNamespace::PdfASchema,
+    XmpNamespace::PdfAProperty,
+    XmpNamespace::PdfAType,
+    XmpNamespace::PdfAField,
+];
+
+/// Returns the predefined xmp-writer namespace with the given URI, if any.
+fn builtin_xmp_namespace(uri: &str) -> Option<XmpNamespace<'static>> {
+    BUILTIN_XMP_NAMESPACES
+        .iter()
+        .find(|ns| ns.url() == uri)
+        .cloned()
+}
+
+fn is_reserved_xmp_prefix(prefix: &str) -> bool {
+    BUILTIN_XMP_NAMESPACES
+        .iter()
+        .any(|ns| ns.prefix() == prefix)
+}
+
+/// Predefined XMP property schemas a custom property may use in PDF/A-1, -2
+/// and -3 without a PDF/A extension schema description.
+///
+/// These are the standard schemas of the XMP 2004 specification that ISO
+/// 19005-1 (PDF/A-1) treats as predefined. The PDF Association restates the
+/// list in TechNote 0008, "Predefined XMP Properties in PDF/A-1":
+/// <https://pdfa.org/wp-content/uploads/2011/08/tn0008_predefined_xmp_properties_in_pdfa-1_2008-03-20.pdf>
+static PDF_A1_A2_A3_PREDEFINED_SCHEMAS: &[&str] = &[
+    "http://www.aiim.org/pdfa/ns/id/",     // pdfaid
+    "http://purl.org/dc/elements/1.1/",    // dc
+    "http://ns.adobe.com/xap/1.0/",        // xmp
+    "http://ns.adobe.com/xap/1.0/rights/", // xmpRights
+    "http://ns.adobe.com/xap/1.0/mm/",     // xmpMM
+    "http://ns.adobe.com/xap/1.0/bj/",     // xmpBJ
+    "http://ns.adobe.com/xap/1.0/t/pg/",   // xmpTPg
+    "http://ns.adobe.com/pdf/1.3/",        // pdf
+    "http://ns.adobe.com/photoshop/1.0/",  // photoshop
+    "http://ns.adobe.com/tiff/1.0/",       // tiff
+    "http://ns.adobe.com/exif/1.0/",       // exif
+];
+
+/// Property schemas that PDF/A-2 and PDF/A-3 predefine in addition to
+/// [`PDF_A1_A2_A3_PREDEFINED_SCHEMAS`], added by the XMP 2005 specification
+/// over the XMP 2004 set.
+///
+/// The three schemas are defined by the Adobe XMP Specification, June 2005:
+/// Dynamic Media (`xmpDM`), Camera Raw (`crs`) and EXIF auxiliary (`aux`).
+/// They are the schemas present in that edition but absent
+/// from XMP 2004.
+static PDF_A2_A3_ADDITIONAL_PREDEFINED_SCHEMAS: &[&str] = &[
+    "http://ns.adobe.com/xmp/1.0/DynamicMedia/",    // xmpDM
+    "http://ns.adobe.com/camera-raw-settings/1.0/", // crs
+    "http://ns.adobe.com/exif/1.0/aux/",            // aux
+];
+
+/// Whether `uri` is a predefined XMP schema that PDF/A exempts from an extension
+/// schema description. `xmp_2005` selects the larger PDF/A-2/-3 set over the
+/// PDF/A-1 set; see [`Validators::uses_xmp_2005_predefined_schemas`].
+fn is_predefined_pdfa_schema(uri: &str, xmp_2005: bool) -> bool {
+    PDF_A1_A2_A3_PREDEFINED_SCHEMAS.contains(&uri)
+        || (xmp_2005 && PDF_A2_A3_ADDITIONAL_PREDEFINED_SCHEMAS.contains(&uri))
+}
+
+fn has_non_finite_real(value: &Value) -> bool {
+    match value {
+        Value::Real(r) => !r.is_finite(),
+        Value::OrderedArray(items)
+        | Value::UnorderedArray(items)
+        | Value::AlternativeArray(items) => items.iter().any(has_non_finite_real),
+        Value::Struct(fields) => fields.iter().any(|field| has_non_finite_real(&field.value)),
+        _ => false,
+    }
+}
+
+pub(crate) fn build_xmp_namespace(ns: &Namespace) -> XmpNamespace<'_> {
+    builtin_xmp_namespace(&ns.uri).unwrap_or_else(|| {
+        XmpNamespace::Custom(Box::new(CustomNamespace::new(
+            ns.schema_name.as_deref().unwrap_or(ns.prefix.as_str()),
+            ns.prefix.as_str(),
+            ns.uri.as_str(),
+        )))
+    })
+}
+
+fn write_value<'n>(element: xmp_writer::Element<'_, 'n>, value: &'n Value) {
+    match value {
+        Value::Text(s) => element.value(s.as_str()),
+        Value::Bool(b) => element.value(*b),
+        Value::Integer(i) => element.value(*i),
+        Value::Real(r) => element.value(*r),
+        Value::Date(d) => element.value(xmp_date(*d)),
+        Value::OrderedArray(items) => write_array(element.array(RdfCollectionType::Seq), items),
+        Value::UnorderedArray(items) => write_array(element.array(RdfCollectionType::Bag), items),
+        Value::AlternativeArray(items) => write_array(element.array(RdfCollectionType::Alt), items),
+        Value::LanguageAlternative(items) => {
+            element.language_alternative(
+                items
+                    .iter()
+                    .map(|(lang, text)| (lang.as_deref().map(LangId), text.as_str())),
+            );
+        }
+        Value::Struct(fields) => write_struct(element.obj(), fields),
+    }
+}
+
+fn write_array<'n>(mut array: xmp_writer::Array<'_, 'n>, items: &'n [Value]) {
+    for item in items {
+        write_value(array.element(), item);
+    }
+}
+
+fn write_struct<'n>(mut s: xmp_writer::Struct<'_, 'n>, fields: &'n [StructField]) {
+    for field in fields {
+        let element = s.element(field.name.as_str(), build_xmp_namespace(&field.namespace));
+        write_value(element, &field.value);
+    }
+}
+
+pub(crate) fn write_user_extension_schema(
+    schemas: &mut xmp_writer::pdfa::PdfAExtSchemasWriter,
+    ns: &Namespace,
+) {
+    let xmp_namespace = build_xmp_namespace(ns);
+    // A namespace xmp-writer knows natively is serialized under its canonical
+    // prefix, not the user-supplied one.
+    let prefix = xmp_namespace.prefix();
+
+    let mut schema = schemas.add_schema();
+    let schema_name = ns
+        .schema_name
+        .clone()
+        .unwrap_or_else(|| format!("{prefix} schema"));
+    schema
+        .element("schema", XmpNamespace::PdfASchema)
+        .value(schema_name.as_str());
+    schema
+        .element("namespaceURI", XmpNamespace::PdfASchema)
+        .value(ns.uri.as_str());
+    schema
+        .element("prefix", XmpNamespace::PdfASchema)
+        .value(prefix);
+
+    if !ns.property_descriptions.is_empty() {
+        let mut properties = schema.properties();
+        for desc in &ns.property_descriptions {
+            properties
+                .add_property()
+                .name(desc.name.as_str())
+                .value_type(desc.value_type.as_str())
+                .category(desc.category == Category::Internal)
+                .description(desc.description.as_str());
         }
     }
 }
