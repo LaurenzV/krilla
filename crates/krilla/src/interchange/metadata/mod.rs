@@ -791,7 +791,7 @@ pub(crate) fn write_user_extension_schema(
                 .add_property()
                 .name(desc.name.as_str())
                 .value_type(desc.value_type.as_str())
-                .category(matches!(desc.category, Category::Internal))
+                .category(desc.category == Category::Internal)
                 .description(desc.description.as_str());
         }
     }
