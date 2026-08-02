@@ -10,9 +10,9 @@
 //!
 //! ## Predefined schemas
 //!
-//! If a namespace URI matches a schema predefined by the XMP specification,
+//! If a namespace URI matches a schema known to xmp-writer,
 //! properties are written under that schema's canonical prefix, and the
-//! namespace's prefix, schema name and property descriptions are ignored.
+//! namespace's prefix is ignored.
 //! It is your responsibility that the property actually exists in the
 //! predefined schema.
 //!
@@ -42,13 +42,15 @@ use super::DateTime;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Namespace {
     /// The XML prefix (e.g. `"fx"`).
+    /// 
+    /// Ignored if the URI is natively known to krilla.
     pub prefix: String,
     /// The namespace URI (e.g. `"urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#"`).
     pub uri: String,
     /// Optional human-readable schema name for the PDF/A extension schema
     /// description. Defaults to `"<prefix> schema"`.
     pub schema_name: Option<String>,
-    /// PDF/A extension-schema property descriptions.
+    /// PDF/A extension schema property descriptions.
     ///
     /// Required for any property name written under this namespace
     /// when exporting to PDF/A.

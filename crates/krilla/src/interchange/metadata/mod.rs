@@ -1,7 +1,7 @@
 //! Setting document metadata.
 //!
 //! PDF allows for the inclusion of metadata in a PDF document. To do so in krilla,
-//! you create a [`Metadata`] object, set the data, and then include it
+//! create a [`Metadata`] object, set the data, and then include it
 //! in the document via [`Document::set_metadata`].
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
