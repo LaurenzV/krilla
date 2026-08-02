@@ -661,15 +661,14 @@ fn is_reserved_xmp_prefix(prefix: &str) -> bool {
         .any(|ns| ns.prefix() == prefix)
 }
 
-/// Predefined XMP property schemas a custom property may use in PDF/A-1
-/// without a PDF/A extension schema description (PDF/A-1 is based on XMP 2004).
-/// Also the common base of the PDF/A-2/-3 set.
+/// Predefined XMP property schemas a custom property may use in PDF/A-1, -2
+/// and -3 without a PDF/A extension schema description.
 ///
 /// These are the standard schemas of the XMP 2004 specification that ISO
 /// 19005-1 (PDF/A-1) treats as predefined. The PDF Association restates the
 /// list in TechNote 0008, "Predefined XMP Properties in PDF/A-1":
 /// <https://pdfa.org/wp-content/uploads/2011/08/tn0008_predefined_xmp_properties_in_pdfa-1_2008-03-20.pdf>
-static PREDEFINED_PDFA_SCHEMAS_XMP_2004: &[&str] = &[
+static PDF_A1_A2_A3_PREDEFINED_SCHEMAS: &[&str] = &[
     "http://www.aiim.org/pdfa/ns/id/",     // pdfaid
     "http://purl.org/dc/elements/1.1/",    // dc
     "http://ns.adobe.com/xap/1.0/",        // xmp
@@ -683,15 +682,15 @@ static PREDEFINED_PDFA_SCHEMAS_XMP_2004: &[&str] = &[
     "http://ns.adobe.com/exif/1.0/",       // exif
 ];
 
-/// Property schemas added by the XMP 2005 specification over the XMP 2004 set
-/// in [`PREDEFINED_PDFA_SCHEMAS_XMP_2004`]. PDF/A-2 and
-/// PDF/A-3 reference XMP 2005 rather than restating a list.
+/// Property schemas that PDF/A-2 and PDF/A-3 predefine in addition to
+/// [`PDF_A1_A2_A3_PREDEFINED_SCHEMAS`], added by the XMP 2005 specification
+/// over the XMP 2004 set.
 ///
 /// The three schemas are defined by the Adobe XMP Specification, June 2005:
 /// Dynamic Media (`xmpDM`), Camera Raw (`crs`) and EXIF auxiliary (`aux`).
 /// They are the schemas present in that edition but absent
 /// from XMP 2004.
-static PREDEFINED_PDFA_SCHEMAS_XMP_2005_ADDITIONS: &[&str] = &[
+static PDF_A2_A3_ADDITIONAL_PREDEFINED_SCHEMAS: &[&str] = &[
     "http://ns.adobe.com/xmp/1.0/DynamicMedia/",    // xmpDM
     "http://ns.adobe.com/camera-raw-settings/1.0/", // crs
     "http://ns.adobe.com/exif/1.0/aux/",            // aux
@@ -701,8 +700,8 @@ static PREDEFINED_PDFA_SCHEMAS_XMP_2005_ADDITIONS: &[&str] = &[
 /// schema description. `xmp_2005` selects the larger PDF/A-2/-3 set over the
 /// PDF/A-1 set; see [`Validators::uses_xmp_2005_predefined_schemas`].
 fn is_predefined_pdfa_schema(uri: &str, xmp_2005: bool) -> bool {
-    PREDEFINED_PDFA_SCHEMAS_XMP_2004.contains(&uri)
-        || (xmp_2005 && PREDEFINED_PDFA_SCHEMAS_XMP_2005_ADDITIONS.contains(&uri))
+    PDF_A1_A2_A3_PREDEFINED_SCHEMAS.contains(&uri)
+        || (xmp_2005 && PDF_A2_A3_ADDITIONAL_PREDEFINED_SCHEMAS.contains(&uri))
 }
 
 fn has_non_finite_real(value: &Value) -> bool {
