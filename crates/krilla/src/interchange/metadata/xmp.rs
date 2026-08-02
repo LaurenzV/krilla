@@ -225,7 +225,7 @@ impl std::fmt::Display for XmpError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             XmpError::ConflictingNamespace(uri) => {
-                write!(f, "the namespace {uri} was declared inconsistently")
+                write!(f, "the namespace {uri} was declared with multiple different prefixes")
             }
             XmpError::ConflictingPrefix(prefix) => {
                 write!(
