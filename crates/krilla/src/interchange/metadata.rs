@@ -130,7 +130,7 @@ impl Metadata {
     /// document information fields.
     ///
     /// **WARNING**: Custom fields will currently be ignored when exporting to
-    /// PDF/A-2 and PDF/A-3. This is a temporary limitation that will be lifted
+    /// PDF/A-2 and PDF/A-3 and PDF/A-4. This is a temporary limitation that will be lifted
     /// in the future.
     #[must_use]
     pub fn custom_field(mut self, name: String, value: String) -> Option<Self> {
