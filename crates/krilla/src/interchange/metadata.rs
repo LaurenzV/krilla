@@ -126,16 +126,19 @@ impl Metadata {
     /// Add a custom field to the document information dictionary.
     ///
     /// If a field with the same name was already added, its value will be
-    /// replaced. Empty names and names reserved for standard document
-    /// information fields are ignored. Custom fields are not included in the
-    /// XMP metadata. PDF/A-2 and PDF/A-3 readers may ignore the document
-    /// information dictionary, and export modes that prohibit the dictionary
-    /// will omit these fields.
-    pub fn custom_field(mut self, name: String, value: String) -> Self {
-        if !name.is_empty() && !is_standard_document_info_field(&name) {
-            self.custom_fields.insert(name, value);
+    /// replaced. Returns `None` for empty names and names reserved for standard
+    /// document information fields. 
+    /// 
+    /// Currently, custom fields are not included in the XMP
+    /// metadata and will fail export in  PDF/A-2 and PDF/A-3.
+    #[must_use]
+    pub fn custom_field(mut self, name: String, value: String) -> Option<Self> {
+        if name.is_empty() || is_standard_document_info_field(&name) {
+            return None;
         }
-        self
+
+        self.custom_fields.insert(name, value);
+        Some(self)
     }
 
     pub(crate) fn has_document_info(&self) -> bool {
@@ -509,5 +512,31 @@ impl PageLayout {
             PageLayout::TwoPageLeft => pdf_writer::types::PageLayout::TwoPageLeft,
             PageLayout::TwoPageRight => pdf_writer::types::PageLayout::TwoPageRight,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Metadata;
+
+    #[test]
+    fn custom_field_returns_none_for_ignored_names() {
+        assert!(Metadata::new()
+            .custom_field(String::new(), "value".to_string())
+            .is_none());
+        assert!(Metadata::new()
+            .custom_field("Title".to_string(), "value".to_string())
+            .is_none());
+
+        let metadata = Metadata::new()
+            .custom_field("CustomField".to_string(), "value".to_string())
+            .unwrap();
+        assert_eq!(
+            metadata
+                .custom_fields
+                .get("CustomField")
+                .map(String::as_str),
+            Some("value")
+        );
     }
 }

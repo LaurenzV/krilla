@@ -53,10 +53,12 @@ fn metadata_full_with_xmp(document: &mut Document) {
 fn metadata_custom_fields(document: &mut Document) {
     let metadata = Metadata::new()
         .title("Standard title".to_string())
-        .custom_field("Title".to_string(), "Custom title".to_string())
         .custom_field("CustomField".to_string(), "old value".to_string())
+        .unwrap()
         .custom_field("CustomField".to_string(), "new value".to_string())
-        .custom_field("Custom/Key".to_string(), "Custom value".to_string());
+        .unwrap()
+        .custom_field("Custom/Key".to_string(), "Custom value".to_string())
+        .unwrap();
     document.set_metadata(metadata);
 }
 
