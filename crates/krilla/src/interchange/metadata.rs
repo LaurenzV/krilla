@@ -9,7 +9,7 @@ use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
 use std::{cell::LazyCell, collections::BTreeMap};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
-use crate::configure::{Configuration, PdfVersion, ValidationError};
+use crate::configure::{Archival, Configuration, PdfVersion, ValidationError};
 use crate::serialize::SerializeContext;
 
 /// Metadata for a PDF document.
@@ -127,10 +127,11 @@ impl Metadata {
     ///
     /// If a field with the same name was already added, its value will be
     /// replaced. Returns `None` for empty names and names reserved for standard
-    /// document information fields. 
-    /// 
-    /// Currently, custom fields are not included in the XMP
-    /// metadata and will fail export in  PDF/A-2 and PDF/A-3.
+    /// document information fields.
+    ///
+    /// **WARNING**: Custom fields will currently be ignored when exporting to
+    /// PDF/A-2 and PDF/A-3. This is a temporary limitation that will be lifted
+    /// in the future.
     #[must_use]
     pub fn custom_field(mut self, name: String, value: String) -> Option<Self> {
         if name.is_empty() || is_standard_document_info_field(&name) {
@@ -313,8 +314,22 @@ impl Metadata {
                 document_info.creation_date(pdf_date(date_time));
             }
 
-            for (name, value) in &self.custom_fields {
-                document_info.pair(Name(name.as_bytes()), TextStr(value));
+            // This is temporary until custom fields can be written to XMP.
+            // See https://github.com/LaurenzV/krilla/pull/419#issuecomment-5142992957.
+            if !matches!(
+                config.validators().archival(),
+                Some(
+                    Archival::A2_A
+                        | Archival::A2_B
+                        | Archival::A2_U
+                        | Archival::A3_A
+                        | Archival::A3_B
+                        | Archival::A3_U
+                )
+            ) {
+                for (name, value) in &self.custom_fields {
+                    document_info.pair(Name(name.as_bytes()), TextStr(value));
+                }
             }
         }
     }

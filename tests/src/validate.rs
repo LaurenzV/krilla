@@ -18,6 +18,7 @@ use krilla::text::{GlyphId, KrillaGlyph};
 use krilla_macros::snapshot;
 
 use crate::embed::{embedded_file_impl, file_1};
+use crate::metadata::{custom_metadata, datetime};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
     metadata_1, metadata_2, rect_to_path, red_fill, settings_1, settings_13, settings_15,
@@ -450,6 +451,30 @@ fn validate_pdfa_private_unicode_codepoint() {
             None
         )]
     )
+}
+
+fn custom_metadata_validation_impl(document: &mut Document) {
+    document.set_metadata(custom_metadata().creation_date(datetime()));
+}
+
+#[snapshot(document, settings_19)]
+fn validate_metadata_custom_fields_pdf_a1(document: &mut Document) {
+    custom_metadata_validation_impl(document);
+}
+
+#[snapshot(document, settings_7)]
+fn validate_metadata_custom_fields_pdf_a2(document: &mut Document) {
+    custom_metadata_validation_impl(document);
+}
+
+#[snapshot(document, settings_10)]
+fn validate_metadata_custom_fields_pdf_a3(document: &mut Document) {
+    custom_metadata_validation_impl(document);
+}
+
+#[snapshot(document, settings_26)]
+fn validate_metadata_custom_fields_pdf_a4(document: &mut Document) {
+    custom_metadata_validation_impl(document);
 }
 
 #[snapshot(document, settings_20)]
