@@ -5,11 +5,11 @@
 //! in the document via [`Document::set_metadata`].
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
-use pdf_writer::{Finish, Pdf, Ref, TextStr};
-use std::cell::LazyCell;
+use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
+use std::{cell::LazyCell, collections::BTreeMap};
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
-use crate::configure::{Configuration, PdfVersion, ValidationError};
+use crate::configure::{Archival, Configuration, PdfVersion, ValidationError};
 use crate::serialize::SerializeContext;
 
 /// Metadata for a PDF document.
@@ -26,6 +26,7 @@ pub struct Metadata {
     pub(crate) creation_date: Option<DateTime>,
     pub(crate) text_direction: Option<TextDirection>,
     pub(crate) page_layout: Option<PageLayout>,
+    pub(crate) custom_fields: BTreeMap<String, String>,
 }
 
 impl Metadata {
@@ -122,6 +123,25 @@ impl Metadata {
         self
     }
 
+    /// Add a custom field to the document information dictionary.
+    ///
+    /// If a field with the same name was already added, its value will be
+    /// replaced. Returns `None` for empty names and names reserved for standard
+    /// document information fields.
+    ///
+    /// **WARNING**: Custom fields will currently be ignored when exporting to
+    /// PDF/A-2 and PDF/A-3 and PDF/A-4. This is a temporary limitation that will be lifted
+    /// in the future.
+    #[must_use]
+    pub fn custom_field(mut self, name: String, value: String) -> Option<Self> {
+        if name.is_empty() || is_standard_document_info_field(&name) {
+            return None;
+        }
+
+        self.custom_fields.insert(name, value);
+        Some(self)
+    }
+
     pub(crate) fn has_document_info(&self) -> bool {
         self.title.is_some()
             || self.producer.is_some()
@@ -130,6 +150,7 @@ impl Metadata {
             || self.creator.is_some()
             || self.creation_date.is_some()
             || self.description.is_some()
+            || !self.custom_fields.is_empty()
     }
 
     pub(crate) fn serialize_xmp_metadata(
@@ -292,8 +313,41 @@ impl Metadata {
                 document_info.modified_date(pdf_date(date_time));
                 document_info.creation_date(pdf_date(date_time));
             }
+
+            // This is temporary until custom fields can be written to XMP.
+            // See https://github.com/LaurenzV/krilla/pull/419#issuecomment-5142992957.
+            if !matches!(
+                config.validators().archival(),
+                Some(
+                    Archival::A2_A
+                        | Archival::A2_B
+                        | Archival::A2_U
+                        | Archival::A3_A
+                        | Archival::A3_B
+                        | Archival::A3_U
+                )
+            ) {
+                for (name, value) in &self.custom_fields {
+                    document_info.pair(Name(name.as_bytes()), TextStr(value));
+                }
+            }
         }
     }
+}
+
+fn is_standard_document_info_field(name: &str) -> bool {
+    matches!(
+        name,
+        "Title"
+            | "Author"
+            | "Subject"
+            | "Keywords"
+            | "Creator"
+            | "Producer"
+            | "CreationDate"
+            | "ModDate"
+            | "Trapped"
+    )
 }
 
 /// A datetime. Invalid values will be clamped.
@@ -473,5 +527,31 @@ impl PageLayout {
             PageLayout::TwoPageLeft => pdf_writer::types::PageLayout::TwoPageLeft,
             PageLayout::TwoPageRight => pdf_writer::types::PageLayout::TwoPageRight,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Metadata;
+
+    #[test]
+    fn custom_field_returns_none_for_ignored_names() {
+        assert!(Metadata::new()
+            .custom_field(String::new(), "value".to_string())
+            .is_none());
+        assert!(Metadata::new()
+            .custom_field("Title".to_string(), "value".to_string())
+            .is_none());
+
+        let metadata = Metadata::new()
+            .custom_field("CustomField".to_string(), "value".to_string())
+            .unwrap();
+        assert_eq!(
+            metadata
+                .custom_fields
+                .get("CustomField")
+                .map(String::as_str),
+            Some("value")
+        );
     }
 }
