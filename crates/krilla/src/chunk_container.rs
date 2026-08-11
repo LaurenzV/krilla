@@ -198,151 +198,139 @@ impl ChunkContainer {
         let named_destinations = sc.global_objects.named_destinations.take();
         let embedded_files = sc.global_objects.embedded_files.take();
 
-        // We only write a catalog if a page tree exists. Every valid PDF must have one
-        // and krilla ensures that there always is one, but for snapshot tests, it can be
-        // useful to not write a document catalog if we don't actually need it for the test.
-        if self.non_stream.page_tree.is_some()
-            || self.non_stream.outline.is_some()
-            || self.non_stream.page_label_tree.is_some()
-            || self.non_stream.destination_profiles.is_some()
-            || self.non_stream.struct_tree_root.is_some()
-        {
-            let meta_ref = if sc.serialize_settings().xmp_metadata {
-                let meta_ref = remapped_ref.bump();
-                let xmp_buf = xmp.finish(None);
-                pdf.stream(meta_ref, xmp_buf.as_bytes())
-                    .pair(Name(b"Type"), Name(b"Metadata"))
-                    .pair(Name(b"Subtype"), Name(b"XML"));
-                Some(meta_ref)
-            } else {
-                None
-            };
+        let meta_ref = if sc.serialize_settings().xmp_metadata {
+            let meta_ref = remapped_ref.bump();
+            let xmp_buf = xmp.finish(None);
+            pdf.stream(meta_ref, xmp_buf.as_bytes())
+                .pair(Name(b"Type"), Name(b"Metadata"))
+                .pair(Name(b"Subtype"), Name(b"XML"));
+            Some(meta_ref)
+        } else {
+            None
+        };
 
-            let catalog_ref = remapped_ref.bump();
+        let catalog_ref = remapped_ref.bump();
 
-            let mut catalog = pdf.catalog(catalog_ref);
+        let mut catalog = pdf.catalog(catalog_ref);
+        let page_tree = self.non_stream.page_tree.as_ref().unwrap();
+        catalog.pages(remapper[&page_tree.0]);
 
-            if let Some(pt) = &self.non_stream.page_tree {
-                catalog.pages(remapper[&pt.0]);
-            }
-
-            if let Some(meta_ref) = meta_ref {
-                catalog.metadata(meta_ref);
-            }
-
-            if let Some(pl) = &self.non_stream.page_label_tree {
-                catalog.pair(Name(b"PageLabels"), remapper[&pl.0]);
-            }
-
-            if let Some(oi) = &self.non_stream.destination_profiles {
-                catalog.pair(Name(b"OutputIntents"), remapper[&oi.0]);
-            }
-
-            if let Some(lang) = self.metadata.as_ref().and_then(|m| m.language.as_ref()) {
-                catalog.lang(TextStr(lang));
-            } else {
-                sc.register_validation_error(ValidationError::NoDocumentLanguage);
-            }
-
-            if let Some(st) = &self.non_stream.struct_tree_root {
-                catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
-                let mut mark_info = catalog.mark_info();
-                mark_info.marked(true);
-                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16
-                    && sc.serialize_settings().pdf_version() < PdfVersion::Pdf20
-                {
-                    // We always set suspects to false because it's required by PDF/UA.
-                    mark_info.suspects(false);
-                }
-                mark_info.finish();
-            }
-
-            let write_doc_title = sc
-                .serialize_settings()
-                .validators()
-                .requires_display_doc_title();
-            let text_direction = self.metadata.as_ref().and_then(|m| m.text_direction);
-
-            if write_doc_title || text_direction.is_some() {
-                let mut vp = catalog.viewer_preferences();
-
-                if write_doc_title {
-                    vp.display_doc_title(true);
-                }
-
-                if let Some(dir) = text_direction {
-                    vp.direction(dir.to_pdf());
-                }
-            }
-
-            let page_layout = self.metadata.as_ref().and_then(|m| m.page_layout);
-            if let Some(layout) = page_layout {
-                // TwoPageLeft and TwoPageRight are only available PDF 1.5+
-                if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
-                    || !matches!(layout, PageLayout::TwoPageLeft | PageLayout::TwoPageRight)
-                {
-                    catalog.page_layout(layout.to_pdf());
-                }
-            }
-
-            if let Some(ol) = &self.non_stream.outline {
-                catalog.outlines(remapper[&ol.0]);
-            }
-
-            let settings = sc.serialize_settings();
-            let validators = settings.validators();
-            let write_embedded_files = self.non_stream.embedded_files.len() != 0
-                || validators.requires_embedded_files_when_empty();
-
-            if !named_destinations.is_empty() || write_embedded_files {
-                // Cannot use pdf-writer API here because it requires Ref's, while
-                // we write our destinations directly into the array.
-                let mut names = catalog.names();
-
-                if !named_destinations.is_empty() {
-                    let mut dest_name_tree = names.destinations();
-                    let mut dest_name_entries = dest_name_tree.names();
-
-                    // "The Names entries in the leaf (or root) nodes shall
-                    // contain the tree’s keys and their associated values,
-                    // arranged in key-value pairs and shall be sorted lexically
-                    // in ascending order by key. Shorter keys shall appear
-                    // before longer ones beginning with the same byte sequence.
-                    // Any encoding of the keys may be used as long as it is
-                    // self-consistent; keys shall be compared for equality on
-                    // a simple byte-by-byte basis."
-                    let mut sorted = named_destinations.into_iter().collect::<Vec<_>>();
-                    // Note that named destinations are guaranteed to be unique,
-                    // hence just comparing by the name is enough.
-                    sorted.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
-
-                    for (name, (dest_ref, _)) in sorted {
-                        dest_name_entries.insert(Str(name.as_bytes()), remapper[&dest_ref]);
-                    }
-
-                    dest_name_entries.finish();
-                    dest_name_tree.finish();
-                }
-
-                if write_embedded_files {
-                    let mut embedded_files_name_tree = names.embedded_files();
-                    let mut embedded_name_entries = embedded_files_name_tree.names();
-
-                    for (name, _ref) in &embedded_files {
-                        embedded_name_entries.insert(Str(name.as_bytes()), remapper[_ref]);
-                    }
-                }
-            }
-
-            if !embedded_files.is_empty() && settings.supports_associated_files() {
-                let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
-                for _ref in embedded_files.values() {
-                    associated_files.item(remapper[_ref]).finish();
-                }
-            }
-
-            catalog.finish();
+        if let Some(meta_ref) = meta_ref {
+            catalog.metadata(meta_ref);
         }
+
+        if let Some(pl) = &self.non_stream.page_label_tree {
+            catalog.pair(Name(b"PageLabels"), remapper[&pl.0]);
+        }
+
+        if let Some(oi) = &self.non_stream.destination_profiles {
+            catalog.pair(Name(b"OutputIntents"), remapper[&oi.0]);
+        }
+
+        if let Some(lang) = self.metadata.as_ref().and_then(|m| m.language.as_ref()) {
+            catalog.lang(TextStr(lang));
+        } else {
+            sc.register_validation_error(ValidationError::NoDocumentLanguage);
+        }
+
+        if let Some(st) = &self.non_stream.struct_tree_root {
+            catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
+            let mut mark_info = catalog.mark_info();
+            mark_info.marked(true);
+            if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16
+                && sc.serialize_settings().pdf_version() < PdfVersion::Pdf20
+            {
+                // We always set suspects to false because it's required by PDF/UA.
+                mark_info.suspects(false);
+            }
+            mark_info.finish();
+        }
+
+        let write_doc_title = sc
+            .serialize_settings()
+            .validators()
+            .requires_display_doc_title();
+        let text_direction = self.metadata.as_ref().and_then(|m| m.text_direction);
+
+        if write_doc_title || text_direction.is_some() {
+            let mut vp = catalog.viewer_preferences();
+
+            if write_doc_title {
+                vp.display_doc_title(true);
+            }
+
+            if let Some(dir) = text_direction {
+                vp.direction(dir.to_pdf());
+            }
+        }
+
+        let page_layout = self.metadata.as_ref().and_then(|m| m.page_layout);
+        if let Some(layout) = page_layout {
+            // TwoPageLeft and TwoPageRight are only available PDF 1.5+
+            if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
+                || !matches!(layout, PageLayout::TwoPageLeft | PageLayout::TwoPageRight)
+            {
+                catalog.page_layout(layout.to_pdf());
+            }
+        }
+
+        if let Some(ol) = &self.non_stream.outline {
+            catalog.outlines(remapper[&ol.0]);
+        }
+
+        let settings = sc.serialize_settings();
+        let validators = settings.validators();
+        let write_embedded_files = self.non_stream.embedded_files.len() != 0
+            || validators.requires_embedded_files_when_empty();
+
+        if !named_destinations.is_empty() || write_embedded_files {
+            // Cannot use pdf-writer API here because it requires Ref's, while
+            // we write our destinations directly into the array.
+            let mut names = catalog.names();
+
+            if !named_destinations.is_empty() {
+                let mut dest_name_tree = names.destinations();
+                let mut dest_name_entries = dest_name_tree.names();
+
+                // "The Names entries in the leaf (or root) nodes shall
+                // contain the tree’s keys and their associated values,
+                // arranged in key-value pairs and shall be sorted lexically
+                // in ascending order by key. Shorter keys shall appear
+                // before longer ones beginning with the same byte sequence.
+                // Any encoding of the keys may be used as long as it is
+                // self-consistent; keys shall be compared for equality on
+                // a simple byte-by-byte basis."
+                let mut sorted = named_destinations.into_iter().collect::<Vec<_>>();
+                // Note that named destinations are guaranteed to be unique,
+                // hence just comparing by the name is enough.
+                sorted.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
+
+                for (name, (dest_ref, _)) in sorted {
+                    dest_name_entries.insert(Str(name.as_bytes()), remapper[&dest_ref]);
+                }
+
+                dest_name_entries.finish();
+                dest_name_tree.finish();
+            }
+
+            if write_embedded_files {
+                let mut embedded_files_name_tree = names.embedded_files();
+                let mut embedded_name_entries = embedded_files_name_tree.names();
+
+                for (name, _ref) in &embedded_files {
+                    embedded_name_entries.insert(Str(name.as_bytes()), remapper[_ref]);
+                }
+            }
+        }
+
+        if !embedded_files.is_empty() && settings.supports_associated_files() {
+            let mut associated_files = catalog.insert(Name(b"AF")).array().typed();
+            for _ref in embedded_files.values() {
+                associated_files.item(remapper[_ref]).finish();
+            }
+        }
+
+        catalog.finish();
 
         Ok(pdf)
     }
