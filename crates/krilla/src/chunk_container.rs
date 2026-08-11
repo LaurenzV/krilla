@@ -212,7 +212,11 @@ impl ChunkContainer {
         let catalog_ref = remapped_ref.bump();
 
         let mut catalog = pdf.catalog(catalog_ref);
-        let page_tree = self.non_stream.page_tree.as_ref().unwrap();
+        let page_tree = self
+            .non_stream
+            .page_tree
+            .as_ref()
+            .expect("page tree should exist");
         catalog.pages(remapper[&page_tree.0]);
 
         if let Some(meta_ref) = meta_ref {
