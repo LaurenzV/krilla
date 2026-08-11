@@ -3,7 +3,9 @@
 pub mod validate;
 mod version;
 
-pub use validate::{Accessibility, Archival, ValidationError, Validator, Validators};
+pub use validate::{
+    Accessibility, Archival, ValidationError, ValidationReport, Validator, Validators,
+};
 pub use version::PdfVersion;
 
 use crate::configure::validate::ValidatorsBuilder;

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 use xmp_writer::{RenditionClass, XmpWriter};
 
-use crate::configure::{PdfVersion, ValidationError};
+use crate::configure::{PdfVersion, ValidationError, Validators};
 use crate::error::KrillaResult;
 use crate::interchange::metadata::Metadata;
 use crate::metadata::PageLayout;
@@ -101,7 +101,7 @@ impl ChunkContainer {
         }
     }
 
-    pub(crate) fn finish(self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
+    pub(crate) fn finish(self, sc: &mut SerializeContext, relaxed: bool) -> KrillaResult<Pdf> {
         let mut remapped_ref = Ref::new(1);
         let mut remapper = HashMap::new();
 
@@ -184,36 +184,48 @@ impl ChunkContainer {
         }
 
         let settings = sc.serialize_settings();
-        let validators = settings.validators();
-        validators.write_xmp(&mut xmp);
-
-        xmp.num_pages(sc.page_infos().len() as u32);
-        xmp.format("application/pdf");
-        xmp.instance_id(&instance_id);
-        xmp.document_id(&document_id);
         pdf.set_file_id((
             document_id.as_bytes().to_vec(),
             instance_id.as_bytes().to_vec(),
         ));
 
-        xmp.rendition_class(RenditionClass::Proof);
-        sc.serialize_settings().pdf_version().write_xmp(&mut xmp);
-
         let named_destinations = sc.global_objects.named_destinations.take();
         let embedded_files = sc.global_objects.embedded_files.take();
 
-        let meta_ref = if sc.serialize_settings().xmp_metadata {
-            let meta_ref = remapped_ref.bump();
-            let xmp_buf = xmp.finish(None);
-            pdf.stream(meta_ref, xmp_buf.as_bytes())
-                .pair(Name(b"Type"), Name(b"Metadata"))
-                .pair(Name(b"Subtype"), Name(b"XML"));
-            Some(meta_ref)
+        let validators = settings.validators();
+        let (meta_ref, catalog_ref) = if relaxed {
+            let catalog_ref = remapped_ref.bump();
+            let meta_ref = settings.xmp_metadata.then(|| remapped_ref.bump());
+            (meta_ref, catalog_ref)
         } else {
-            None
+            let meta_ref = settings.xmp_metadata.then(|| remapped_ref.bump());
+            let catalog_ref = remapped_ref.bump();
+            (meta_ref, catalog_ref)
         };
 
-        let catalog_ref = remapped_ref.bump();
+        let num_pages = sc.page_infos().len() as u32;
+        let pdf_version = settings.pdf_version();
+        let write_xmp = |mut xmp: XmpWriter, validators: Validators, pdf: &mut Pdf| {
+            validators.write_xmp(&mut xmp);
+            xmp.num_pages(num_pages);
+            xmp.format("application/pdf");
+            xmp.instance_id(&instance_id);
+            xmp.document_id(&document_id);
+            xmp.rendition_class(RenditionClass::Proof);
+            pdf_version.write_xmp(&mut xmp);
+
+            if let Some(meta_ref) = meta_ref {
+                let xmp_buf = xmp.finish(None);
+                pdf.stream(meta_ref, xmp_buf.as_bytes())
+                    .pair(Name(b"Type"), Name(b"Metadata"))
+                    .pair(Name(b"Subtype"), Name(b"XML"));
+            }
+        };
+        let mut xmp = Some(xmp);
+
+        if !relaxed {
+            write_xmp(xmp.take().unwrap(), validators, &mut pdf);
+        }
 
         let mut catalog = pdf.catalog(catalog_ref);
         let page_tree = self
@@ -249,8 +261,8 @@ impl ChunkContainer {
             catalog.pair(Name(b"StructTreeRoot"), remapper[&st.0]);
             let mut mark_info = catalog.mark_info();
             mark_info.marked(true);
-            if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf16
-                && sc.serialize_settings().pdf_version() < PdfVersion::Pdf20
+            if settings.pdf_version() >= PdfVersion::Pdf16
+                && settings.pdf_version() < PdfVersion::Pdf20
             {
                 // We always set suspects to false because it's required by PDF/UA.
                 mark_info.suspects(false);
@@ -258,10 +270,7 @@ impl ChunkContainer {
             mark_info.finish();
         }
 
-        let write_doc_title = sc
-            .serialize_settings()
-            .validators()
-            .requires_display_doc_title();
+        let write_doc_title = settings.validators().requires_display_doc_title();
         let text_direction = self.metadata.as_ref().and_then(|m| m.text_direction);
 
         if write_doc_title || text_direction.is_some() {
@@ -279,7 +288,7 @@ impl ChunkContainer {
         let page_layout = self.metadata.as_ref().and_then(|m| m.page_layout);
         if let Some(layout) = page_layout {
             // TwoPageLeft and TwoPageRight are only available PDF 1.5+
-            if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15
+            if settings.pdf_version() >= PdfVersion::Pdf15
                 || !matches!(layout, PageLayout::TwoPageLeft | PageLayout::TwoPageRight)
             {
                 catalog.page_layout(layout.to_pdf());
@@ -290,8 +299,6 @@ impl ChunkContainer {
             catalog.outlines(remapper[&ol.0]);
         }
 
-        let settings = sc.serialize_settings();
-        let validators = settings.validators();
         let write_embedded_files = self.non_stream.embedded_files.len() != 0
             || validators.requires_embedded_files_when_empty();
 
@@ -343,6 +350,12 @@ impl ChunkContainer {
         }
 
         catalog.finish();
+
+        let conforming_validators = sc.seal_validation(pdf.limits(), remapped_ref);
+
+        if relaxed {
+            write_xmp(xmp.take().unwrap(), conforming_validators, &mut pdf);
+        }
 
         Ok(pdf)
     }

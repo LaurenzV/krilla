@@ -15,6 +15,7 @@
 //! [`Page`]: Page
 
 use crate::chunk_container::ChunkContainer;
+use crate::configure::ValidationReport;
 use crate::destination::NamedDestination;
 use crate::error::KrillaResult;
 use crate::form::FieldTree;
@@ -146,7 +147,16 @@ impl Document {
     }
 
     /// Attempt to export the document to a PDF file.
-    pub fn finish(mut self) -> KrillaResult<Vec<u8>> {
+    pub fn finish(self) -> KrillaResult<Vec<u8>> {
+        self.finish_inner(false).map(|(pdf, _)| pdf)
+    }
+
+    /// Export the document even if validation fails and return the validation errors.
+    pub fn finish_relaxed(self) -> KrillaResult<(Vec<u8>, ValidationReport)> {
+        self.finish_inner(true)
+    }
+
+    fn finish_inner(mut self, relaxed: bool) -> KrillaResult<(Vec<u8>, ValidationReport)> {
         // Write empty page if none has been created yet.
         if self.serializer_context.page_infos().is_empty() {
             self.start_page();
@@ -157,6 +167,7 @@ impl Document {
             chunk_container,
         } = self;
 
-        Ok(serializer_context.finish(chunk_container)?.finish())
+        let (pdf, validation_errors) = serializer_context.finish(chunk_container, relaxed)?;
+        Ok((pdf.finish(), validation_errors))
     }
 }

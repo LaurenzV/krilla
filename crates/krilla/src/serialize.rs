@@ -13,7 +13,7 @@ use pdf_writer::{Chunk, Content, Finish, Limits, Name, Obj, Pdf, Ref, Settings, 
 use crate::chunk_container::ChunkContainer;
 use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
 use crate::configure::validate::ValidationStore;
-use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
+use crate::configure::{Configuration, PdfVersion, ValidationError, ValidationReport, Validators};
 use crate::error::{KrillaError, KrillaResult, LimitError};
 use crate::form::{AcroForm, FieldTree};
 use crate::geom::Size;
@@ -43,6 +43,54 @@ const NAME_LEN: usize = 127;
 const MAX_FLOAT: f32 = 32767.0;
 const DICT_LEN: usize = 4095;
 const ARRAY_LEN: usize = 8191;
+
+#[derive(Default)]
+struct ValidationState {
+    errors: ValidationReport,
+    sealed: bool,
+}
+
+impl ValidationState {
+    fn register(&mut self, error: ValidationError, validators: Validators) {
+        assert!(!self.sealed, "validation has already been sealed");
+
+        if let Some(validators) = validators.prohibits(&error) {
+            self.errors.push((error, validators));
+        }
+    }
+
+    fn seal(&mut self, validators: Validators) -> Validators {
+        assert!(!self.sealed, "validation has already been sealed");
+        self.sealed = true;
+
+        let mut conforming = validators;
+        for (_, validators) in &self.errors {
+            conforming.remove(*validators);
+        }
+
+        conforming
+    }
+
+    fn take_report(&mut self) -> ValidationReport {
+        assert!(self.sealed, "validation has not been sealed");
+
+        let mut errors = vec![];
+        #[allow(
+            clippy::mutable_key_type,
+            reason = "HarfRust's shaper cache uses atomics, but Font's hash and equality only depend on its immutable, prehashed FontInfo"
+        )]
+        let mut seen = HashSet::new();
+
+        for error in std::mem::take(&mut self.errors) {
+            if !seen.contains(&error) {
+                seen.insert(error.clone());
+                errors.push(error);
+            }
+        }
+
+        errors
+    }
+}
 
 /// Settings that should be applied when creating a PDF document.
 #[derive(Clone, Debug)]
@@ -83,8 +131,9 @@ pub struct SerializeSettings {
     pub cmyk_profile: Option<ICCProfile<4>>,
     /// A validator and PDF version used for export.
     ///
-    /// In case validation fails, export will fail, and a list of validation errors that
-    /// occurred will be returned instead of the PDF.
+    /// When using [`Document::finish`], validation errors cause export to fail.
+    /// [`Document::finish_relaxed`] instead returns the PDF together with those errors and omits
+    /// the conformance metadata for validators that failed.
     ///
     /// **Important**: Make sure to carefully read the documentation of the [`validate`] module
     /// before using this feature! Just setting a validator might not be enough to ensure that
@@ -96,6 +145,8 @@ pub struct SerializeSettings {
     /// is a bug).
     ///
     /// [`validate`]: crate::configure::validate
+    /// [`Document::finish`]: crate::Document::finish
+    /// [`Document::finish_relaxed`]: crate::Document::finish_relaxed
     pub configuration: Configuration,
     /// Whether to enable the creation of tagged documents. See the module documentation
     /// of [`tagging`] for more information about tagged PDF documents.
@@ -267,9 +318,7 @@ pub(crate) struct SerializeContext {
     /// is based on this field) to generate a new Ref, instead of creating one manually with
     /// `Ref::new`.
     pub(crate) cur_ref: Ref,
-    /// All validation errors that are collected as part of the export process
-    /// alongside the validators that raised the error.
-    validation_errors: Vec<(ValidationError, Validators)>,
+    validation: ValidationState,
     /// Settings used for serialization.
     serialize_settings: Arc<SerializeSettings>,
     /// Settings used for all PDF object chunks.
@@ -313,7 +362,7 @@ impl SerializeContext {
             page_tree_ref,
             page_infos: vec![],
             location: None,
-            validation_errors: vec![],
+            validation: ValidationState::default(),
             serialize_settings: Arc::new(serialize_settings),
             chunk_settings,
             limits: Limits::new(),
@@ -462,7 +511,11 @@ impl SerializeContext {
         &mut self.validation_store
     }
 
-    pub(crate) fn finish(mut self, mut chunk_container: ChunkContainer) -> KrillaResult<Pdf> {
+    pub(crate) fn finish(
+        mut self,
+        mut chunk_container: ChunkContainer,
+        relaxed: bool,
+    ) -> KrillaResult<(Pdf, ValidationReport)> {
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use MaybeTake::take to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
@@ -484,27 +537,10 @@ impl SerializeContext {
         self.serialize_tag_tree(&mut chunk_container)?;
 
         // Create the final PDF.
-        let pdf = chunk_container.finish(&mut self)?;
-        self.register_limits(pdf.limits());
+        let pdf = chunk_container.finish(&mut self, relaxed)?;
+        let errors = self.validation.take_report();
 
-        self.check_validator_limits();
-
-        if !self.validation_errors.is_empty() {
-            // Deduplicate errors, while still preserving order.
-            let mut errors = vec![];
-            #[allow(
-                clippy::mutable_key_type,
-                reason = "HarfRust's shaper cache uses atomics, but Font's hash and equality only depend on its immutable, prehashed FontInfo"
-            )]
-            let mut seen = HashSet::new();
-
-            for error in self.validation_errors {
-                if !seen.contains(&error) {
-                    seen.insert(error.clone());
-                    errors.push(error);
-                }
-            }
-
+        if !relaxed && !errors.is_empty() {
             return Err(KrillaError::Validation(errors));
         }
 
@@ -515,16 +551,21 @@ impl SerializeContext {
         // Just a sanity check that we've actually processed all items.
         self.global_objects.assert_all_taken();
 
-        Ok(pdf)
+        Ok((pdf, errors))
     }
 }
 
 /// Various registration methods.
 impl SerializeContext {
     pub(crate) fn register_validation_error(&mut self, error: ValidationError) {
-        if let Some(validators) = self.serialize_settings().validators().prohibits(&error) {
-            self.validation_errors.push((error, validators))
-        }
+        self.validation
+            .register(error, self.serialize_settings().validators());
+    }
+
+    pub(crate) fn seal_validation(&mut self, limits: &Limits, next_ref: Ref) -> Validators {
+        self.register_limits(limits);
+        self.check_validator_limits(next_ref);
+        self.validation.seal(self.serialize_settings().validators())
     }
 
     pub(crate) fn register_limits(&mut self, limits: &Limits) {
@@ -970,8 +1011,8 @@ impl SerializeContext {
         Ok(())
     }
 
-    fn check_validator_limits(&mut self) {
-        if self.cur_ref > Ref::new(8388607) {
+    fn check_validator_limits(&mut self, next_ref: Ref) {
+        if next_ref > Ref::new(8388607) {
             self.register_validation_error(ValidationError::TooManyIndirectObjects)
         }
 

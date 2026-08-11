@@ -2,7 +2,9 @@ use krilla::action::{LinkAction, ResetFormAction};
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{rgb, separation};
 use krilla::configure::validate::VersionedFeature;
-use krilla::configure::{Accessibility, ConfigurationBuilder, PdfVersion, ValidationError};
+use krilla::configure::{
+    Accessibility, Archival, ConfigurationBuilder, PdfVersion, ValidationError,
+};
 use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
 use krilla::form::{FieldTree, FormField};
@@ -1294,6 +1296,85 @@ fn validate_multi_validator_ua1_prohibits_missing_outline() {
         validation_errors(document.finish()),
         vec![ValidationError::MissingDocumentOutline]
     );
+}
+
+#[test]
+fn relaxed_ua_omits_ua_conformance_metadata() {
+    let settings = SerializeSettings {
+        configuration: ConfigurationBuilder::new()
+            .with_accessibility_validator(Accessibility::UA1)
+            .finish()
+            .unwrap(),
+        ..settings_1()
+    };
+    let mut document = Document::new_with(settings);
+    document.set_metadata(metadata_2());
+    document.set_tag_tree(TagTree::new());
+
+    let (pdf, errors) = document.finish_relaxed().unwrap();
+
+    assert_eq!(errors.len(), 1);
+    assert_eq!(errors[0].0, ValidationError::MissingDocumentOutline);
+    assert!(!pdf
+        .windows(b"pdfuaid:part".len())
+        .any(|window| window == b"pdfuaid:part"));
+}
+
+#[test]
+fn relaxed_ua_failure_preserves_pdfa_conformance_metadata() {
+    let settings = SerializeSettings {
+        configuration: ConfigurationBuilder::new()
+            .with_archival_validator(Archival::A3_B)
+            .with_accessibility_validator(Accessibility::UA1)
+            .finish()
+            .unwrap(),
+        ..settings_1()
+    };
+    let mut document = Document::new_with(settings);
+    document.set_metadata(metadata_2());
+    document.set_tag_tree(TagTree::new());
+
+    let (pdf, errors) = document.finish_relaxed().unwrap();
+
+    assert_eq!(errors.len(), 1);
+    assert_eq!(errors[0].0, ValidationError::MissingDocumentOutline);
+    assert!(pdf
+        .windows(b"pdfaid:part".len())
+        .any(|window| window == b"pdfaid:part"));
+    assert!(!pdf
+        .windows(b"pdfuaid:part".len())
+        .any(|window| window == b"pdfuaid:part"));
+}
+
+#[test]
+fn relaxed_pdfa_failure_preserves_pdfua_conformance_metadata() {
+    let settings = SerializeSettings {
+        configuration: ConfigurationBuilder::new()
+            .with_archival_validator(Archival::A3_A)
+            .with_accessibility_validator(Accessibility::UA1)
+            .finish()
+            .unwrap(),
+        ..settings_1()
+    };
+    let mut document = Document::new_with(settings);
+    document.set_metadata(
+        Metadata::new()
+            .title("Test Document".to_string())
+            .creation_date(DateTime::new(2001)),
+    );
+    document.set_tag_tree(TagTree::new());
+    document.set_outline(Outline::new());
+
+    let (pdf, errors) = document.finish_relaxed().unwrap();
+
+    assert_eq!(errors.len(), 1);
+    assert_eq!(errors[0].0, ValidationError::NoDocumentLanguage);
+    assert!(!pdf
+        .windows(b"pdfaid:part".len())
+        .any(|window| window == b"pdfaid:part"));
+    assert!(pdf
+        .windows(b"pdfuaid:part".len())
+        .any(|window| window == b"pdfuaid:part"));
 }
 
 #[snapshot(document, settings_32)]

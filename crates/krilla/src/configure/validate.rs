@@ -184,6 +184,9 @@ pub struct Validators {
     ua: Option<Accessibility>,
 }
 
+/// Validation errors and the validators that reported them.
+pub type ValidationReport = Vec<(ValidationError, Validators)>;
+
 impl Validators {
     /// Returns a filtered `Validators` containing only validators that prohibit the given error,
     /// or `None` if no validator prohibits it.
@@ -213,6 +216,16 @@ impl Validators {
     /// Returns the PDF/UA accessibility validator, if set.
     pub fn accessibility(self) -> Option<Accessibility> {
         self.ua
+    }
+
+    pub(crate) fn remove(&mut self, other: Self) {
+        if other.a.is_some() {
+            self.a = None;
+        }
+
+        if other.ua.is_some() {
+            self.ua = None;
+        }
     }
 
     /// Whether the font must supply valid Unicode code points for each of the
