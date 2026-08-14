@@ -22,6 +22,7 @@ pub struct Metadata {
     pub(crate) keywords: Option<Vec<String>>,
     pub(crate) authors: Option<Vec<String>>,
     pub(crate) document_id: Option<String>,
+    pub(crate) version_id: Option<String>,
     pub(crate) language: Option<String>,
     pub(crate) creation_date: Option<DateTime>,
     pub(crate) text_direction: Option<TextDirection>,
@@ -108,6 +109,14 @@ impl Metadata {
     /// different versions of the same document.
     pub fn document_id(mut self, document_id: String) -> Self {
         self.document_id = Some(document_id);
+        self
+    }
+
+    /// A version ID.
+    ///
+    /// This attribute identifies a specific version of the document.
+    pub fn version_id(mut self, version_id: String) -> Self {
+        self.version_id = Some(version_id);
         self
     }
 
@@ -210,6 +219,10 @@ impl Metadata {
 
         if let Some(producer) = &self.producer {
             xmp.producer(producer);
+        }
+
+        if let Some(version_id) = &self.version_id {
+            xmp.version_id(version_id);
         }
 
         if let Some(lang) = &self.language {
