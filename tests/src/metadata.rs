@@ -49,6 +49,20 @@ fn metadata_full_with_xmp(document: &mut Document) {
     metadata_impl(document);
 }
 
+#[snapshot(document, settings_5)]
+fn metadata_version_id(document: &mut Document) {
+    let metadata = Metadata::new().version_id("1.2.3".to_string());
+    document.set_metadata(metadata);
+}
+
+#[snapshot(document, settings_19)]
+fn metadata_version_id_pdf_a1(document: &mut Document) {
+    let metadata = Metadata::new()
+        .creation_date(datetime())
+        .version_id("1.2.3".to_string());
+    document.set_metadata(metadata);
+}
+
 #[snapshot(document)]
 fn metadata_custom_fields(document: &mut Document) {
     document.set_metadata(custom_metadata());
