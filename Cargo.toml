@@ -56,5 +56,5 @@ usvg = "0.47.0"
 xmp-writer = "0.3.3"
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.18.1"
-zune-jpeg = "0.5.5"
+zune-jpeg = { git = "https://github.com/etemesi254/zune-image", rev = "9a8663b034ca8dd50da0e67d42e4a0994e3a3580", features = ["arith"] }
  

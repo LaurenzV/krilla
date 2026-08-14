@@ -750,7 +750,7 @@ dependencies = [
  "hayro-jpeg2000",
  "rustc-hash",
  "smallvec",
- "zune-jpeg",
+ "zune-jpeg 0.5.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1029,7 +1029,7 @@ dependencies = [
  "tiny-skia-path 0.12.0",
  "xmp-writer",
  "yoke",
- "zune-jpeg",
+ "zune-jpeg 0.5.15 (git+https://github.com/etemesi254/zune-image?rev=9a8663b034ca8dd50da0e67d42e4a0994e3a3580)",
 ]
 
 [[package]]
@@ -1570,7 +1570,7 @@ dependencies = [
  "svgtypes",
  "tiny-skia 0.12.0",
  "usvg",
- "zune-jpeg",
+ "zune-jpeg 0.5.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2642,6 +2642,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb8a0807f7c01457d0379ba880ba6322660448ddebc890ce29bb64da71fb40f9"
 
 [[package]]
+name = "zune-core"
+version = "0.5.1"
+source = "git+https://github.com/etemesi254/zune-image?rev=9a8663b034ca8dd50da0e67d42e4a0994e3a3580#9a8663b034ca8dd50da0e67d42e4a0994e3a3580"
+
+[[package]]
 name = "zune-inflate"
 version = "0.2.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2656,5 +2661,13 @@ version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "27bc9d5b815bc103f142aa054f561d9187d191692ec7c2d1e2b4737f8dbd7296"
 dependencies = [
- "zune-core",
+ "zune-core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "zune-jpeg"
+version = "0.5.15"
+source = "git+https://github.com/etemesi254/zune-image?rev=9a8663b034ca8dd50da0e67d42e4a0994e3a3580#9a8663b034ca8dd50da0e67d42e4a0994e3a3580"
+dependencies = [
+ "zune-core 0.5.1 (git+https://github.com/etemesi254/zune-image?rev=9a8663b034ca8dd50da0e67d42e4a0994e3a3580)",
 ]

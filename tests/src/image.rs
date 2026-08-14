@@ -70,6 +70,14 @@ fn image_rgb8_jpg(surface: &mut Surface) {
     image_visreg_impl(surface, "rgb8.jpg", load_jpg_image);
 }
 
+#[snapshot]
+fn image_rgb8_arithmetic_jpg(page: &mut Page) {
+    let mut surface = page.surface();
+    let image = load_jpg_image("rgb8_arithmetic.jpg");
+    let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
+    surface.draw_image(image, size);
+}
+
 #[visreg(pdfium, mupdf, pdfbox, poppler, quartz)]
 fn image_cmyk_jpg(surface: &mut Surface) {
     image_visreg_impl(surface, "cmyk.jpg", load_jpg_image);

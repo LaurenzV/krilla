@@ -160,6 +160,12 @@ struct ImageMetadata {
     icc: Option<GenericICCProfile>,
 }
 
+#[derive(Copy, Clone, Eq, PartialEq)]
+enum JpegCoding {
+    Huffman,
+    Arithmetic,
+}
+
 struct ImageRepr {
     inner: Deferred<Result<Repr, String>>,
     metadata: ImageMetadata,
@@ -658,10 +664,21 @@ fn jpeg_metadata(data: &[u8]) -> Result<ImageMetadata, String> {
         (dimensions.0 as u32, dimensions.1 as u32)
     };
 
-    let image_color_space = decoder
+    let input_color_space = decoder
         .input_colorspace()
-        .and_then(|c| c.try_into().ok())
         .ok_or("failed to read image colorspace".to_string())?;
+
+    let coding = jpeg_coding(data)?;
+    let image_color_space = if coding == JpegCoding::Arithmetic {
+        match input_color_space {
+            ColorSpace::Luma => ImageColorspace::Luma,
+            _ => ImageColorspace::Rgb,
+        }
+    } else {
+        input_color_space
+            .try_into()
+            .map_err(|_| "failed to read image colorspace".to_string())?
+    };
 
     let icc = decoder
         .icc_profile()
@@ -687,7 +704,7 @@ fn decode_jpeg(data: Data) -> Result<Repr, String> {
         .input_colorspace()
         .ok_or("failed to read image colorspace".to_string())?;
 
-    if matches!(
+    if !matches!(
         input_color_space,
         ColorSpace::Luma
             | ColorSpace::YCbCr
@@ -695,15 +712,78 @@ fn decode_jpeg(data: Data) -> Result<Repr, String> {
             | ColorSpace::CMYK
             | ColorSpace::YCCK
     ) {
+        return Err("image has an unknown color space".to_string());
+    }
+
+    if jpeg_coding(data.as_ref())? == JpegCoding::Huffman {
         Ok(Repr::Jpeg(JpegRepr {
             data,
             bits_per_component: BitsPerComponent::Eight,
             invert_cmyk: matches!(input_color_space, ColorSpace::YCCK | ColorSpace::CMYK),
         }))
     } else {
-        // JPEGs shouldn't be able to have a different color space?
-        Err("image has an unknown color space".to_string())
+        let output_color_space = match input_color_space {
+            ColorSpace::Luma => ColorSpace::Luma,
+            _ => ColorSpace::RGB,
+        };
+        let options = decoder
+            .options()
+            .jpeg_set_out_colorspace(output_color_space);
+        decoder.set_options(options);
+
+        let img_data = decoder
+            .decode()
+            .map_err(|e| e.to_string().to_ascii_lowercase())?;
+        let (color_channel, alpha_channel, bits_per_component) =
+            handle_u8_image(&img_data, output_color_space);
+
+        Ok(Repr::Sampled(SampledRepr {
+            color_channel,
+            alpha_channel,
+            bits_per_component,
+        }))
     }
+}
+
+fn jpeg_coding(data: &[u8]) -> Result<JpegCoding, String> {
+    let mut offset = 0;
+
+    while offset < data.len() {
+        if data[offset] != 0xff {
+            offset += 1;
+            continue;
+        }
+
+        while data.get(offset) == Some(&0xff) {
+            offset += 1;
+        }
+
+        let marker = *data
+            .get(offset)
+            .ok_or("failed to read JPEG marker".to_string())?;
+        offset += 1;
+
+        match marker {
+            0xc0..=0xc2 => return Ok(JpegCoding::Huffman),
+            0xc9..=0xca => return Ok(JpegCoding::Arithmetic),
+            0x01 | 0xd0..=0xd9 => continue,
+            _ => {}
+        }
+
+        let length = u16::from_be_bytes(
+            data.get(offset..offset + 2)
+                .and_then(|bytes| bytes.try_into().ok())
+                .ok_or("failed to read JPEG marker length".to_string())?,
+        ) as usize;
+
+        if length < 2 || offset + length > data.len() {
+            return Err("invalid JPEG marker length".to_string());
+        }
+
+        offset += length;
+    }
+
+    Err("failed to read JPEG coding scheme".to_string())
 }
 
 fn decode_gif(data: Data) -> Result<Repr, String> {
