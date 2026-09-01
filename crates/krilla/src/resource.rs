@@ -172,6 +172,35 @@ impl Resource for Font {
     }
 }
 
+/// A property list referenced by name from a `BDC` operator instead of written inline. The only
+/// one krilla needs is an optional content group, for the `/OC /<name> BDC` form.
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub(crate) struct Properties(Ref);
+
+impl Resource for Properties {
+    fn new(ref_: Ref) -> Self {
+        Self(ref_)
+    }
+
+    fn get_ref(&self) -> Ref {
+        self.0
+    }
+
+    fn get_dict<'a>(resources: &'a mut writers::Resources) -> Dict<'a> {
+        // `resources.properties()` is typed to `PropertyList` values, not the plain refs that a
+        // resource dictionary holds.
+        resources.insert(Name(b"Properties")).dict()
+    }
+
+    fn get_prefix() -> &'static str {
+        "oc"
+    }
+
+    fn get_mapper(b: &mut ResourceDictionaryBuilder) -> &mut ResourceMapper<Properties> {
+        &mut b.properties
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct ResourceDictionaryBuilder {
     pub(crate) color_spaces: ResourceMapper<ColorSpace>,
@@ -180,6 +209,7 @@ pub(crate) struct ResourceDictionaryBuilder {
     pub(crate) x_objects: ResourceMapper<XObject>,
     pub(crate) shadings: ResourceMapper<Shading>,
     pub(crate) fonts: ResourceMapper<Font>,
+    pub(crate) properties: ResourceMapper<Properties>,
 }
 
 impl ResourceDictionaryBuilder {
@@ -191,6 +221,7 @@ impl ResourceDictionaryBuilder {
             x_objects: ResourceMapper::new(),
             shadings: ResourceMapper::new(),
             fonts: ResourceMapper::new(),
+            properties: ResourceMapper::new(),
         }
     }
 
@@ -209,6 +240,7 @@ impl ResourceDictionaryBuilder {
             x_objects: self.x_objects.into_resource_list(),
             shadings: self.shadings.into_resource_list(),
             fonts: self.fonts.into_resource_list(),
+            properties: self.properties.into_resource_list(),
         }
     }
 }
@@ -221,6 +253,7 @@ pub(crate) struct ResourceDictionary {
     pub(crate) x_objects: ResourceList<XObject>,
     pub(crate) shadings: ResourceList<Shading>,
     pub(crate) fonts: ResourceList<Font>,
+    pub(crate) properties: ResourceList<Properties>,
 }
 
 impl Default for ResourceDictionary {
@@ -232,6 +265,7 @@ impl Default for ResourceDictionary {
             x_objects: ResourceList::empty(),
             shadings: ResourceList::empty(),
             fonts: ResourceList::empty(),
+            properties: ResourceList::empty(),
         }
     }
 }
@@ -253,7 +287,8 @@ impl ResourceDictionary {
             || self.patterns.len() > 0
             || self.x_objects.len() > 0
             || self.shadings.len() > 0
-            || self.fonts.len() > 0;
+            || self.fonts.len() > 0
+            || self.properties.len() > 0;
 
         if !write_proc_sets && !has_resource_entries {
             // `Resources` dictionary is mandatory (or rather, it's mandatory if
@@ -282,6 +317,7 @@ impl ResourceDictionary {
         write_resource_type::<XObject>(&mut resources, &self.x_objects);
         write_resource_type::<Shading>(&mut resources, &self.shadings);
         write_resource_type::<Font>(&mut resources, &self.fonts);
+        write_resource_type::<Properties>(&mut resources, &self.properties);
         parent.set_resources(resources_ref);
     }
 }

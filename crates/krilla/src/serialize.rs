@@ -12,7 +12,7 @@ use pdf_writer::{Chunk, Content, Finish, Limits, Name, Obj, Pdf, Ref, Settings, 
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
-use crate::configure::validate::ValidationStore;
+use crate::configure::validate::{ValidationStore, VersionedFeature};
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
 use crate::error::{KrillaError, KrillaResult, LimitError};
 use crate::geom::Size;
@@ -573,6 +573,42 @@ impl SerializeContext {
         Some(dest_ref)
     }
 
+    /// Register a new optional content group and write its object.
+    ///
+    /// Unlike `register_cacheable`, groups are not deduplicated: two groups with the same name
+    /// are two distinct layers.
+    pub(crate) fn add_optional_content_group(
+        &mut self,
+        chunk_container: &mut ChunkContainer,
+        name: &str,
+        visible: bool,
+    ) -> Ref {
+        if self.serialize_settings().pdf_version()
+            < VersionedFeature::OptionalContent.minimum_pdf_version()
+        {
+            self.register_validation_error(ValidationError::RequiresNewerPdfVersion(
+                VersionedFeature::OptionalContent,
+                self.location,
+            ));
+        }
+
+        let ref_ = self.new_ref();
+
+        chunk_container
+            .non_stream
+            .optional_content_groups
+            .indirect(ref_)
+            .dict()
+            .pair(Name(b"Type"), Name(b"OCG"))
+            .pair(Name(b"Name"), Str(name.as_bytes()));
+
+        self.global_objects
+            .optional_content_groups
+            .push((ref_, visible));
+
+        ref_
+    }
+
     pub(crate) fn register_page(&mut self, page: InternalPage) {
         let ref_ = self.new_ref();
         self.page_infos.push(PageInfo::Krilla {
@@ -1084,6 +1120,9 @@ pub(crate) struct GlobalObjects {
     /// Stores the association of the names of embedded files to their refs,
     /// for the catalog dictionary.
     pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,
+    /// Stores every optional content group and its default visibility,
+    /// for the catalog dictionary.
+    pub(crate) optional_content_groups: MaybeTaken<Vec<(Ref, bool)>>,
     /// A list of custom headings numbers used in the document.
     pub(crate) custom_heading_roles: BTreeSet<NonZeroU16>,
     /// The context tracking all of the pdfs and their pages that have been inserted.
@@ -1101,6 +1140,7 @@ impl GlobalObjects {
         assert!(self.outline.is_taken());
         assert!(self.tag_tree.is_taken());
         assert!(self.embedded_files.is_taken());
+        assert!(self.optional_content_groups.is_taken());
         #[cfg(feature = "pdf")]
         assert!(self.pdf_ctx.is_taken());
     }

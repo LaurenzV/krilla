@@ -153,6 +153,8 @@ pub enum VersionedFeature {
     HeaderFooterArtifactSubtypes,
     /// Scope attribute for table header cells.
     TableHeaderScope,
+    /// Optional content groups.
+    OptionalContent,
 }
 
 impl VersionedFeature {
@@ -162,6 +164,7 @@ impl VersionedFeature {
             VersionedFeature::StructureOrderTabbing => PdfVersion::Pdf15,
             VersionedFeature::HeaderFooterArtifactSubtypes => PdfVersion::Pdf17,
             VersionedFeature::TableHeaderScope => PdfVersion::Pdf15,
+            VersionedFeature::OptionalContent => PdfVersion::Pdf15,
         }
     }
 }
@@ -548,7 +551,10 @@ impl Archival {
                 | ValidationError::Transparency(_)
                 | ValidationError::ImageInterpolation(_)
                 | ValidationError::EmbeddedFile(EmbedError::Existence, _)
-                | ValidationError::EmbeddedPDF(_),
+                | ValidationError::EmbeddedPDF(_)
+                // PDF/A-1 forbids optional content outright. It is pinned to PDF 1.4, so the
+                // version check always fires for it.
+                | ValidationError::RequiresNewerPdfVersion(VersionedFeature::OptionalContent, _),
             ) => true,
             // Allowed under all PDF/A-1 profiles.
             (
@@ -607,7 +613,8 @@ impl Archival {
                 | ValidationError::RequiresNewerPdfVersion(
                     VersionedFeature::HeaderFooterArtifactSubtypes
                     | VersionedFeature::StructureOrderTabbing
-                    | VersionedFeature::TableHeaderScope,
+                    | VersionedFeature::TableHeaderScope
+                    | VersionedFeature::OptionalContent,
                     _,
                 ),
             ) => false,
@@ -684,7 +691,8 @@ impl Archival {
                 | ValidationError::RequiresNewerPdfVersion(
                     VersionedFeature::HeaderFooterArtifactSubtypes
                     | VersionedFeature::StructureOrderTabbing
-                    | VersionedFeature::TableHeaderScope,
+                    | VersionedFeature::TableHeaderScope
+                    | VersionedFeature::OptionalContent,
                     _,
                 ),
             ) => false,
@@ -1110,7 +1118,8 @@ impl Accessibility {
                 | ValidationError::RequiresNewerPdfVersion(
                     VersionedFeature::HeaderFooterArtifactSubtypes
                     | VersionedFeature::StructureOrderTabbing
-                    | VersionedFeature::TableHeaderScope,
+                    | VersionedFeature::TableHeaderScope
+                    | VersionedFeature::OptionalContent,
                     _,
                 ),
             ) => true,

@@ -1,0 +1,91 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [3 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /Properties <<
+    /oc0 4 0 R
+  >>
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Page
+  /Resources 2 0 R
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 5 0 R
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /OCG
+  /Name (Outer Layer)
+>>
+endobj
+
+5 0 obj
+<<
+  /Length 98
+>>
+stream
+/OC /oc0 BDC
+/inner BMC
+q
+1 0 0 -1 0 842 cm
+1 0 0 rg
+20 20 m
+80 20 l
+80 80 l
+20 80 l
+h
+f
+Q
+EMC
+EMC
+endstream
+endobj
+
+6 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /OCProperties <<
+    /OCGs [4 0 R]
+    /D <<
+      /Order [4 0 R]
+      /ON [4 0 R]
+    >>
+  >>
+>>
+endobj
+
+xref
+0 7
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000179 00000 n
+0000000294 00000 n
+0000000351 00000 n
+0000000502 00000 n
+trailer
+<<
+  /Size 7
+  /Root 6 0 R
+  /ID [(g4U8HqNuCQGa6YpxxeJv9w==) (g4U8HqNuCQGa6YpxxeJv9w==)]
+>>
+startxref
+654
+%%EOF

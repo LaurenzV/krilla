@@ -25,6 +25,7 @@ use crate::graphics::paint::{Fill, FillRule, Stroke};
 use crate::graphics::shading_function::ShadingFunction;
 use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
 use crate::num::NormalizedF32;
+use crate::optional_content::OptionalContentGroupId;
 use crate::paint::{InnerPaint, Paint};
 #[cfg(feature = "pdf")]
 use crate::pdf::PdfDocument;
@@ -234,6 +235,46 @@ impl<'a> Surface<'a> {
         if self.page_identifier.is_some() {
             self.bd.get_mut().end_marked_content();
         }
+    }
+
+    /// Start a marked-content section with an arbitrary tag name.
+    ///
+    /// This writes the plain `/<name> BMC` form and is independent of tagged PDF: unlike
+    /// [`start_tagged`](Self::start_tagged) it needs no structure tree, and the section has no
+    /// marked-content identifier tying it to one. `name` is escaped as a PDF name, so any string
+    /// can be passed.
+    ///
+    /// Marked-content sections may nest.
+    pub fn start_marked_content(&mut self, name: &str) {
+        self.bd
+            .get_mut()
+            .start_marked_content(pdf_writer::Name(name.as_bytes()));
+    }
+
+    /// End the innermost marked-content section.
+    ///
+    /// # Panics
+    /// Panics if no marked-content section has been started.
+    pub fn end_marked_content(&mut self) {
+        self.bd.get_mut().end_marked_content();
+    }
+
+    /// Start marking content as belonging to the optional content group `id`.
+    ///
+    /// This writes the `/OC /<name> BDC` form. A viewer that supports optional content lets the
+    /// user hide the group's content; one that does not shows it unconditionally.
+    ///
+    /// Optional content sections may nest.
+    pub fn start_optional_content(&mut self, id: OptionalContentGroupId) {
+        self.bd.get_mut().start_optional_content(id.0);
+    }
+
+    /// End the innermost optional content section.
+    ///
+    /// # Panics
+    /// Panics if no marked-content section has been started.
+    pub fn end_optional_content(&mut self) {
+        self.bd.get_mut().end_marked_content();
     }
 
     fn outline_glyphs(
@@ -621,7 +662,7 @@ impl Drop for Surface<'_> {
 
         assert!(self.bd.sub_builders.is_empty());
         assert!(self.push_instructions.is_empty());
-        assert!(!root_builder.active_marked_content);
+        assert_eq!(root_builder.active_marked_content, 0);
 
         (self.finish_fn)(root_builder.finish(self.sc), num_mcids)
     }

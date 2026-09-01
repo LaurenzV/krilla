@@ -55,6 +55,7 @@ pub(crate) struct NonStreamChunks {
     pub(crate) patterns: Chunk,
     pub(crate) pages: Chunk,
     pub(crate) embedded_files: Chunk,
+    pub(crate) optional_content_groups: Chunk,
 }
 
 impl ChunkContainer {
@@ -93,6 +94,7 @@ impl ChunkContainer {
                 patterns: sc.new_chunk(),
                 pages: sc.new_chunk(),
                 embedded_files: sc.new_chunk(),
+                optional_content_groups: sc.new_chunk(),
             },
         }
     }
@@ -197,6 +199,7 @@ impl ChunkContainer {
 
         let named_destinations = sc.global_objects.named_destinations.take();
         let embedded_files = sc.global_objects.embedded_files.take();
+        let optional_content_groups = sc.global_objects.optional_content_groups.take();
 
         let meta_ref = if sc.serialize_settings().xmp_metadata {
             let meta_ref = remapped_ref.bump();
@@ -334,6 +337,40 @@ impl ChunkContainer {
             }
         }
 
+        if !optional_content_groups.is_empty() {
+            let mut properties = catalog.insert(Name(b"OCProperties")).dict();
+
+            let mut all = properties.insert(Name(b"OCGs")).array().typed();
+            all.items(optional_content_groups.iter().map(|(r, _)| remapper[r]));
+            all.finish();
+
+            let mut config = properties.insert(Name(b"D")).dict();
+
+            // A viewer presents the groups listed in `/Order`, so a configuration without it
+            // has an empty layers panel however many groups `/OCGs` holds. Flat, in
+            // registration order.
+            let mut order = config.insert(Name(b"Order")).array().typed();
+            order.items(optional_content_groups.iter().map(|(r, _)| remapper[r]));
+            order.finish();
+
+            // Every group is listed in either `/ON` or `/OFF`, so `/BaseState`, which only
+            // covers the groups listed in neither, is never needed.
+            for (key, visible) in [(Name(b"ON"), true), (Name(b"OFF"), false)] {
+                let mut refs = optional_content_groups
+                    .iter()
+                    .filter(|(_, v)| *v == visible)
+                    .map(|(r, _)| remapper[r])
+                    .peekable();
+
+                if refs.peek().is_some() {
+                    config.insert(key).array().typed().items(refs);
+                }
+            }
+
+            config.finish();
+            properties.finish();
+        }
+
         catalog.finish();
 
         Ok(pdf)
@@ -429,6 +466,7 @@ impl Visit for NonStreamChunks {
         self.patterns.visit(sc, f)?;
         self.pages.visit(sc, f)?;
         self.embedded_files.visit(sc, f)?;
+        self.optional_content_groups.visit(sc, f)?;
 
         Ok(())
     }
