@@ -21,6 +21,7 @@ use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::TagTree;
+use crate::optional_content::OptionalContentGroupId;
 use crate::page::{Page, PageSettings};
 #[cfg(feature = "pdf")]
 use crate::pdf::PdfDocument;
@@ -137,6 +138,27 @@ impl Document {
         self.serializer_context
             .register_named_destination(dest)
             .map(|_| ())
+    }
+
+    /// Register a new optional content group, a layer whose visibility a viewer lets the user
+    /// toggle.
+    ///
+    /// `name` is the layer's name as shown by the viewer, `visible` whether it starts out shown.
+    /// Two groups with the same name are two distinct layers.
+    ///
+    /// Pass the returned id to
+    /// [`Surface::start_optional_content`](crate::surface::Surface::start_optional_content) to
+    /// mark content as belonging to the group.
+    pub fn add_optional_content_group(
+        &mut self,
+        name: &str,
+        visible: bool,
+    ) -> OptionalContentGroupId {
+        OptionalContentGroupId(self.serializer_context.add_optional_content_group(
+            &mut self.chunk_container,
+            name,
+            visible,
+        ))
     }
 
     /// Attempt to export the document to a PDF file.

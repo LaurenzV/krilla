@@ -55,7 +55,8 @@ pub(crate) struct ContentBuilder {
     bbox_important: bool,
     /// A temporary buffer that's reused across the builder.
     scratch: Vec<u8>,
-    pub(crate) active_marked_content: bool,
+    /// How many marked-content sections are currently open. They may nest.
+    pub(crate) active_marked_content: u32,
 }
 
 /// Stores either a device-specific color space,
@@ -82,7 +83,7 @@ impl ContentBuilder {
             graphics_states: GraphicsStates::new(),
             bbox: None,
             scratch: Vec::new(),
-            active_marked_content: false,
+            active_marked_content: 0,
         }
     }
 
@@ -110,11 +111,7 @@ impl ContentBuilder {
     }
 
     fn start_marked_content_prelude(&mut self) {
-        if self.active_marked_content {
-            panic!("can't start marked content twice");
-        }
-
-        self.active_marked_content = true;
+        self.active_marked_content += 1;
     }
 
     #[track_caller]
@@ -148,12 +145,28 @@ impl ContentBuilder {
     }
 
     pub(crate) fn end_marked_content(&mut self) {
-        if !self.active_marked_content {
+        if self.active_marked_content == 0 {
             panic!("can't end marked content when none has been started");
         }
 
         self.content.end_marked_content();
-        self.active_marked_content = false;
+        self.active_marked_content -= 1;
+    }
+
+    /// Mark subsequent content as belonging to the optional content group `ocg_ref`.
+    ///
+    /// This writes the `/OC /<name> BDC` form, where `<name>` refers to `ocg_ref` via this
+    /// content stream's own `/Properties` resource dictionary.
+    #[track_caller]
+    pub(crate) fn start_optional_content(&mut self, ocg_ref: Ref) {
+        self.start_marked_content_prelude();
+
+        let name = self
+            .rd_builder
+            .register_resource(resource::Properties::new(ocg_ref));
+        self.content
+            .begin_marked_content_with_properties(Name(b"OC"))
+            .properties_named(name.to_pdf_name());
     }
 
     pub(crate) fn concat_transform(&mut self, transform: &Transform) {

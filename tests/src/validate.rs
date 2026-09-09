@@ -86,6 +86,20 @@ pub fn validate_pdf_a_q_nesting_28() {
 }
 
 #[test]
+pub fn validate_pdf_a1_optional_content() {
+    let mut document = Document::new_with(settings_19());
+    document.add_optional_content_group("My Layer", true);
+
+    assert_eq!(
+        validation_errors(document.finish()),
+        vec![ValidationError::RequiresNewerPdfVersion(
+            VersionedFeature::OptionalContent,
+            None
+        )]
+    );
+}
+
+#[test]
 pub fn validate_pdf_a_string_length() {
     let mut document = pdfa_document();
     let metadata = Metadata::new()

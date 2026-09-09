@@ -1,0 +1,71 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [3 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Page
+  /Resources 2 0 R
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 4 0 R
+>>
+endobj
+
+4 0 obj
+<<
+  /Length 81
+>>
+stream
+/myTag BMC
+q
+1 0 0 -1 0 200 cm
+1 0 0 rg
+20 20 m
+80 20 l
+80 80 l
+20 80 l
+h
+f
+Q
+EMC
+endstream
+endobj
+
+5 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 6
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000142 00000 n
+0000000257 00000 n
+0000000391 00000 n
+trailer
+<<
+  /Size 6
+  /Root 5 0 R
+  /ID [(CA+xbUovPewmq7bc6RAPoQ==) (CA+xbUovPewmq7bc6RAPoQ==)]
+>>
+startxref
+445
+%%EOF
