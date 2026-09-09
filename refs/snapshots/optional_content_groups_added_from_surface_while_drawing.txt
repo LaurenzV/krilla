@@ -1,0 +1,115 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [3 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /Properties <<
+    /oc0 4 0 R
+    /oc1 5 0 R
+  >>
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Page
+  /Resources 2 0 R
+  /MediaBox [0 0 595 842]
+  /Parent 1 0 R
+  /Contents 6 0 R
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /OCG
+  /Name (Shown)
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /OCG
+  /Name (Hidden)
+>>
+endobj
+
+6 0 obj
+<<
+  /Length 197
+>>
+stream
+/OC /oc0 BDC
+/1 BMC
+q
+1 0 0 -1 0 842 cm
+1 0 0 rg
+20 20 m
+80 20 l
+80 80 l
+20 80 l
+h
+f
+Q
+EMC
+EMC
+/OC /oc1 BDC
+/2 BMC
+q
+1 0 0 -1 0 842 cm
+0 0 1 rg
+100 100 m
+160 100 l
+160 160 l
+100 160 l
+h
+f
+Q
+EMC
+EMC
+endstream
+endobj
+
+7 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /OCProperties <<
+    /OCGs [4 0 R 5 0 R]
+    /D <<
+      /Order [4 0 R 5 0 R]
+      /ON [4 0 R]
+      /OFF [5 0 R]
+    >>
+  >>
+>>
+endobj
+
+xref
+0 8
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000194 00000 n
+0000000309 00000 n
+0000000360 00000 n
+0000000412 00000 n
+0000000663 00000 n
+trailer
+<<
+  /Size 8
+  /Root 7 0 R
+  /ID [(dyXEmJVpdlbd5R94r/SpaA==) (dyXEmJVpdlbd5R94r/SpaA==)]
+>>
+startxref
+846
+%%EOF

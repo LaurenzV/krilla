@@ -277,6 +277,30 @@ impl<'a> Surface<'a> {
         self.bd.get_mut().end_marked_content();
     }
 
+    /// Register an optional content group while a page is being drawn, and return its id for
+    /// [`start_optional_content`](Self::start_optional_content) to mark content with.
+    ///
+    /// Identical in effect to
+    /// [`Document::add_optional_content_group`](crate::Document::add_optional_content_group) -- the same
+    /// two lines against the same two fields -- but callable *during* painting, which that one is not:
+    /// [`Document::start_page_with`](crate::Document::start_page_with) moves `&mut` borrows of both the
+    /// `SerializeContext` and the `ChunkContainer` into the [`Page`](crate::page::Page), so the
+    /// `Document` is exclusively borrowed for as long as any page is open.
+    ///
+    /// A producer that only discovers which groups it needs *as it draws* -- one group per layer that
+    /// actually carries ink, say -- otherwise has to either enumerate every possible group up front or
+    /// make a throwaway drawing pass first, purely to satisfy the borrow.
+    ///
+    /// `name` is the group's name as shown by the viewer, `visible` whether it starts out shown. Two
+    /// groups with the same name are two distinct groups, exactly as on `Document`.
+    pub fn add_optional_content_group(
+        &mut self,
+        name: &str,
+        visible: bool,
+    ) -> OptionalContentGroupId {
+        OptionalContentGroupId(self.sc.add_optional_content_group(self.chunk_container, name, visible))
+    }
+
     fn outline_glyphs(
         &mut self,
         glyphs: &[impl Glyph],
