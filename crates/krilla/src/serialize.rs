@@ -15,6 +15,7 @@ use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
 use crate::configure::validate::ValidationStore;
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
 use crate::error::{KrillaError, KrillaResult, LimitError};
+use crate::form::{AcroForm, FieldTree};
 use crate::geom::Size;
 use crate::graphics::color::{rgb, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
@@ -369,6 +370,10 @@ impl SerializeContext {
         }
     }
 
+    pub(crate) fn set_field_tree(&mut self, root: FieldTree) {
+        self.global_objects.forms.field_tree = Some(root);
+    }
+
     pub(crate) fn set_tag_tree(&mut self, root: TagTree) {
         // Only set the tag tree if the user actually enabled tagging.
         if self.serialize_settings.enable_tagging {
@@ -469,6 +474,7 @@ impl SerializeContext {
         self.serialize_fonts(&mut chunk_container)?;
         self.serialize_pages(&mut chunk_container)?;
         self.serialize_page_tree(&mut chunk_container);
+        self.serialize_forms(&mut chunk_container);
         #[cfg(feature = "pdf")]
         self.serialize_embedded_pdfs(&mut chunk_container)?;
         self.serialize_xyz_destinations(&mut chunk_container)?;
@@ -809,6 +815,14 @@ impl SerializeContext {
         chunk_container.non_stream.page_tree = Some((self.page_tree_ref, page_tree_chunk));
     }
 
+    fn serialize_forms(&mut self, chunk_container: &mut ChunkContainer) {
+        if self.global_objects.forms.field_tree.is_some() {
+            let acroform = self.global_objects.forms.take();
+            let acroform_ref = self.new_ref();
+            acroform.serialize(self, chunk_container, acroform_ref);
+        }
+    }
+
     fn serialize_xyz_destinations(
         &mut self,
         chunk_container: &mut ChunkContainer,
@@ -1081,6 +1095,8 @@ pub(crate) struct GlobalObjects {
     outline: MaybeTaken<Option<Outline>>,
     /// Stores the tag tree.
     tag_tree: MaybeTaken<Option<TagTree>>,
+    /// Stores the form fields.
+    pub(crate) forms: MaybeTaken<AcroForm>,
     /// Stores the association of the names of embedded files to their refs,
     /// for the catalog dictionary.
     pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,

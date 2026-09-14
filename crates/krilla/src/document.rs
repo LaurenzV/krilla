@@ -17,6 +17,7 @@
 use crate::chunk_container::ChunkContainer;
 use crate::destination::NamedDestination;
 use crate::error::KrillaResult;
+use crate::form::FieldTree;
 use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::metadata::Metadata;
 use crate::interchange::outline::Outline;
@@ -109,6 +110,11 @@ impl Document {
     /// Set the metadata of the document.
     pub fn set_metadata(&mut self, metadata: Metadata) {
         self.chunk_container.metadata = Some(metadata);
+    }
+
+    /// Set the interactive form's field tree of the document.
+    pub fn set_field_tree(&mut self, root: FieldTree) {
+        self.serializer_context.set_field_tree(root);
     }
 
     /// Set the tag tree of the document.

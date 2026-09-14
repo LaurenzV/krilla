@@ -47,6 +47,7 @@ mod annotation;
 mod destination;
 mod embed;
 mod font;
+mod form;
 mod graphic;
 mod image;
 mod mask;
@@ -820,6 +821,15 @@ pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
     surface.draw_path(&path);
     surface.pop();
     surface.finish();
+
+    stream_builder.finish()
+}
+
+pub fn square_stream(mut stream_builder: StreamBuilder, fill: Fill) -> Stream {
+    let mut stream_surface = stream_builder.surface();
+    stream_surface.set_fill(Some(fill));
+    stream_surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
+    stream_surface.finish();
 
     stream_builder.finish()
 }

@@ -123,6 +123,8 @@ pub enum ValidationError {
     MissingDocumentOutline,
     /// An annotation is missing an alt text.
     MissingAnnotationAltText(Option<Location>),
+    /// A form field is missing an alt name.
+    MissingFieldAltName(Option<Location>),
     /// The date of the document is missing.
     // We need this because for some standards we need to add the
     // xmp:History attribute.
@@ -135,6 +137,15 @@ pub enum ValidationError {
     EmbeddedFile(EmbedError, Option<Location>),
     /// The PDF contains no tagging.
     MissingTagging,
+    /// The PDF contains an annotation with a rollover or down appearance.
+    AnnotationHasConditionalAppearance(Option<Location>),
+    /// The PDF contains an action that can mutate the appearance of the document (e.g., multimedia
+    /// content, reset form, etc.).
+    ContainsMutatingAction(Option<Location>),
+    /// The PDF contains an annotation or field that has an additional-actions dictionary.
+    // Note that PDF/A-4 allows additional-actions, but limits it to certain keys, which is not
+    // implemented in krilla yet.
+    ContainsAdditionalActions(Option<Location>),
     /// The PDF contains another embedded PDF.
     ///
     /// This is currently forbidden in validated export because we cannot manually verify
@@ -548,6 +559,9 @@ impl Archival {
                 | ValidationError::Transparency(_)
                 | ValidationError::ImageInterpolation(_)
                 | ValidationError::EmbeddedFile(EmbedError::Existence, _)
+                | ValidationError::AnnotationHasConditionalAppearance(_)
+                | ValidationError::ContainsMutatingAction(_)
+                | ValidationError::ContainsAdditionalActions(_)
                 | ValidationError::EmbeddedPDF(_),
             ) => true,
             // Allowed under all PDF/A-1 profiles.
@@ -575,6 +589,7 @@ impl Archival {
                 | ValidationError::NoDocumentLanguage
                 | ValidationError::MissingAltText(_)
                 | ValidationError::MissingAnnotationAltText(_)
+                | ValidationError::MissingFieldAltName(_)
                 | ValidationError::MissingTagging,
             ) => self == Self::A1_A,
 
@@ -592,6 +607,9 @@ impl Archival {
                 | ValidationError::RestrictedLicense(_)
                 | ValidationError::MissingDocumentDate
                 | ValidationError::ImageInterpolation(_)
+                | ValidationError::AnnotationHasConditionalAppearance(_)
+                | ValidationError::ContainsMutatingAction(_)
+                | ValidationError::ContainsAdditionalActions(_)
                 | ValidationError::EmbeddedPDF(_),
             ) => true,
             // Allowed under all PDF/A-2 and PDF/A-3 profiles.
@@ -633,6 +651,7 @@ impl Archival {
                 | ValidationError::NoDocumentLanguage
                 | ValidationError::MissingAltText(_)
                 | ValidationError::MissingAnnotationAltText(_)
+                | ValidationError::MissingFieldAltName(_)
                 | ValidationError::MissingTagging,
             ) => self == Self::A2_A || self == Self::A3_A,
             // Forbidden under PDF/A-2 and PDF/A-3 accessible and Unicode profiles.
@@ -656,6 +675,8 @@ impl Archival {
                 | ValidationError::RestrictedLicense(_)
                 | ValidationError::MissingDocumentDate
                 | ValidationError::ImageInterpolation(_)
+                | ValidationError::AnnotationHasConditionalAppearance(_)
+                | ValidationError::ContainsMutatingAction(_)
                 | ValidationError::EmbeddedPDF(_),
             ) => true,
             // Allowed under all PDF/A-4 profiles.
@@ -675,12 +696,14 @@ impl Archival {
                 | ValidationError::MissingHeadingTitle
                 | ValidationError::MissingDocumentOutline
                 | ValidationError::MissingAnnotationAltText(_)
+                | ValidationError::MissingFieldAltName(_)
                 | ValidationError::Transparency(_)
                 | ValidationError::EmbeddedFile(
                     EmbedError::MissingDate | EmbedError::MissingMimeType,
                     _,
                 )
                 | ValidationError::MissingTagging
+                | ValidationError::ContainsAdditionalActions(_)
                 | ValidationError::RequiresNewerPdfVersion(
                     VersionedFeature::HeaderFooterArtifactSubtypes
                     | VersionedFeature::StructureOrderTabbing
@@ -1104,6 +1127,7 @@ impl Accessibility {
                 | ValidationError::MissingHeadingTitle
                 | ValidationError::MissingDocumentOutline
                 | ValidationError::MissingAnnotationAltText(_)
+                | ValidationError::MissingFieldAltName(_)
                 | ValidationError::EmbeddedFile(EmbedError::MissingDescription, _)
                 | ValidationError::MissingTagging
                 | ValidationError::EmbeddedPDF(_)
@@ -1134,6 +1158,9 @@ impl Accessibility {
                     EmbedError::Existence | EmbedError::MissingDate | EmbedError::MissingMimeType,
                     _,
                 )
+                | ValidationError::AnnotationHasConditionalAppearance(_)
+                | ValidationError::ContainsMutatingAction(_)
+                | ValidationError::ContainsAdditionalActions(_)
                 | ValidationError::MissingDocumentDate,
             ) => false,
         }

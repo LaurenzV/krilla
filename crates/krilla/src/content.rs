@@ -908,7 +908,7 @@ impl ContentBuilder {
     ) {
         let state = ExtGState::new().mask(mask, sc, chunk_container);
         self.uses_mask = true;
-        let x_object = XObject::new(stream, false, true, None);
+        let x_object = XObject::new(stream, false, true, None, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
@@ -922,7 +922,7 @@ impl ContentBuilder {
         let state = ExtGState::new()
             .stroking_alpha(opacity)
             .non_stroking_alpha(opacity);
-        let x_object = XObject::new(stream, true, false, None);
+        let x_object = XObject::new(stream, true, false, None, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
@@ -933,7 +933,7 @@ impl ContentBuilder {
         stream: Stream,
     ) {
         let state = ExtGState::new();
-        let x_object = XObject::new(stream, true, false, None);
+        let x_object = XObject::new(stream, true, false, None, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 

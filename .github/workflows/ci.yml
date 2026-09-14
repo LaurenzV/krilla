@@ -79,7 +79,14 @@ jobs:
           path: ./diffs
 
       - name: Run Arlington PDF tests
+        # Exclude tests due to Arlington incorrectly requiring the DA key for non-variable text form fields.
+        # See https://github.com/LaurenzV/krilla/pull/423#issuecomment-5604746032
         run: find ./store -name "*.pdf"
+          ! -path "./store/snapshots/forms_checkbox.pdf"
+          ! -path "./store/snapshots/forms_push_button.pdf"
+          ! -path "./store/snapshots/forms_radio_group.pdf"
+          ! -path "./store/snapshots/forms_reset_action.pdf"
+          ! -path "./store/snapshots/validate_pdf_ua1_full_example.pdf"
           | xargs /tmp/arlington/arlington-pdf-model-checker --format text -r -v --loglevel 0 -e ISO_19005_3
 
       - name: Run veraPDF tests

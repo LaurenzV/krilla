@@ -1,0 +1,303 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [16 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Fields [9 0 R 10 0 R 11 0 R]
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Annot
+  /Subtype /Widget
+  /Rect [20 190 30 200]
+  /F 4
+  /AS /Off
+  /AP <<
+    /N <<
+      /Off 18 0 R
+      /Yes 19 0 R
+    >>
+  >>
+  /Parent 7 0 R
+  /StructParent 0
+>>
+endobj
+
+4 0 obj
+<<
+  /Type /Annot
+  /Subtype /Widget
+  /Rect [30 190 40 200]
+  /F 4
+  /AS /Off
+  /AP <<
+    /N <<
+      /Off 18 0 R
+      /Yes 19 0 R
+    >>
+  >>
+  /Parent 8 0 R
+  /StructParent 1
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /Annot
+  /Subtype /Widget
+  /Rect [50 190 60 200]
+  /AA <<
+    /D <<
+      /Type /Action
+      /S /ResetForm
+      /Fields [(checkboxes.checkbox1)]
+    >>
+  >>
+  /F 4
+  /AS /Yes
+  /AP <<
+    /N <<
+      /Yes 20 0 R
+    >>
+  >>
+  /Parent 10 0 R
+  /StructParent 2
+>>
+endobj
+
+6 0 obj
+<<
+  /Type /Annot
+  /Subtype /Widget
+  /Rect [60 190 70 200]
+  /AA <<
+    /D <<
+      /Type /Action
+      /S /ResetForm
+      /Fields [(checkboxes.checkbox1)]
+      /Flags 1
+    >>
+  >>
+  /F 4
+  /AS /Yes
+  /AP <<
+    /N <<
+      /Yes 20 0 R
+    >>
+  >>
+  /Parent 11 0 R
+  /StructParent 3
+>>
+endobj
+
+7 0 obj
+<<
+  /T (checkbox1)
+  /Ff 0
+  /Parent 9 0 R
+  /FT /Btn
+  /V /Off
+  /DV /Yes
+  /Kids [3 0 R]
+>>
+endobj
+
+8 0 obj
+<<
+  /T (checkbox2)
+  /Ff 0
+  /Parent 9 0 R
+  /FT /Btn
+  /V /Off
+  /DV /Off
+  /Kids [4 0 R]
+>>
+endobj
+
+9 0 obj
+<<
+  /T (checkboxes)
+  /Kids [7 0 R 8 0 R]
+>>
+endobj
+
+10 0 obj
+<<
+  /T (reset1)
+  /Ff 65536
+  /FT /Btn
+  /Kids [5 0 R]
+>>
+endobj
+
+11 0 obj
+<<
+  /T (reset2)
+  /Ff 65536
+  /FT /Btn
+  /Kids [6 0 R]
+>>
+endobj
+
+12 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+13 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+14 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+15 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+16 0 obj
+<<
+  /Type /Page
+  /Resources 15 0 R
+  /MediaBox [0 0 200 200]
+  /Tabs /S
+  /Parent 1 0 R
+  /Contents 17 0 R
+  /Annots [3 0 R 4 0 R 5 0 R 6 0 R]
+>>
+endobj
+
+17 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+18 0 obj
+<<
+  /Length 44
+  /Type /XObject
+  /Subtype /Form
+  /Resources 12 0 R
+  /BBox [0 0 10 10]
+  /Matrix [1 0 0 -1 0 10]
+>>
+stream
+q
+1 0 0 rg
+0 0 m
+10 0 l
+10 10 l
+0 10 l
+h
+f
+Q
+endstream
+endobj
+
+19 0 obj
+<<
+  /Length 44
+  /Type /XObject
+  /Subtype /Form
+  /Resources 13 0 R
+  /BBox [0 0 10 10]
+  /Matrix [1 0 0 -1 0 10]
+>>
+stream
+q
+0 1 0 rg
+0 0 m
+10 0 l
+10 10 l
+0 10 l
+h
+f
+Q
+endstream
+endobj
+
+20 0 obj
+<<
+  /Length 44
+  /Type /XObject
+  /Subtype /Form
+  /Resources 14 0 R
+  /BBox [0 0 10 10]
+  /Matrix [1 0 0 -1 0 10]
+>>
+stream
+q
+0 0 1 rg
+0 0 m
+10 0 l
+10 10 l
+0 10 l
+h
+f
+Q
+endstream
+endobj
+
+21 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /AcroForm 2 0 R
+>>
+endobj
+
+xref
+0 22
+0000000000 65535 f
+0000000016 00000 n
+0000000081 00000 n
+0000000135 00000 n
+0000000334 00000 n
+0000000533 00000 n
+0000000825 00000 n
+0000001132 00000 n
+0000001243 00000 n
+0000001354 00000 n
+0000001416 00000 n
+0000001492 00000 n
+0000001568 00000 n
+0000001631 00000 n
+0000001694 00000 n
+0000001757 00000 n
+0000001820 00000 n
+0000001985 00000 n
+0000002038 00000 n
+0000002236 00000 n
+0000002434 00000 n
+0000002632 00000 n
+trailer
+<<
+  /Size 22
+  /Root 21 0 R
+  /ID [(TuQrYNKRKAauNrwAkP4FXA==) (TuQrYNKRKAauNrwAkP4FXA==)]
+>>
+startxref
+2705
+%%EOF

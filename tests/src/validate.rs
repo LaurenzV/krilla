@@ -1,10 +1,11 @@
-use krilla::action::LinkAction;
+use krilla::action::{LinkAction, ResetFormAction};
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{rgb, separation};
 use krilla::configure::validate::VersionedFeature;
 use krilla::configure::{Accessibility, ConfigurationBuilder, PdfVersion, ValidationError};
 use krilla::embed::EmbedError;
 use krilla::error::KrillaError;
+use krilla::form::{FieldTree, FormField};
 use krilla::geom::{Point, Rect, Size};
 use krilla::metadata::{DateTime, Metadata};
 use krilla::num::NormalizedF32;
@@ -22,9 +23,9 @@ use crate::metadata::{custom_metadata, datetime};
 use crate::{
     blue_fill, cmyk_fill, dummy_text_with_spans, green_fill, load_jpg_image, load_png_image, loc,
     metadata_1, metadata_2, rect_to_path, red_fill, settings_1, settings_13, settings_15,
-    settings_17, settings_19, settings_20, settings_23, settings_24, settings_32, settings_33,
-    settings_7, settings_8, settings_9, stops_with_2_solid_1, validation_errors, youtube_link,
-    NOTO_SANS,
+    settings_17, settings_19, settings_20, settings_23, settings_24, settings_26, settings_32,
+    settings_33, settings_7, settings_8, settings_9, square_stream, stops_with_2_solid_1,
+    validation_errors, youtube_link, NOTO_SANS,
 };
 use crate::{Document, SerializeSettings};
 
@@ -283,6 +284,123 @@ fn validate_pdfa1b_transparency_with_location() {
             // Note that we don't have 7 here, even though we should in theory. The reason is
             // that since we cache graphics states, only the first time we serialize it will
             // it trigger the validation error. Not optimal, but changing that would be a pain.
+        ]
+    )
+}
+
+fn reset_form_action_document_impl(document: &mut Document) {
+    let mut page = document.start_page();
+
+    let mut surface = page.surface();
+    let button_appearance = square_stream(surface.stream_builder(), red_fill(1.0));
+    surface.finish();
+
+    let field_loc = loc(1);
+    let mut button = FormField::push_button("button".to_string())
+        .with_location(Some(field_loc))
+        .with_alt_name("A button".to_string());
+
+    let annot_loc = loc(2);
+    let annot = Annotation::from(
+        button
+            .new_widget(
+                Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
+                button_appearance.clone(),
+            )
+            .with_action_mouse_press(ResetFormAction::All.into()),
+    )
+    .with_location(Some(annot_loc));
+    page.add_widget_annotation(&mut button, annot);
+
+    page.finish();
+
+    let mut field_tree = FieldTree::new();
+    field_tree.push(button);
+    document.set_field_tree(field_tree);
+}
+
+#[test]
+fn validate_pdf_a_with_reset_form_action() {
+    let mut document = pdfa_document();
+    reset_form_action_document_impl(&mut document);
+
+    assert_eq!(
+        validation_errors(document.finish()),
+        vec![
+            ValidationError::ContainsAdditionalActions(Some(loc(2))),
+            ValidationError::ContainsMutatingAction(Some(loc(2))),
+        ]
+    )
+}
+
+#[test]
+fn validate_pdf_a4_with_reset_form_action() {
+    let mut document = Document::new_with(settings_26());
+    reset_form_action_document_impl(&mut document);
+
+    assert_eq!(
+        validation_errors(document.finish()),
+        vec![ValidationError::ContainsMutatingAction(Some(loc(2)))]
+    )
+}
+
+#[test]
+fn validate_pdf_a_annotation_has_conditional_appearance() {
+    let mut document = pdfa_document();
+    let mut page = document.start_page();
+
+    let mut surface = page.surface();
+    let button_appearance_normal = square_stream(surface.stream_builder(), red_fill(1.0));
+    let button_appearance_alt = square_stream(surface.stream_builder(), blue_fill(1.0));
+    surface.finish();
+
+    let field_loc = loc(1);
+    let mut button = FormField::push_button("button".to_string())
+        .with_location(Some(field_loc))
+        .with_alt_name("A button".to_string());
+
+    let annot1_loc = {
+        let annot_loc = loc(2);
+        let annot = Annotation::from(
+            button
+                .new_widget(
+                    Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
+                    button_appearance_normal.clone(),
+                )
+                .with_rollover_appearance(button_appearance_alt.clone()),
+        )
+        .with_location(Some(annot_loc));
+        page.add_widget_annotation(&mut button, annot);
+
+        annot_loc
+    };
+    let annot2_loc = {
+        let annot_loc = loc(3);
+        let annot = Annotation::from(
+            button
+                .new_widget(
+                    Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
+                    button_appearance_normal,
+                )
+                .with_down_appearance(button_appearance_alt),
+        )
+        .with_location(Some(annot_loc));
+        page.add_widget_annotation(&mut button, annot);
+
+        annot_loc
+    };
+
+    page.finish();
+
+    let mut field_tree = FieldTree::new();
+    field_tree.push(button);
+    document.set_field_tree(field_tree);
+
+    assert_eq!(
+        validation_errors(document.finish()),
+        vec![
+            ValidationError::AnnotationHasConditionalAppearance(Some(annot1_loc)),
+            ValidationError::AnnotationHasConditionalAppearance(Some(annot2_loc))
         ]
     )
 }
@@ -600,6 +718,51 @@ fn validate_pdf_ua1_empty_alt() {
         .contains(&ValidationError::MissingAltText(Some(formula_loc))));
 }
 
+#[test]
+fn validate_pdf_ua1_empty_form_field_alt_name() {
+    let mut document = Document::new_with(settings_15());
+    let mut page = document.start_page();
+
+    let button_appearance = {
+        let mut surface = page.surface();
+
+        square_stream(surface.stream_builder(), red_fill(1.0))
+    };
+
+    let field_loc = loc(1);
+    let mut button = FormField::push_button("button".to_string())
+        .with_location(Some(field_loc))
+        .with_alt_name(String::new());
+
+    let annot_loc = loc(2);
+    let annot = {
+        let annot = Annotation::from(button.new_widget(
+            Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
+            button_appearance,
+        ))
+        .with_location(Some(annot_loc));
+
+        page.add_widget_annotation(&mut button, annot)
+    };
+
+    page.finish();
+
+    let form_loc = loc(3);
+    let mut tag_group = TagGroup::new(Tag::Form.with_location(Some(form_loc)));
+    tag_group.push(annot);
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(tag_group);
+    document.set_tag_tree(tag_tree);
+
+    let mut field_tree = FieldTree::new();
+    field_tree.push(button);
+    document.set_field_tree(field_tree);
+
+    assert!(validation_errors(document.finish())
+        .contains(&ValidationError::MissingFieldAltName(Some(field_loc))));
+}
+
 #[snapshot(document, settings_15)]
 fn validate_pdf_ua1_full_example(document: &mut Document) {
     let mut page = document.start_page();
@@ -619,7 +782,23 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
     );
     surface.end_tagged();
 
+    let button_appearance = square_stream(surface.stream_builder(), red_fill(1.0));
+
     surface.finish();
+
+    let mut button =
+        FormField::push_button("button".to_string()).with_alt_name("A button".to_string());
+
+    let button_annotation = {
+        let annotation = Annotation::from(button.new_widget(
+            Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
+            button_appearance,
+        ));
+        page.add_widget_annotation(&mut button, annotation)
+    };
+
+    let mut form_group = TagGroup::new(Tag::Form);
+    form_group.push(button_annotation);
 
     let annotation = page.add_tagged_annotation(Annotation::new_link(
         LinkAnnotation::new(
@@ -637,7 +816,12 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
     let mut tag_tree = TagTree::new();
     tag_tree.push(id1);
     tag_tree.push(link_group);
+    tag_tree.push(form_group);
     document.set_tag_tree(tag_tree);
+
+    let mut field_tree = FieldTree::new();
+    field_tree.push(button);
+    document.set_field_tree(field_tree);
 
     let metadata = Metadata::new()
         .language("en".to_string())
@@ -668,9 +852,24 @@ fn validate_pdf_ua1_missing_requirements() {
     );
     surface.end_tagged();
 
+    let button_appearance = square_stream(surface.stream_builder(), red_fill(1.0));
+
     surface.finish();
 
-    let annot_loc = loc(1);
+    let button_loc = loc(1);
+    let mut button = FormField::push_button("button".to_string()).with_location(Some(button_loc));
+
+    let button_annot_loc = loc(2);
+    let button_annot = {
+        let annotation = Annotation::from(button.new_widget(
+            Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
+            button_appearance,
+        ))
+        .with_location(Some(button_annot_loc));
+        page.add_widget_annotation(&mut button, annotation)
+    };
+
+    let annot_loc = loc(3);
     let annot = page.add_tagged_annotation(
         Annotation::new_link(
             LinkAnnotation::new(
@@ -684,20 +883,26 @@ fn validate_pdf_ua1_missing_requirements() {
 
     page.finish();
 
-    let formula_loc = loc(2);
+    let formula_loc = loc(4);
     let mut tag_group = TagGroup::new(Tag::Formula(None).with_location(Some(formula_loc)));
     tag_group.push(id1);
     tag_group.push(annot);
+    tag_group.push(button_annot);
 
     let mut tag_tree = TagTree::new();
     tag_tree.push(tag_group);
     document.set_tag_tree(tag_tree);
+
+    let mut field_tree = FieldTree::new();
+    field_tree.push(button);
+    document.set_field_tree(field_tree);
 
     assert_eq!(
         validation_errors(document.finish()),
         vec![
             ValidationError::MissingDocumentOutline,
             ValidationError::MissingAnnotationAltText(Some(annot_loc)),
+            ValidationError::MissingFieldAltName(Some(button_loc)),
             ValidationError::MissingAltText(Some(formula_loc)),
             ValidationError::NoDocumentTitle
         ]
