@@ -160,7 +160,7 @@ impl From<FieldGroup> for Node {
 }
 
 /// A type-agnostic field.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum FieldKind {
     /// A push button field.
     PushButton(FormField<kind::PushButton>),
@@ -207,7 +207,7 @@ impl From<FormField<kind::Radio>> for FieldKind {
 ///
 /// Fields can be created via [`FormField::push_button`],
 /// [`FormField::checkbox`], and [`FormField::radio`].
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct FormField<T> {
     name: String,
     alt_name: Option<String>,
