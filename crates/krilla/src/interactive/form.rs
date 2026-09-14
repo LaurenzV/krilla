@@ -501,6 +501,8 @@ impl<T: SerializableField> FormField<T> {
 
         let mut flags = self.flags;
         if sc.serialize_settings().pdf_version() < PdfVersion::Pdf15 {
+            // TODO: throw error instead; cannot use a ValidationError::RequiresNewerPdfVersion
+            // since that requires exporting to PDF/A or PDF/UA
             flags.remove(FieldFlags::RADIOS_IN_UNISON);
         }
 
