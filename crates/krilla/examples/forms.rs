@@ -1,4 +1,4 @@
-//! This examples shows how to create a document with form fields.
+//! This example shows how to create a document with form fields.
 
 use std::path;
 use std::path::PathBuf;
