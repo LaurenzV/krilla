@@ -10,7 +10,7 @@ use pdf_writer::{types::FieldFlags, writers::Form, Finish, Ref, TextStr};
 use crate::{
     annotation::{DualStateAppearanceStream, NamedAppearanceStream, WidgetAnnotation},
     chunk_container::ChunkContainer,
-    configure::{validate::VersionedFeature, ValidationError},
+    configure::{PdfVersion, ValidationError},
     form::kind::{Checkbox, Radio},
     geom::Rect,
     serialize::SerializeContext,
@@ -499,18 +499,12 @@ impl<T: SerializableField> FormField<T> {
         let root_ref = self.identifier.unwrap_or_else(|| sc.new_ref());
         let mut field = chunk_container.non_stream.fields.form_field(root_ref);
 
-        if sc.serialize_settings().pdf_version()
-            < VersionedFeature::RadiosInUnison.minimum_pdf_version()
-        {
-            sc.register_validation_error(ValidationError::RequiresNewerPdfVersion(
-                VersionedFeature::RadiosInUnison,
-                self.location,
-            ));
+        let mut flags = self.flags;
+        if sc.serialize_settings().pdf_version() < PdfVersion::Pdf15 {
+            flags.remove(FieldFlags::RADIOS_IN_UNISON);
         }
 
-        field
-            .partial_name(TextStr(&self.name))
-            .field_flags(self.flags);
+        field.partial_name(TextStr(&self.name)).field_flags(flags);
 
         if let Some(parent_ref) = parent_ref {
             field.parent(parent_ref);
