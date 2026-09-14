@@ -430,7 +430,10 @@ impl FormField<kind::Radio> {
         self
     }
 
-    /// Create a widget annotation for the radio group field.
+    /// Create a widget annotation for the radio group field, which is automatically marked as
+    /// selected if the value matches the field's value.
+    /// If [radios in unison](Self::set_radios_in_unison) is `false` (default) and two or more
+    /// annotations share the same `value`, [`Self::new_widget_with_selected`] must be used instead.
     ///
     /// - `rect`: The bounding box of the widget annotation that it should cover on the page.
     /// - `value`: The value the widget annotation represents in the radio group. Cannot be 'Off'.
@@ -443,13 +446,40 @@ impl FormField<kind::Radio> {
         off_appearance: Stream,
         on_appearance: Stream,
     ) -> WidgetAnnotation<DualStateAppearanceStream> {
+        self.new_widget_with_selected(
+            rect,
+            self.kind.value.as_ref() == Some(&value),
+            value,
+            off_appearance,
+            on_appearance,
+        )
+    }
+
+    /// Create a widget annotation for the radio group field, manually specifying whether the radio
+    /// button is selected.
+    /// This must be used if [radios in unison](Self::set_radios_in_unison) is `false` (default)
+    /// and two or more annotations share the same `value`.
+    ///
+    /// - `rect`: The bounding box of the widget annotation that it should cover on the page.
+    /// - `selected`: Whether this widget annotation (radio button) is selected.
+    /// - `value`: The value the widget annotation represents in the radio group. Cannot be 'Off'.
+    /// - `off_appearance`: The appearance of the widget annotation when the radio button is off.
+    /// - `on_appearance`: The appearance of the widget annotation when the radio button is on.
+    pub fn new_widget_with_selected(
+        &self,
+        rect: Rect,
+        selected: bool,
+        value: String,
+        off_appearance: Stream,
+        on_appearance: Stream,
+    ) -> WidgetAnnotation<DualStateAppearanceStream> {
         debug_assert_ne!(
             value, "Off",
             "A radio button cannot have reserved value 'Off'"
         );
         WidgetAnnotation::dual(
             rect,
-            self.kind.value.as_ref() == Some(&value),
+            selected,
             "Off".to_string(),
             off_appearance,
             value,
