@@ -8,7 +8,7 @@
 
 use core::f32;
 
-use pdf_writer::types::AnnotationFlags;
+use pdf_writer::types::{AnnotationFlags, HighlightEffect};
 use pdf_writer::{Finish, Name, Ref, TextStr};
 
 use crate::chunk_container::ChunkContainer;
@@ -740,6 +740,10 @@ impl SerializableAppearance for SimpleAppearanceStream {
         annotation: &mut pdf_writer::writers::Annotation<'_>,
         refs: Self::RefsHolder,
     ) {
+        if refs.down.is_some() {
+            annotation.highlight(HighlightEffect::Push);
+        }
+
         let mut appearance = annotation.appearance();
         appearance.normal().stream(refs.normal);
         if let Some(ref_) = refs.rollover {
@@ -779,6 +783,10 @@ impl SerializableAppearance for NamedAppearanceStream {
         annotation.appearance_state(name);
 
         let ap_refs = refs.appearance;
+        if ap_refs.down.is_some() {
+            annotation.highlight(HighlightEffect::Push);
+        }
+
         let mut appearance = annotation.appearance();
         appearance.normal().streams().pair(name, ap_refs.normal);
         if let Some(ref_) = ap_refs.rollover {
@@ -818,6 +826,10 @@ impl SerializableAppearance for DualStateAppearanceStream {
         let on_name = Name(refs.on.name.as_bytes());
 
         annotation.appearance_state(if refs.value { on_name } else { off_name });
+
+        if refs.off.appearance.down.is_some() || refs.on.appearance.down.is_some() {
+            annotation.highlight(HighlightEffect::Push);
+        }
 
         let mut appearance = annotation.appearance();
         appearance
