@@ -433,7 +433,7 @@ impl FormField<kind::Radio> {
     /// Create a widget annotation for the radio group field.
     ///
     /// - `rect`: The bounding box of the widget annotation that it should cover on the page.
-    /// - `value`: The value the widget annotation represents in the radio group.
+    /// - `value`: The value the widget annotation represents in the radio group. Cannot be 'Off'.
     /// - `off_appearance`: The appearance of the widget annotation when the radio button is off.
     /// - `on_appearance`: The appearance of the widget annotation when the radio button is on.
     pub fn new_widget(
@@ -443,6 +443,10 @@ impl FormField<kind::Radio> {
         off_appearance: Stream,
         on_appearance: Stream,
     ) -> WidgetAnnotation<DualStateAppearanceStream> {
+        debug_assert_ne!(
+            value, "Off",
+            "A radio button cannot have reserved value 'Off'"
+        );
         WidgetAnnotation::dual(
             rect,
             self.kind.value.as_ref() == Some(&value),
