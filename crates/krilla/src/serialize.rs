@@ -32,9 +32,8 @@ use crate::pdf::{PdfDocument, PdfSerializerContext};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
-use crate::text::GlyphId;
-use crate::text::{Font, FontContainer, FontIdentifier};
-use crate::util::SipHashable;
+use crate::text::{Font, FontContainer, FontIdentifier, GlyphId, StandardFont};
+use crate::util::{NameExt, SipHashable};
 
 const STR_LEN: usize = 32767;
 const NAME_LEN: usize = 127;
@@ -791,6 +790,17 @@ impl SerializeContext {
                 borrowed
                     .cid_font()
                     .serialize(self, chunk_container, f.get_ref())?;
+            }
+        }
+
+        for font in StandardFont::ALL {
+            let identifier = FontIdentifier::Standard(font);
+            if let Some(&ref_) = self.cached_mappings.get(&identifier.sip_hash()) {
+                chunk_container
+                    .non_stream
+                    .fonts
+                    .type1_font(ref_)
+                    .base_font(font.base_font().to_pdf_name());
             }
         }
 
