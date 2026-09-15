@@ -457,3 +457,13 @@ impl ResourcesExt for writers::Page<'_> {
         self.pair(Name(b"Resources"), resources_ref);
     }
 }
+
+impl ResourcesExt for writers::Form<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
+        self.default_resources()
+    }
+
+    fn set_resources(&mut self, resources_ref: Ref) {
+        self.pair(Name(b"DR"), resources_ref);
+    }
+}

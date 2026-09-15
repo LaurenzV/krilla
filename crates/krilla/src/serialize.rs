@@ -470,10 +470,10 @@ impl SerializeContext {
         self.serialize_destination_profiles(&mut chunk_container);
         self.serialize_page_label_tree(&mut chunk_container);
         self.serialize_outline(&mut chunk_container);
-        self.serialize_fonts(&mut chunk_container)?;
         self.serialize_pages(&mut chunk_container)?;
         self.serialize_page_tree(&mut chunk_container);
         self.serialize_forms(&mut chunk_container);
+        self.serialize_fonts(&mut chunk_container)?;
         #[cfg(feature = "pdf")]
         self.serialize_embedded_pdfs(&mut chunk_container)?;
         self.serialize_xyz_destinations(&mut chunk_container)?;
@@ -827,7 +827,8 @@ impl SerializeContext {
 
     fn serialize_forms(&mut self, chunk_container: &mut ChunkContainer) {
         if self.global_objects.forms.field_tree.is_some() {
-            let acroform = self.global_objects.forms.take();
+            let mut acroform = self.global_objects.forms.take();
+            acroform.prepare_for_serialization(self);
             let acroform_ref = self.new_ref();
             acroform.serialize(self, chunk_container, acroform_ref);
         }

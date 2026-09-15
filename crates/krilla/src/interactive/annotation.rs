@@ -346,8 +346,6 @@ impl<T> WidgetAnnotation<T> {
 
 /// Applies to widget annotations with a single state appearance.
 impl WidgetAnnotation<SimpleAppearanceStream> {
-    // TODO: will be used for variable text form fields
-    #[allow(dead_code)]
     pub(crate) fn simple(rect: Rect, appearance: Stream) -> Self {
         Self {
             rect,

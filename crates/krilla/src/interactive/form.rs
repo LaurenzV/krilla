@@ -8,25 +8,35 @@
 use pdf_writer::{types::FieldFlags, writers::Form, Finish, Ref, TextStr};
 
 use crate::{
-    annotation::{DualStateAppearanceStream, NamedAppearanceStream, WidgetAnnotation},
+    annotation::{
+        DualStateAppearanceStream, NamedAppearanceStream, SimpleAppearanceStream, WidgetAnnotation,
+    },
     chunk_container::ChunkContainer,
     configure::{PdfVersion, ValidationError},
-    form::kind::{Checkbox, Radio},
+    form::{
+        kind::{Checkbox, Radio},
+        variable_text::{TextAlignment, VariableAppearance, VariableText},
+    },
     geom::Rect,
+    resource::ResourceDictionaryBuilder,
     serialize::SerializeContext,
     stream::Stream,
     surface::Location,
     tagging::AnnotationIdentifier,
 };
 
-#[derive(Default)]
 pub(crate) struct AcroForm {
     pub(crate) field_tree: Option<FieldTree>,
+    rd_builder: ResourceDictionaryBuilder,
 }
 
 impl AcroForm {
+    pub(crate) fn prepare_for_serialization(&mut self, sc: &mut SerializeContext) {
+        self.field_tree.visit(sc, &mut self.rd_builder);
+    }
+
     pub(crate) fn serialize(
-        &self,
+        self,
         sc: &mut SerializeContext,
         chunk_container: &mut ChunkContainer,
         root_ref: Ref,
@@ -43,9 +53,24 @@ impl AcroForm {
             form.fields(fields);
         }
 
+        self.rd_builder.finish().to_pdf_resources(
+            &mut form,
+            sc,
+            &mut chunk_container.non_stream.resource_dictionaries,
+        );
+
         form.finish();
 
         chunk_container.non_stream.forms = Some((root_ref, chunk));
+    }
+}
+
+impl Default for AcroForm {
+    fn default() -> Self {
+        Self {
+            field_tree: Default::default(),
+            rd_builder: ResourceDictionaryBuilder::new_with_prefix("f"),
+        }
     }
 }
 
@@ -121,6 +146,9 @@ impl FieldGroup {
 }
 
 /// A node in a field tree.
+// Allow unbalanced enum under the assumption there are way more Leafs than Groups
+// under normal use.
+#[allow(clippy::large_enum_variant)]
 pub enum Node {
     /// A group node.
     Group(FieldGroup),
@@ -168,6 +196,8 @@ pub enum FieldKind {
     Checkbox(FormField<kind::Checkbox>),
     /// A radio group field.
     Radio(FormField<kind::Radio>),
+    /// A text field.
+    Text(FormField<kind::Text>),
 }
 
 impl FieldKind {
@@ -181,6 +211,7 @@ impl FieldKind {
             Self::PushButton(f) => f.serialize_field(sc, chunk_container, parent_ref),
             Self::Checkbox(f) => f.serialize_field(sc, chunk_container, parent_ref),
             Self::Radio(f) => f.serialize_field(sc, chunk_container, parent_ref),
+            Self::Text(f) => f.serialize_field(sc, chunk_container, parent_ref),
         }
     }
 }
@@ -203,10 +234,16 @@ impl From<FormField<kind::Radio>> for FieldKind {
     }
 }
 
+impl From<FormField<kind::Text>> for FieldKind {
+    fn from(value: FormField<kind::Text>) -> Self {
+        Self::Text(value)
+    }
+}
+
 /// A form field.
 ///
 /// Fields can be created via [`FormField::push_button`],
-/// [`FormField::checkbox`], and [`FormField::radio`].
+/// [`FormField::checkbox`], [`FormField::radio`], and [`FormField::text`].
 #[derive(Debug, Default)]
 pub struct FormField<T> {
     name: String,
@@ -488,6 +525,123 @@ impl FormField<kind::Radio> {
     }
 }
 
+impl FormField<kind::Text> {
+    /// Create a text field.
+    /// The field name must not contain any period character (`.`).
+    pub fn text(name: String) -> Self {
+        Self {
+            name,
+            ..Default::default()
+        }
+    }
+
+    /// Set whether the field should accept text across multiple lines.
+    /// Default: false
+    pub fn set_mutliline(&mut self, multiline: bool) {
+        self.flags.set(FieldFlags::MULTILINE, multiline);
+    }
+
+    /// Set whether the field should accept text across multiple lines.
+    /// Default: false
+    pub fn with_mutliline(mut self, multiline: bool) -> Self {
+        self.set_mutliline(multiline);
+        self
+    }
+
+    /// Set whether to divide the field in equally spaced positions (i.e., combs).
+    /// If this is true, [max length](Self::set_max_length) should be set.
+    /// Default: false
+    pub fn set_comb(&mut self, comb: bool) {
+        self.flags.set(FieldFlags::COMB, comb);
+    }
+
+    /// Set whether to divide the field in equally spaced positions (i.e., combs).
+    /// If this is true, [max length](Self::set_max_length) should be set.
+    /// Default: false
+    pub fn with_comb(mut self, comb: bool) -> Self {
+        self.set_comb(comb);
+        self
+    }
+
+    /// Set the maximum length of the field's value, in number of characters.
+    /// If the provided length is [`None`], the field accepts any number of characters.
+    pub fn set_max_length(&mut self, max_len: Option<i32>) {
+        self.kind.max_length = max_len;
+    }
+
+    /// Set the maximum length of the field's value, in number of characters.
+    /// If the provided length is [`None`], the field accepts any number of characters.
+    pub fn with_max_length(mut self, max_len: Option<i32>) -> Self {
+        self.set_max_length(max_len);
+        self
+    }
+
+    /// Set the value of the text field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn set_value(&mut self, value: String) {
+        self.kind.value = Some(value);
+    }
+
+    /// Set the value of the text field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn with_value(mut self, value: String) -> Self {
+        self.set_value(value);
+        self
+    }
+
+    /// Set the default value of the text field.
+    pub fn set_default_value(&mut self, value: String) {
+        self.kind.default_value = Some(value);
+    }
+
+    /// Set the default value of the text field.
+    pub fn with_default_value(mut self, value: String) -> Self {
+        self.set_default_value(value);
+        self
+    }
+
+    /// Set the appearance characteristics the value of the field should have when drawn.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn set_appearance(&mut self, appearance: VariableAppearance) {
+        self.kind.variable_text.appearance = Some(appearance);
+    }
+
+    /// Set the appearance characteristics the value of the field should have when drawn.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn with_appearance(mut self, appearance: VariableAppearance) -> Self {
+        self.set_appearance(appearance);
+        self
+    }
+
+    /// Set the text alignment of the value of the field.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn set_text_alignment(&mut self, alignment: TextAlignment) {
+        self.kind.variable_text.text_alignment = alignment;
+    }
+
+    /// Set the text alignment of the value of the field.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn with_text_alignment(mut self, alignment: TextAlignment) -> Self {
+        self.set_text_alignment(alignment);
+        self
+    }
+
+    /// Create a widget annotation for the text field.
+    ///
+    /// - `rect`: The bounding box of the widget annotation that it should cover on the page.
+    /// - `appearance`: The appearance of the widget annotation, which should match the current
+    ///   value of this field. It must contain [variable text marked content](crate::surface::Surface::start_variable_text).
+    pub fn new_widget(
+        &self,
+        rect: Rect,
+        appearance: Stream,
+    ) -> WidgetAnnotation<SimpleAppearanceStream> {
+        WidgetAnnotation::simple(rect, appearance)
+    }
+}
+
 #[allow(private_bounds)]
 impl<T: SerializableField> FormField<T> {
     fn serialize_field(
@@ -543,8 +697,9 @@ pub(crate) trait SerializableField {
 
 /// Field kind structs.
 pub mod kind {
-    use pdf_writer::{types::CheckBoxState, Name};
+    use pdf_writer::{types::CheckBoxState, Name, TextStr};
 
+    use super::variable_text::VariableText;
     use super::SerializableField;
 
     /// A push button.
@@ -612,5 +767,192 @@ pub mod kind {
                 .radio_value(Name(value))
                 .radio_default_value(Name(default_value));
         }
+    }
+
+    /// A text field.
+    /// Create a field of this type via [`FormField::text`](super::FormField::text).
+    #[derive(Debug, Clone, Default)]
+    pub struct Text {
+        pub(super) variable_text: VariableText,
+        pub(super) value: Option<String>,
+        pub(super) default_value: Option<String>,
+        pub(super) max_length: Option<i32>,
+    }
+
+    impl SerializableField for Text {
+        fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+            field.field_type(pdf_writer::types::FieldType::Text);
+            if let Some(value) = &self.value {
+                field.text_value(TextStr(value));
+            }
+            if let Some(value) = &self.default_value {
+                field.text_default_value(TextStr(value));
+            }
+
+            if let Some(len) = self.max_length {
+                field.text_max_len(len);
+            }
+
+            self.variable_text.serialize(field);
+        }
+    }
+}
+
+/// Appearance of variable text fields.
+pub mod variable_text {
+    use pdf_writer::{types::Quadding, Buf};
+
+    use crate::{
+        resource::ResourceDictionaryBuilder, serialize::SerializeContext, text::StandardFont,
+        util::NameExt,
+    };
+
+    #[derive(Debug, Clone, Default)]
+    pub(super) struct VariableText {
+        pub(super) appearance: Option<VariableAppearance>,
+        pub(super) appearance_buf: Option<Buf>,
+        pub(super) text_alignment: TextAlignment,
+    }
+
+    impl VariableText {
+        pub(super) fn serialize<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+            if self.text_alignment != TextAlignment::default() {
+                field.vartext_quadding(self.text_alignment.into());
+            }
+
+            let buf = self
+                .appearance_buf
+                .as_ref()
+                .expect("text field must have its default appearance field set");
+            let str = pdf_writer::Str(buf);
+            field.vartext_default_appearance(str);
+        }
+    }
+
+    /// Appearance of variable text fields.
+    /// Defines how PDF processors should draw text when modifying the field's contents.
+    #[derive(Debug, Clone)]
+    pub struct VariableAppearance {
+        /// The font family of the text.
+        pub font: FormFont,
+        /// The font size of the text.
+        /// If set to 0, the PDF processor should automatically size it to fit.
+        pub font_size: f32,
+    }
+
+    impl VariableAppearance {
+        pub(super) fn serialize(
+            &self,
+            sc: &mut SerializeContext,
+            rd_builder: &mut ResourceDictionaryBuilder,
+        ) -> Buf {
+            let identifier = match &self.font {
+                // TODO support fully embedding type 0 fonts
+                // FormFont::Embedded(font) => todo!(),
+                FormFont::Standard(standard_font) => {
+                    crate::text::FontIdentifier::Standard(*standard_font)
+                }
+            };
+            let font_name = sc.register_font_identifier(identifier);
+            let font_name = rd_builder.register_resource(font_name);
+
+            let mut content = sc.new_content();
+            content.set_font(font_name.to_pdf_name(), self.font_size);
+
+            content.finish()
+        }
+    }
+
+    /// A font family used to fill out a form field.
+    #[derive(Debug, Clone)]
+    pub enum FormFont {
+        /* TODO
+        /// An embedded OpenType font, without subsetting.
+        Embedded(Font),
+        */
+        /// One of the 14 standard type 1 PDF fonts.
+        Standard(StandardFont),
+    }
+
+    /// The horizontal alignment of text.
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+    pub enum TextAlignment {
+        /// Left.
+        #[default]
+        Left,
+        /// Center.
+        Center,
+        /// Right.
+        Right,
+    }
+
+    impl From<TextAlignment> for Quadding {
+        fn from(value: TextAlignment) -> Self {
+            match value {
+                TextAlignment::Left => Self::Left,
+                TextAlignment::Center => Self::Center,
+                TextAlignment::Right => Self::Right,
+            }
+        }
+    }
+}
+
+// Visit all fields in a field tree
+// Used to pre-process variable text fields.
+trait Visit {
+    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder);
+}
+
+impl Visit for FieldTree {
+    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+        self.fields.visit(sc, rd_builder);
+    }
+}
+
+impl Visit for Node {
+    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+        match self {
+            Node::Group(field_group) => field_group.visit(sc, rd_builder),
+            Node::Leaf(field_kind) => field_kind.visit(sc, rd_builder),
+        }
+    }
+}
+
+impl Visit for FieldGroup {
+    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+        self.fields.visit(sc, rd_builder);
+    }
+}
+
+impl Visit for FieldKind {
+    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+        #[allow(clippy::single_match)]
+        match self {
+            FieldKind::Text(form_field) => form_field.kind.variable_text.visit(sc, rd_builder),
+            _ => {}
+        }
+    }
+}
+
+impl Visit for VariableText {
+    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+        if let Some(ap) = &self.appearance {
+            let buf = ap.serialize(sc, rd_builder);
+            self.appearance_buf = Some(buf);
+        }
+    }
+}
+
+impl<T: Visit> Visit for Option<T> {
+    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+        if let Some(t) = self {
+            t.visit(sc, rd_builder);
+        }
+    }
+}
+
+impl<T: Visit> Visit for Vec<T> {
+    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+        self.iter_mut().for_each(|item| item.visit(sc, rd_builder));
     }
 }
