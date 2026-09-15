@@ -14,7 +14,7 @@ use crate::{
     chunk_container::ChunkContainer,
     configure::{PdfVersion, ValidationError},
     form::{
-        kind::{Checkbox, Radio},
+        kind::{Checkbox, ChoiceOption, Radio},
         variable_text::{TextAlignment, VariableAppearance, VariableText},
     },
     geom::Rect,
@@ -198,6 +198,10 @@ pub enum FieldKind {
     Radio(FormField<kind::Radio>),
     /// A text field.
     Text(FormField<kind::Text>),
+    /// A list box field.
+    ListBox(FormField<kind::ListBox>),
+    /// A combo box (dropdown) field.
+    ComboBox(FormField<kind::ComboBox>),
 }
 
 impl FieldKind {
@@ -212,6 +216,8 @@ impl FieldKind {
             Self::Checkbox(f) => f.serialize_field(sc, chunk_container, parent_ref),
             Self::Radio(f) => f.serialize_field(sc, chunk_container, parent_ref),
             Self::Text(f) => f.serialize_field(sc, chunk_container, parent_ref),
+            Self::ListBox(f) => f.serialize_field(sc, chunk_container, parent_ref),
+            Self::ComboBox(f) => f.serialize_field(sc, chunk_container, parent_ref),
         }
     }
 }
@@ -240,10 +246,23 @@ impl From<FormField<kind::Text>> for FieldKind {
     }
 }
 
+impl From<FormField<kind::ComboBox>> for FieldKind {
+    fn from(value: FormField<kind::ComboBox>) -> Self {
+        Self::ComboBox(value)
+    }
+}
+
+impl From<FormField<kind::ListBox>> for FieldKind {
+    fn from(value: FormField<kind::ListBox>) -> Self {
+        Self::ListBox(value)
+    }
+}
+
 /// A form field.
 ///
 /// Fields can be created via [`FormField::push_button`],
-/// [`FormField::checkbox`], [`FormField::radio`], and [`FormField::text`].
+/// [`FormField::checkbox`], [`FormField::radio`], [`FormField::text`],
+/// [`FormField::listbox`], and [`FormField::combobox`].
 #[derive(Debug, Default)]
 pub struct FormField<T> {
     name: String,
@@ -642,6 +661,215 @@ impl FormField<kind::Text> {
     }
 }
 
+impl FormField<kind::ListBox> {
+    /// Create a listbox field.
+    /// The field name must not contain any period character (`.`).
+    pub fn listbox(name: String) -> Self {
+        Self {
+            name,
+            ..Default::default()
+        }
+    }
+
+    /// Set the options available on the listbox.
+    pub fn set_options(&mut self, options: Vec<ChoiceOption>) {
+        self.kind.options = options;
+    }
+
+    /// Set the options available on the listbox.
+    pub fn with_options(mut self, options: Vec<ChoiceOption>) -> Self {
+        self.set_options(options);
+        self
+    }
+
+    /// Set whether to accept selecting more than one option at a time.
+    /// Default: false
+    pub fn set_multiple_options(&mut self, multiple_options: bool) {
+        self.flags.set(FieldFlags::MULTI_SELECT, multiple_options);
+    }
+
+    /// Set whether to accept selecting more than one option at a time.
+    /// Default: false
+    pub fn with_multiple_options(mut self, multiple_options: bool) -> Self {
+        self.set_multiple_options(multiple_options);
+        self
+    }
+
+    /// Set the value (selected options) of the listbox field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn set_value(&mut self, value: Vec<String>) {
+        self.kind.value = value;
+    }
+
+    /// Set the value (selected options) of the listbox field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn with_value(mut self, value: Vec<String>) -> Self {
+        self.set_value(value);
+        self
+    }
+
+    /// Set the default value (selected options) of the listbox field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn set_default_value(&mut self, value: Vec<String>) {
+        self.kind.default_value = value;
+    }
+
+    /// Set the default value (selected options) of the listbox field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn with_default_value(mut self, value: Vec<String>) -> Self {
+        self.set_default_value(value);
+        self
+    }
+
+    /// Set the appearance characteristics the value of the field should have when drawn.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn set_appearance(&mut self, appearance: VariableAppearance) {
+        self.kind.variable_text.appearance = Some(appearance);
+    }
+
+    /// Set the appearance characteristics the value of the field should have when drawn.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn with_appearance(mut self, appearance: VariableAppearance) -> Self {
+        self.set_appearance(appearance);
+        self
+    }
+
+    /// Set the text alignment of the value of the field.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn set_text_alignment(&mut self, alignment: TextAlignment) {
+        self.kind.variable_text.text_alignment = alignment;
+    }
+
+    /// Set the text alignment of the value of the field.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn with_text_alignment(mut self, alignment: TextAlignment) -> Self {
+        self.set_text_alignment(alignment);
+        self
+    }
+
+    /// Create a widget annotation for the listbox field.
+    ///
+    /// - `rect`: The bounding box of the widget annotation that it should cover on the page.
+    /// - `appearance`: The appearance of the widget annotation, which should match the current
+    ///   value of this field. It must contain [variable text marked content](crate::surface::Surface::start_variable_text).
+    pub fn new_widget(
+        &self,
+        rect: Rect,
+        appearance: Stream,
+    ) -> WidgetAnnotation<SimpleAppearanceStream> {
+        WidgetAnnotation::simple(rect, appearance)
+    }
+}
+
+impl FormField<kind::ComboBox> {
+    /// Create a combobox field.
+    /// The field name must not contain any period character (`.`).
+    pub fn combobox(name: String) -> Self {
+        Self {
+            name,
+            flags: FieldFlags::COMBO,
+            ..Default::default()
+        }
+    }
+
+    /// Set the options available on the combobox.
+    pub fn set_options(&mut self, options: Vec<ChoiceOption>) {
+        self.kind.options = options;
+    }
+
+    /// Set the options available on the combobox.
+    pub fn with_options(mut self, options: Vec<ChoiceOption>) -> Self {
+        self.set_options(options);
+        self
+    }
+
+    /// Set whether to allow a free-form text option in addition to the given available options.
+    /// Default: false
+    pub fn set_edit(&mut self, edit: bool) {
+        self.flags.set(FieldFlags::EDIT, edit);
+    }
+
+    /// Set whether to allow a free-form text option in addition to the given available options.
+    /// Default: false
+    pub fn with_edit(mut self, edit: bool) -> Self {
+        self.set_edit(edit);
+        self
+    }
+
+    /// Set the value (selected option) of the combobox field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn set_value(&mut self, value: String) {
+        self.kind.value = Some(value);
+    }
+
+    /// Set the value (selected option) of the combobox field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn with_value(mut self, value: String) -> Self {
+        self.set_value(value);
+        self
+    }
+
+    /// Set the default value (selected option) of the combobox field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn set_default_value(&mut self, value: String) {
+        self.kind.default_value = Some(value);
+    }
+
+    /// Set the default value (selected option) of the combobox field.
+    /// Keep in mind the caller has the responsibility of creating and
+    /// applying the corresponding appearance stream.
+    pub fn with_default_value(mut self, value: String) -> Self {
+        self.set_default_value(value);
+        self
+    }
+
+    /// Set the appearance characteristics the value of the field should have when drawn.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn set_appearance(&mut self, appearance: VariableAppearance) {
+        self.kind.variable_text.appearance = Some(appearance);
+    }
+
+    /// Set the appearance characteristics the value of the field should have when drawn.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn with_appearance(mut self, appearance: VariableAppearance) -> Self {
+        self.set_appearance(appearance);
+        self
+    }
+
+    /// Set the text alignment of the value of the field.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn set_text_alignment(&mut self, alignment: TextAlignment) {
+        self.kind.variable_text.text_alignment = alignment;
+    }
+
+    /// Set the text alignment of the value of the field.
+    /// This is not used by krilla, but by future PDF readers when changing the value of the field.
+    pub fn with_text_alignment(mut self, alignment: TextAlignment) -> Self {
+        self.set_text_alignment(alignment);
+        self
+    }
+
+    /// Create a widget annotation for the combobox field.
+    ///
+    /// - `rect`: The bounding box of the widget annotation that it should cover on the page.
+    /// - `appearance`: The appearance of the widget annotation, which should match the current
+    ///   value of this field. It must contain [variable text marked content](crate::surface::Surface::start_variable_text).
+    pub fn new_widget(
+        &self,
+        rect: Rect,
+        appearance: Stream,
+    ) -> WidgetAnnotation<SimpleAppearanceStream> {
+        WidgetAnnotation::simple(rect, appearance)
+    }
+}
+
 #[allow(private_bounds)]
 impl<T: SerializableField> FormField<T> {
     fn serialize_field(
@@ -697,7 +925,7 @@ pub(crate) trait SerializableField {
 
 /// Field kind structs.
 pub mod kind {
-    use pdf_writer::{types::CheckBoxState, Name, TextStr};
+    use pdf_writer::{types::CheckBoxState, Finish, Name, TextStr};
 
     use super::variable_text::VariableText;
     use super::SerializableField;
@@ -796,9 +1024,96 @@ pub mod kind {
             self.variable_text.serialize(field);
         }
     }
+
+    /// An option for a listbox or combobox.
+    #[derive(Debug, Clone, Default)]
+    pub struct ChoiceOption {
+        /// The export value of the option.
+        /// If display name is [`None`], this is used as the display name too.
+        pub value: String,
+        /// The user-facing name of the option.
+        pub display_name: Option<String>,
+    }
+
+    impl ChoiceOption {
+        /// Create a new choice option.
+        pub fn new(value: String, display_name: Option<String>) -> Self {
+            Self {
+                value,
+                display_name,
+            }
+        }
+
+        fn serialize<'a>(&self, options: &mut pdf_writer::writers::ChoiceOptions<'a>) {
+            match &self.display_name {
+                Some(display_name) => options.export(TextStr(display_name), TextStr(&self.value)),
+                None => options.option(TextStr(&self.value)),
+            };
+        }
+    }
+
+    /// A listbox.
+    /// Create a field of this type via [`FormField::listbox`](super::FormField::listbox).
+    #[derive(Debug, Clone, Default)]
+    pub struct ListBox {
+        pub(super) variable_text: VariableText,
+        pub(super) value: Vec<String>,
+        pub(super) default_value: Vec<String>,
+        pub(super) options: Vec<ChoiceOption>,
+    }
+
+    impl SerializableField for ListBox {
+        fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+            field.field_type(pdf_writer::types::FieldType::Choice);
+            match self.value.len() {
+                0 => field.choice_value(None),
+                1 => field.choice_value(Some(TextStr(&self.value[0]))),
+                _ => field.choice_values(self.value.iter().map(|s| TextStr(s))),
+            };
+            match self.default_value.len() {
+                0 => field.choice_default_value(None),
+                1 => field.choice_default_value(Some(TextStr(&self.default_value[0]))),
+                _ => field.choice_default_values(self.default_value.iter().map(|s| TextStr(s))),
+            };
+
+            let mut options = field.choice_options();
+            for opt in &self.options {
+                opt.serialize(&mut options)
+            }
+            options.finish();
+
+            self.variable_text.serialize(field);
+        }
+    }
+
+    /// A combobox.
+    /// Create a field of this type via [`FormField::combobox`](super::FormField::combobox).
+    #[derive(Debug, Clone, Default)]
+    pub struct ComboBox {
+        pub(super) variable_text: VariableText,
+        pub(super) value: Option<String>,
+        pub(super) default_value: Option<String>,
+        pub(super) options: Vec<ChoiceOption>,
+    }
+
+    impl SerializableField for ComboBox {
+        fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+            field.field_type(pdf_writer::types::FieldType::Choice);
+            field.choice_value(self.value.as_deref().map(TextStr));
+            field.choice_default_value(self.default_value.as_deref().map(TextStr));
+
+            let mut options = field.choice_options();
+            for opt in &self.options {
+                opt.serialize(&mut options)
+            }
+            options.finish();
+
+            self.variable_text.serialize(field);
+        }
+    }
 }
 
-/// Appearance of variable text fields.
+/// Appearance of variable text fields (text, listbox, combbox).
 pub mod variable_text {
     use pdf_writer::{types::Quadding, Buf};
 
@@ -929,6 +1244,8 @@ impl Visit for FieldKind {
         #[allow(clippy::single_match)]
         match self {
             FieldKind::Text(form_field) => form_field.kind.variable_text.visit(sc, rd_builder),
+            FieldKind::ListBox(form_field) => form_field.kind.variable_text.visit(sc, rd_builder),
+            FieldKind::ComboBox(form_field) => form_field.kind.variable_text.visit(sc, rd_builder),
             _ => {}
         }
     }
