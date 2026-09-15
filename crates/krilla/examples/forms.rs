@@ -5,11 +5,13 @@ use std::path::PathBuf;
 
 use krilla::action::ResetFormAction;
 use krilla::color::rgb;
+use krilla::form::variable_text::{FormFont, TextAlignment, VariableAppearance};
 use krilla::form::{FieldGroup, FieldTree, FormField};
 use krilla::geom::{PathBuilder, Point, Rect};
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
 use krilla::text::Font;
+use krilla::text::StandardFont;
 use krilla::text::TextDirection;
 use krilla::Document;
 
@@ -17,10 +19,16 @@ fn main() {
     // Create a new document.
     let mut document = Document::new();
 
-    // Load a font.
+    // Load some fonts.
     let font = {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../assets/fonts/NotoSans-Regular.ttf");
+        let data = std::fs::read(&path).unwrap();
+        Font::new(data.into(), 0).unwrap()
+    };
+    let font_serif = {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/LibertinusSerif-Regular.otf");
         let data = std::fs::read(&path).unwrap();
         Font::new(data.into(), 0).unwrap()
     };
@@ -36,6 +44,22 @@ fn main() {
     radio_group.set_alt_name("A radio group".to_string());
     // Disallow toggling the radio group back to off.
     radio_group.set_allow_toggling_off(false);
+
+    // Create a text field.
+    let mut text_field = FormField::text("text".to_string());
+    // Set an alternative name, for accessibility purposes.
+    text_field.set_alt_name("A text field".to_string());
+    // Set the appearance PDF processors should use when filling out this text field.
+    text_field.set_appearance(VariableAppearance {
+        font: FormFont::Standard(StandardFont::TimesRoman),
+        font_size: 10.0,
+        paint: Some(rgb::Color::new(255, 0, 255).into()),
+        ..Default::default()
+    });
+    // Tell PDF processors to center the text when filling out this text field.
+    text_field.set_text_alignment(TextAlignment::Center);
+    // Pre-fill this field with the given value.
+    text_field.set_value("testing".to_string());
 
     // Create a button that will reset the form when clicked.
     let mut reset_button = FormField::push_button("reset-button".to_string());
@@ -190,6 +214,42 @@ fn main() {
         TextDirection::Auto,
     );
 
+    // Create an appearance for the text field.
+    // It is our responsibility to ensure the styles and the value match those of the field.
+    let text_appearance = {
+        let mut builder = surface.stream_builder();
+        let mut surface = builder.surface();
+
+        // Start the part of the appearance stream that represents the value of the field.
+        surface.start_variable_text();
+
+        // Write the current value, taking into consideration the appearance of the field.
+        surface.set_fill(Some(Fill {
+            paint: rgb::Color::new(255, 0, 255).into(),
+            ..Default::default()
+        }));
+        surface.draw_text(
+            Point::from_xy(6.0, 13.0),
+            font_serif.clone(),
+            10.0,
+            "testing",
+            false,
+            TextDirection::Auto,
+        );
+
+        // Do not forget to end the section!
+        surface.end_variable_text();
+
+        surface.finish();
+        builder.finish()
+    };
+
+    // Create a widget annotation (visual representation) for the text field.
+    let text_widget = text_field.new_widget(
+        Rect::from_xywh(40.0, 120.0, 40.0, 20.0).unwrap(),
+        text_appearance,
+    );
+
     // Create an appearance for the reset push button.
     let button_appearance = {
         let mut builder = surface.stream_builder();
@@ -210,7 +270,7 @@ fn main() {
 
     // Create a widget annotation (visual representation) for the push button.
     let mut reset_button_widget = reset_button.new_widget(
-        Rect::from_xywh(40.0, 120.0, 40.0, 20.0).unwrap(),
+        Rect::from_xywh(40.0, 150.0, 40.0, 20.0).unwrap(),
         button_appearance,
     );
     // Set an on click action (reset all fields except for button itself).
@@ -226,6 +286,7 @@ fn main() {
     page.add_widget_annotation(&mut checkbox, checkbox_widget.into());
     page.add_widget_annotation(&mut radio_group, radio_option_1.into());
     page.add_widget_annotation(&mut radio_group, radio_option_2.into());
+    page.add_widget_annotation(&mut text_field, text_widget.into());
     page.add_widget_annotation(&mut reset_button, reset_button_widget.into());
 
     // Finish the page.
@@ -236,6 +297,7 @@ fn main() {
         fields: vec![
             checkbox.into(),
             radio_group.into(),
+            text_field.into(),
             // Fields can be grouped arbitrarily.
             FieldGroup {
                 name: "actions".to_string(),
