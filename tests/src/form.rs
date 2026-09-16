@@ -1,15 +1,19 @@
 use krilla::action::ResetFormAction;
-use krilla::form::kind::PushButton;
+use krilla::color::{cmyk, luma, rgb};
+use krilla::form::kind::{ChoiceOption, PushButton};
+use krilla::form::variable_text::{FormFont, VariableAppearance};
 use krilla::form::{FieldGroup, FieldTree, FormField};
-use krilla::geom::Rect;
+use krilla::geom::{Point, Rect};
+use krilla::num::NormalizedF32;
 use krilla::page::PageSettings;
-use krilla::paint::Fill;
+use krilla::paint::{Fill, Paint};
 use krilla::stream::Stream;
 use krilla::surface::Surface;
+use krilla::text::{Font, StandardFont, TextDirection};
 use krilla::Document;
 use krilla_macros::snapshot;
 
-use crate::{blue_fill, green_fill, rect_to_path, red_fill, square_stream};
+use crate::{blue_fill, green_fill, rect_to_path, red_fill, square_stream, LIBERTINUS_SERIF};
 
 #[snapshot(document)]
 fn forms_push_button(d: &mut Document) {
@@ -115,6 +119,187 @@ fn forms_radio_group(d: &mut Document) {
 }
 
 #[snapshot(document)]
+fn forms_text_field(d: &mut Document) {
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+
+    let font_data = LIBERTINUS_SERIF.clone();
+    let font = Font::new(font_data, 0).unwrap();
+    let mut surface = page.surface();
+
+    let paint: Paint = cmyk::Color::new(100, 150, 50, 15).into();
+    let appearance = {
+        let mut stream_builder = surface.stream_builder();
+        let mut stream_surface = stream_builder.surface();
+
+        stream_surface.start_variable_text();
+
+        stream_surface.set_fill(Some(Fill {
+            paint: paint.clone(),
+            ..Default::default()
+        }));
+        stream_surface.draw_text(
+            Point::from_xy(25.0, 15.0),
+            font,
+            10.0,
+            "Hi.",
+            false,
+            TextDirection::Auto,
+        );
+
+        stream_surface.end_variable_text();
+        stream_surface.finish();
+
+        stream_builder.finish()
+    };
+
+    surface.finish();
+
+    let mut text_field = FormField::text("text_field".to_string());
+    text_field.set_alt_name("A text field".to_string());
+    text_field.set_mapping_name("txt1".to_string());
+    text_field.set_value("Hi.".to_string());
+    text_field.set_mutliline(true);
+    text_field.set_max_length(Some(10));
+    text_field.set_text_alignment(krilla::form::variable_text::TextAlignment::Right);
+    text_field.set_appearance(variable_appearance(paint));
+
+    let text_widget =
+        text_field.new_widget(Rect::from_xywh(50.0, 0.0, 40.0, 20.0).unwrap(), appearance);
+
+    page.add_widget_annotation(&mut text_field, text_widget.into());
+
+    page.finish();
+
+    d.set_field_tree(FieldTree {
+        fields: vec![text_field.into()],
+    });
+}
+
+#[snapshot(document)]
+fn forms_combobox(d: &mut Document) {
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+
+    let font_data = LIBERTINUS_SERIF.clone();
+    let font = Font::new(font_data, 0).unwrap();
+    let mut surface = page.surface();
+
+    let paint: Paint = luma::Color::new(100).into();
+    let appearance = {
+        let mut stream_builder = surface.stream_builder();
+        let mut stream_surface = stream_builder.surface();
+        stream_surface.start_variable_text();
+
+        stream_surface.set_fill(Some(Fill {
+            paint: paint.clone(),
+            ..Default::default()
+        }));
+        stream_surface.draw_text(
+            Point::from_xy(5.0, 15.0),
+            font,
+            10.0,
+            "Foo",
+            false,
+            TextDirection::Auto,
+        );
+
+        stream_surface.end_variable_text();
+        stream_surface.finish();
+
+        stream_builder.finish()
+    };
+
+    surface.finish();
+
+    let mut combobox_field = FormField::combobox("combobox_field".to_string());
+    combobox_field.set_alt_name("A combobox field".to_string());
+    combobox_field.set_mapping_name("combo1".to_string());
+    combobox_field.set_value("foo".to_string());
+    combobox_field.set_appearance(variable_appearance(paint));
+    combobox_field.set_edit(true);
+    combobox_field.set_options(vec![
+        ChoiceOption::new("foo".to_string(), Some("Foo".to_string())),
+        ChoiceOption::new("bar".to_string(), None),
+    ]);
+
+    let combobox_widget =
+        combobox_field.new_widget(Rect::from_xywh(50.0, 0.0, 40.0, 20.0).unwrap(), appearance);
+
+    page.add_widget_annotation(&mut combobox_field, combobox_widget.into());
+
+    page.finish();
+
+    d.set_field_tree(FieldTree {
+        fields: vec![combobox_field.into()],
+    });
+}
+
+#[snapshot(document)]
+fn forms_listbox(d: &mut Document) {
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+
+    let font_data = LIBERTINUS_SERIF.clone();
+    let font = Font::new(font_data, 0).unwrap();
+    let mut surface = page.surface();
+
+    let paint: Paint = rgb::Color::new(255, 0, 0).into();
+    let appearance = {
+        let mut stream_builder = surface.stream_builder();
+        let mut stream_surface = stream_builder.surface();
+        stream_surface.start_variable_text();
+
+        stream_surface.set_fill(Some(Fill {
+            paint: paint.clone(),
+            ..Default::default()
+        }));
+        stream_surface.draw_text(
+            Point::from_xy(5.0, 10.0),
+            font.clone(),
+            10.0,
+            "Foo",
+            false,
+            TextDirection::Auto,
+        );
+        stream_surface.draw_text(
+            Point::from_xy(5.0, 20.0),
+            font,
+            10.0,
+            "bar",
+            false,
+            TextDirection::Auto,
+        );
+
+        stream_surface.end_variable_text();
+        stream_surface.finish();
+
+        stream_builder.finish()
+    };
+
+    surface.finish();
+
+    let mut listbox_field = FormField::listbox("listbox_field".to_string());
+    listbox_field.set_alt_name("A listbox field".to_string());
+    listbox_field.set_mapping_name("list1".to_string());
+    listbox_field.set_value(vec!["foo".to_string()]);
+    listbox_field.set_appearance(variable_appearance(paint));
+    listbox_field.set_multiple_options(true);
+    listbox_field.set_options(vec![
+        ChoiceOption::new("foo".to_string(), Some("Foo".to_string())),
+        ChoiceOption::new("bar".to_string(), None),
+    ]);
+
+    let listbox_widget =
+        listbox_field.new_widget(Rect::from_xywh(50.0, 0.0, 40.0, 40.0).unwrap(), appearance);
+
+    page.add_widget_annotation(&mut listbox_field, listbox_widget.into());
+
+    page.finish();
+
+    d.set_field_tree(FieldTree {
+        fields: vec![listbox_field.into()],
+    });
+}
+
+#[snapshot(document)]
 fn forms_reset_action(d: &mut Document) {
     let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
 
@@ -176,4 +361,13 @@ fn forms_reset_action(d: &mut Document) {
             reset_button_2.into(),
         ],
     });
+}
+
+fn variable_appearance(paint: Paint) -> VariableAppearance {
+    VariableAppearance {
+        font: FormFont::Standard(StandardFont::TimesRoman),
+        font_size: 10.0,
+        paint: Some(paint),
+        opacity: NormalizedF32::new(0.5).unwrap(),
+    }
 }

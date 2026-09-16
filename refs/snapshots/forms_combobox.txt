@@ -1,0 +1,295 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [13 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Fields [4 0 R]
+  /DR 8 0 R
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Annot
+  /Subtype /Widget
+  /Rect [50 180 90 200]
+  /F 4
+  /AP <<
+    /N 18 0 R
+  >>
+  /Parent 4 0 R
+  /StructParent 0
+>>
+endobj
+
+4 0 obj
+<<
+  /T (combobox_field)
+  /Ff 393216
+  /TU (A combobox field)
+  /TM (combo1)
+  /FT /Ch
+  /V (foo)
+  /DV null
+  /Opt [[(foo) (Foo)] (bar)]
+  /DA (/ff0 10 Tf\n/fg0 gs\n0.39215687 g)
+  /Kids [3 0 R]
+>>
+endobj
+
+5 0 obj
+<<
+  /Type /ExtGState
+  /ca 0.5
+>>
+endobj
+
+6 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /Font <<
+    /f0 9 0 R
+  >>
+>>
+endobj
+
+7 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+8 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /ExtGState <<
+    /fg0 5 0 R
+  >>
+  /Font <<
+    /ff0 12 0 R
+  >>
+>>
+endobj
+
+9 0 obj
+<<
+  /Type /Font
+  /Subtype /Type0
+  /BaseFont /TKVAHB+LibertinusSerif-Regular-Identity-H
+  /Encoding /Identity-H
+  /DescendantFonts [10 0 R]
+  /ToUnicode 15 0 R
+>>
+endobj
+
+10 0 obj
+<<
+  /Type /Font
+  /Subtype /CIDFontType0
+  /BaseFont /TKVAHB+LibertinusSerif-Regular
+  /CIDSystemInfo <<
+    /Registry (Adobe)
+    /Ordering (Identity)
+    /Supplement 0
+  >>
+  /FontDescriptor 11 0 R
+  /DW 0
+  /W [0 0 500 1 1 485 2 2 504]
+>>
+endobj
+
+11 0 obj
+<<
+  /Type /FontDescriptor
+  /FontName /TKVAHB+LibertinusSerif-Regular
+  /Flags 131078
+  /FontBBox [0 -10 500 698]
+  /ItalicAngle 0
+  /Ascent 894
+  /Descent -246
+  /CapHeight 658
+  /StemV 95.4
+  /CIDSet 14 0 R
+  /FontFile3 16 0 R
+>>
+endobj
+
+12 0 obj
+<<
+  /Type /Font
+  /Subtype /Type1
+  /BaseFont /Times-Roman
+>>
+endobj
+
+13 0 obj
+<<
+  /Type /Page
+  /Resources 7 0 R
+  /MediaBox [0 0 200 200]
+  /Tabs /S
+  /Parent 1 0 R
+  /Contents 17 0 R
+  /Annots [3 0 R]
+>>
+endobj
+
+14 0 obj
+<<
+  /Length 18
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C7B000000E100E1
+endstream
+endobj
+
+15 0 obj
+<<
+  /Length 633
+  /Type /CMap
+  /WMode 0
+>>
+stream
+%!PS-Adobe-3.0 Resource-CMap
+%%DocumentNeededResources: procset CIDInit
+%%IncludeResource: procset CIDInit
+%%BeginResource: CMap Custom
+%%Title: (Custom Adobe Identity 0)
+%%Version: 1
+%%EndComments
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo 3 dict dup begin
+    /Registry (Adobe) def
+    /Ordering (Identity) def
+    /Supplement 0 def
+end def
+/CMapName /Custom def
+/CMapVersion 1 def
+/CMapType 0 def
+/WMode 0 def
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+2 beginbfchar
+<0001> <0046>
+<0002> <006F>
+endbfchar
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+%%EndResource
+%%EOF
+endstream
+endobj
+
+16 0 obj
+<<
+  /Length 1198
+  /Filter [/ASCIIHexDecode /FlateDecode]
+  /Subtype /CIDFontType0C
+>>
+stream
+789C458F6D4813711CC7FFD7B9DB9AE7A4CD03D9E66DD884DE2836227C9320A1649994
+CD1792853ACF6D254ECEDB96A3070A6E5CBB73795BDB7CD1C32A8582368906EE85B387
+57512FA4373D2C08174565EF7AE07F768BB52BC1DF8BCFEFF9C7EF8B80AA2A8020487D
+8F6784A219CF846FEA18457BC69AFB28976F7C98567A5D924932F3382935E080D4020B
+CFFF27AE367F3E275F35D79B7E6FA81A0000F9DA0A11ED8E0ACB65BC51297DC76D8A5B
+C79B008A2098EE50C7A87784EA1EA526180F33BDDF3B394D7B5C6EC6BA15D95B77DB9B
+EDADF63D56879BB26EBD653D427B4F514EC6DAE163DC5E7AAA05806D0001C885A4D431
+773D09EBE299B97B714CBE9450935A3451C6B7F378F5A2B6505D88E235D20A8156862B
+862A8AEA049E171401CA6FBB143CD503543977189491DE7E3E2F7D5D412AB4E551BE4A
+E2367A4B1CF6EE8F9980ED300ADBE5A8AA84497942896425834118FDD7539566D5F220
+7C44C8ED5054C12F98AEEB861FBE7DB01AB813808E875702FA9F6B86025C84AF89B508
+73326211D9142F8A1AC37A783E7C376D4C0B0BC2026928B0A29F67598D83E3CEEF35B5
+C003D893647C89CC61BFE69D5DB72CC9C44C246631BC0A65CF7EBB1CD3CC8405AEB2C3
+054361DA24C7B0D37D82E0B4B02CEF1759CD4BEE5AA8CD586A52B705439D1CB959CD08
+7921975B0E67709B28F22956D4744682B3EF8DF0845A37703123D566906C11468A6816
+0E134DABB20A36BE58BE7D3F4DE6966E3E7F66FCD1076BE4E6EEFEC9A131D23574E668
+8F110EC0E344F1F13ED926EB0F8E0FEEF440FD9B0FA98F9F2CBABF262CF990
+endstream
+endobj
+
+17 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+18 0 obj
+<<
+  /Length 112
+  /Type /XObject
+  /Subtype /Form
+  /Resources 6 0 R
+  /BBox [0 0 40 20]
+  /Matrix [1 0 0 -1 0 20]
+>>
+stream
+/Tx BMC
+q
+0.39215687 g
+BT
+0 Tr
+/f0 10 Tf
+1 0 0 -1 5 15 Tm
+[(\000\001\000\002) -6.9999695 (\000\002)] TJ
+ET
+Q
+EMC
+endstream
+endobj
+
+19 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /AcroForm 2 0 R
+>>
+endobj
+
+xref
+0 20
+0000000000 65535 f
+0000000016 00000 n
+0000000081 00000 n
+0000000133 00000 n
+0000000282 00000 n
+0000000498 00000 n
+0000000549 00000 n
+0000000641 00000 n
+0000000703 00000 n
+0000000833 00000 n
+0000001014 00000 n
+0000001274 00000 n
+0000001524 00000 n
+0000001604 00000 n
+0000001750 00000 n
+0000001863 00000 n
+0000002576 00000 n
+0000003897 00000 n
+0000003950 00000 n
+0000004216 00000 n
+trailer
+<<
+  /Size 20
+  /Root 19 0 R
+  /ID [(1YspnVpYMXlv2zvoFmI7bg==) (1YspnVpYMXlv2zvoFmI7bg==)]
+>>
+startxref
+4289
+%%EOF
