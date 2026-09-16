@@ -165,7 +165,7 @@ impl PdfSerializerContext {
 
         let mut entries = self.infos.into_iter().collect::<Vec<_>>();
         // Make sure we always process them in the same order.
-        entries.sort_by(|d1, d2| d1.1.counter.cmp(&d2.1.counter));
+        entries.sort_by_key(|(_, doc_info)| doc_info.counter);
 
         for (doc, info) in entries {
             for location in info.locations.iter() {
