@@ -5,9 +5,10 @@ use std::path::PathBuf;
 
 use krilla::action::ResetFormAction;
 use krilla::color::rgb;
+use krilla::form::kind::ChoiceOption;
 use krilla::form::variable_text::{FormFont, TextAlignment, VariableAppearance};
 use krilla::form::{FieldGroup, FieldTree, FormField};
-use krilla::geom::{PathBuilder, Point, Rect};
+use krilla::geom::{Path, PathBuilder, Point, Rect};
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
 use krilla::text::Font;
@@ -60,6 +61,44 @@ fn main() {
     text_field.set_text_alignment(TextAlignment::Center);
     // Pre-fill this field with the given value.
     text_field.set_value("testing".to_string());
+
+    // Create a combobox field.
+    let mut combobox_field = FormField::combobox("combobox".to_string());
+    // Set an alternative name, for accessibility purposes.
+    combobox_field.set_alt_name("A combobox field with 3 colors as options".to_string());
+    // Set the available options of this field, along with their display names
+    combobox_field.set_options(vec![
+        ChoiceOption::new("red".into(), Some("Red".into())),
+        ChoiceOption::new("green".into(), Some("Green".into())),
+        ChoiceOption::new("blue".into(), Some("Blue".into())),
+    ]);
+    // Allow users to add their own values instead.
+    combobox_field.set_edit(true);
+    // Set the appearance PDF processors should use when filling out this combobox field.
+    combobox_field.set_appearance(VariableAppearance {
+        font: FormFont::Standard(StandardFont::Helvetica),
+        font_size: 10.0,
+        ..Default::default()
+    });
+
+    // Create a listbox field.
+    let mut listbox_field = FormField::listbox("listbox".to_string());
+    // Set an alternative name, for accessibility purposes.
+    listbox_field.set_alt_name("A listbox field with 3 colors as options".to_string());
+    // Set the available options of this field, along with their display names
+    listbox_field.set_options(vec![
+        ChoiceOption::new("red".into(), Some("Red".into())),
+        ChoiceOption::new("green".into(), Some("Green".into())),
+        ChoiceOption::new("blue".into(), Some("Blue".into())),
+    ]);
+    // Allow users to select multiple options.
+    listbox_field.set_multiple_options(true);
+    // Set the appearance PDF processors should use when filling out this listbox field.
+    listbox_field.set_appearance(VariableAppearance {
+        font: FormFont::Standard(StandardFont::Helvetica),
+        font_size: 10.0,
+        ..Default::default()
+    });
 
     // Create a button that will reset the form when clicked.
     let mut reset_button = FormField::push_button("reset-button".to_string());
@@ -143,18 +182,14 @@ fn main() {
             paint: rgb::Color::black().into(),
             ..Default::default()
         }));
-        let mut pb = PathBuilder::new();
-        pb.push_rect(Rect::from_xywh(0.0, 0.0, 20.0, 20.0).unwrap());
-        surface.draw_path(&pb.finish().unwrap());
+        surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
 
         surface.set_fill(Some(Fill {
             paint: rgb::Color::black().into(),
             ..Default::default()
         }));
         surface.set_stroke(None);
-        let mut pb = PathBuilder::new();
-        pb.push_rect(Rect::from_xywh(3.0, 3.0, 14.0, 14.0).unwrap());
-        surface.draw_path(&pb.finish().unwrap());
+        surface.draw_path(&rect_to_path(3.0, 3.0, 14.0, 14.0));
 
         surface.finish();
         builder.finish()
@@ -170,9 +205,7 @@ fn main() {
             paint: rgb::Color::black().into(),
             ..Default::default()
         }));
-        let mut pb = PathBuilder::new();
-        pb.push_rect(Rect::from_xywh(0.0, 0.0, 20.0, 20.0).unwrap());
-        surface.draw_path(&pb.finish().unwrap());
+        surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
 
         surface.finish();
         builder.finish()
@@ -250,6 +283,92 @@ fn main() {
         text_appearance,
     );
 
+    // Create an appearance for the combobox field.
+    let combobox_appearance = {
+        let mut builder = surface.stream_builder();
+        let mut surface = builder.surface();
+
+        // Draw a border around the field.
+        surface.set_stroke(Some(Stroke {
+            paint: rgb::Color::black().into(),
+            ..Default::default()
+        }));
+        surface.draw_path(&rect_to_path(0.0, 0.0, 60.0, 20.0));
+
+        // Start the part of the appearance stream that represents the value of the field.
+        surface.start_variable_text();
+
+        // There is no value, so we can leave this empty instead.
+
+        // Do not forget to end the section!
+        surface.end_variable_text();
+
+        surface.finish();
+        builder.finish()
+    };
+
+    // Create a widget annotation (visual representation) for the combobox field.
+    let combobox_widget = combobox_field.new_widget(
+        Rect::from_xywh(120.0, 120.0, 60.0, 20.0).unwrap(),
+        combobox_appearance,
+    );
+
+    // Create an appearance for the listbox field.
+    // It is our responsibility to draw the available options.
+    let listbox_appearance = {
+        let mut builder = surface.stream_builder();
+        let mut surface = builder.surface();
+
+        // Draw a border around the field.
+        surface.set_stroke(Some(Stroke {
+            paint: rgb::Color::black().into(),
+            ..Default::default()
+        }));
+        surface.draw_path(&rect_to_path(0.0, 0.0, 60.0, 40.0));
+        surface.set_stroke(None);
+
+        // Start the part of the appearance stream that represents the value of the field.
+        surface.start_variable_text();
+
+        // Draw the options
+        surface.draw_text(
+            Point::from_xy(2.0, 10.0),
+            font.clone(),
+            8.0,
+            "Red",
+            false,
+            TextDirection::Auto,
+        );
+        surface.draw_text(
+            Point::from_xy(2.0, 20.0),
+            font.clone(),
+            8.0,
+            "Green",
+            false,
+            TextDirection::Auto,
+        );
+        surface.draw_text(
+            Point::from_xy(2.0, 30.0),
+            font.clone(),
+            8.0,
+            "Blue",
+            false,
+            TextDirection::Auto,
+        );
+
+        // Do not forget to end the section!
+        surface.end_variable_text();
+
+        surface.finish();
+        builder.finish()
+    };
+
+    // Create a widget annotation (visual representation) for the listbox field.
+    let listbox_widget = listbox_field.new_widget(
+        Rect::from_xywh(120.0, 150.0, 60.0, 40.0).unwrap(),
+        listbox_appearance,
+    );
+
     // Create an appearance for the reset push button.
     let button_appearance = {
         let mut builder = surface.stream_builder();
@@ -287,6 +406,8 @@ fn main() {
     page.add_widget_annotation(&mut radio_group, radio_option_1.into());
     page.add_widget_annotation(&mut radio_group, radio_option_2.into());
     page.add_widget_annotation(&mut text_field, text_widget.into());
+    page.add_widget_annotation(&mut combobox_field, combobox_widget.into());
+    page.add_widget_annotation(&mut listbox_field, listbox_widget.into());
     page.add_widget_annotation(&mut reset_button, reset_button_widget.into());
 
     // Finish the page.
@@ -298,6 +419,8 @@ fn main() {
             checkbox.into(),
             radio_group.into(),
             text_field.into(),
+            combobox_field.into(),
+            listbox_field.into(),
             // Fields can be grouped arbitrarily.
             FieldGroup {
                 name: "actions".to_string(),
@@ -314,4 +437,11 @@ fn main() {
 
     // Write the PDF to a file.
     std::fs::write(path, &pdf).unwrap();
+}
+
+// A simple convenience function that allow us to generate rectangle paths.
+fn rect_to_path(x: f32, y: f32, w: f32, h: f32) -> Path {
+    let mut builder = PathBuilder::new();
+    builder.push_rect(Rect::from_xywh(x, y, w, h).unwrap());
+    builder.finish().unwrap()
 }
