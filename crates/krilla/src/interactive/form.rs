@@ -31,8 +31,16 @@ pub(crate) struct AcroForm {
 }
 
 impl AcroForm {
-    pub(crate) fn prepare_for_serialization(&mut self, sc: &mut SerializeContext) {
-        self.field_tree.visit(sc, &mut self.rd_builder);
+    pub(crate) fn prepare_for_serialization(
+        &mut self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+    ) {
+        self.field_tree.visit(&mut VisitContext {
+            sc,
+            chunk_container,
+            rd_builder: &mut self.rd_builder,
+        });
     }
 
     pub(crate) fn serialize(
@@ -624,7 +632,7 @@ impl FormField<kind::Text> {
     /// Set the appearance characteristics the value of the field should have when drawn.
     /// This is not used by krilla, but by future PDF readers when changing the value of the field.
     pub fn set_appearance(&mut self, appearance: VariableAppearance) {
-        self.kind.variable_text.appearance = Some(appearance);
+        self.kind.variable_text.appearance = appearance;
     }
 
     /// Set the appearance characteristics the value of the field should have when drawn.
@@ -728,7 +736,7 @@ impl FormField<kind::ListBox> {
     /// Set the appearance characteristics the value of the field should have when drawn.
     /// This is not used by krilla, but by future PDF readers when changing the value of the field.
     pub fn set_appearance(&mut self, appearance: VariableAppearance) {
-        self.kind.variable_text.appearance = Some(appearance);
+        self.kind.variable_text.appearance = appearance;
     }
 
     /// Set the appearance characteristics the value of the field should have when drawn.
@@ -833,7 +841,7 @@ impl FormField<kind::ComboBox> {
     /// Set the appearance characteristics the value of the field should have when drawn.
     /// This is not used by krilla, but by future PDF readers when changing the value of the field.
     pub fn set_appearance(&mut self, appearance: VariableAppearance) {
-        self.kind.variable_text.appearance = Some(appearance);
+        self.kind.variable_text.appearance = appearance;
     }
 
     /// Set the appearance characteristics the value of the field should have when drawn.
@@ -1118,13 +1126,20 @@ pub mod variable_text {
     use pdf_writer::{types::Quadding, Buf};
 
     use crate::{
-        resource::ResourceDictionaryBuilder, serialize::SerializeContext, text::StandardFont,
+        chunk_container::ChunkContainer,
+        color::{Color, RegularColor},
+        graphics_state::ExtGState,
+        num::NormalizedF32,
+        paint::{InnerPaint, Paint},
+        resource::ResourceDictionaryBuilder,
+        serialize::{MaybeDeviceColorSpace, SerializeContext},
+        text::StandardFont,
         util::NameExt,
     };
 
     #[derive(Debug, Clone, Default)]
     pub(super) struct VariableText {
-        pub(super) appearance: Option<VariableAppearance>,
+        pub(super) appearance: VariableAppearance,
         pub(super) appearance_buf: Option<Buf>,
         pub(super) text_alignment: TextAlignment,
     }
@@ -1153,12 +1168,17 @@ pub mod variable_text {
         /// The font size of the text.
         /// If set to 0, the PDF processor should automatically size it to fit.
         pub font_size: f32,
+        /// The color of the text. Currently only solid colors are supported.
+        pub paint: Option<Paint>,
+        /// The opacity of the text.
+        pub opacity: NormalizedF32,
     }
 
     impl VariableAppearance {
         pub(super) fn serialize(
             &self,
             sc: &mut SerializeContext,
+            chunk_container: &mut ChunkContainer,
             rd_builder: &mut ResourceDictionaryBuilder,
         ) -> Buf {
             let identifier = match &self.font {
@@ -1174,7 +1194,65 @@ pub mod variable_text {
             let mut content = sc.new_content();
             content.set_font(font_name.to_pdf_name(), self.font_size);
 
+            if self.opacity != NormalizedF32::ONE {
+                let graphics_state = sc.register_resourceable(
+                    chunk_container,
+                    ExtGState::new().non_stroking_alpha(self.opacity),
+                );
+                let graphics_state = rd_builder.register_resource(graphics_state);
+                content.set_parameters(graphics_state.to_pdf_name());
+            }
+
+            if let Some(paint) = &self.paint {
+                match &paint.0 {
+                    InnerPaint::Color(color) => {
+                        let color_space = color.color_space(sc);
+                        let color_space = sc.register_colorspace(chunk_container, color_space);
+
+                        match color_space {
+                            MaybeDeviceColorSpace::DeviceGray
+                            | MaybeDeviceColorSpace::DeviceRgb
+                            | MaybeDeviceColorSpace::DeviceCMYK => match color {
+                                Color::Regular(RegularColor::Rgb(r)) => {
+                                    let comps = r.to_pdf_color();
+                                    content.set_fill_rgb(comps[0], comps[1], comps[2]);
+                                }
+                                Color::Regular(RegularColor::Luma(l)) => {
+                                    content.set_fill_gray(l.to_pdf_color());
+                                }
+                                Color::Regular(RegularColor::Cmyk(c)) => {
+                                    let comps = c.to_pdf_color();
+                                    content.set_fill_cmyk(comps[0], comps[1], comps[2], comps[3]);
+                                }
+                                Color::Special(_) => {
+                                    panic!("Device color space cannot be used with special colors")
+                                }
+                            },
+                            MaybeDeviceColorSpace::ColorSpace(color_space) => {
+                                let color_space_name = rd_builder.register_resource(color_space);
+                                content.set_fill_color_space(color_space_name.to_pdf_name());
+                                content.set_fill_color(color.to_pdf_color());
+                            }
+                        }
+                    }
+                    _ => {
+                        panic!("Only solid colors are supported on variable text");
+                    }
+                }
+            }
+
             content.finish()
+        }
+    }
+
+    impl Default for VariableAppearance {
+        fn default() -> Self {
+            Self {
+                font: FormFont::Standard(StandardFont::Helvetica),
+                font_size: 0.0,
+                paint: Default::default(),
+                opacity: NormalizedF32::ONE,
+            }
         }
     }
 
@@ -1215,61 +1293,67 @@ pub mod variable_text {
 // Visit all fields in a field tree
 // Used to pre-process variable text fields.
 trait Visit {
-    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder);
+    fn visit(&mut self, context: &mut VisitContext);
+}
+
+struct VisitContext<'a> {
+    sc: &'a mut SerializeContext,
+    chunk_container: &'a mut ChunkContainer,
+    rd_builder: &'a mut ResourceDictionaryBuilder,
 }
 
 impl Visit for FieldTree {
-    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
-        self.fields.visit(sc, rd_builder);
+    fn visit(&mut self, context: &mut VisitContext) {
+        self.fields.visit(context);
     }
 }
 
 impl Visit for Node {
-    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+    fn visit(&mut self, context: &mut VisitContext) {
         match self {
-            Node::Group(field_group) => field_group.visit(sc, rd_builder),
-            Node::Leaf(field_kind) => field_kind.visit(sc, rd_builder),
+            Node::Group(field_group) => field_group.visit(context),
+            Node::Leaf(field_kind) => field_kind.visit(context),
         }
     }
 }
 
 impl Visit for FieldGroup {
-    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
-        self.fields.visit(sc, rd_builder);
+    fn visit(&mut self, context: &mut VisitContext) {
+        self.fields.visit(context);
     }
 }
 
 impl Visit for FieldKind {
-    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+    fn visit(&mut self, context: &mut VisitContext) {
         #[allow(clippy::single_match)]
         match self {
-            FieldKind::Text(form_field) => form_field.kind.variable_text.visit(sc, rd_builder),
-            FieldKind::ListBox(form_field) => form_field.kind.variable_text.visit(sc, rd_builder),
-            FieldKind::ComboBox(form_field) => form_field.kind.variable_text.visit(sc, rd_builder),
+            FieldKind::Text(form_field) => form_field.kind.variable_text.visit(context),
+            FieldKind::ListBox(form_field) => form_field.kind.variable_text.visit(context),
+            FieldKind::ComboBox(form_field) => form_field.kind.variable_text.visit(context),
             _ => {}
         }
     }
 }
 
 impl Visit for VariableText {
-    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
-        if let Some(ap) = &self.appearance {
-            let buf = ap.serialize(sc, rd_builder);
-            self.appearance_buf = Some(buf);
-        }
+    fn visit(&mut self, context: &mut VisitContext) {
+        let buf =
+            self.appearance
+                .serialize(context.sc, context.chunk_container, context.rd_builder);
+        self.appearance_buf = Some(buf);
     }
 }
 
 impl<T: Visit> Visit for Option<T> {
-    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
+    fn visit(&mut self, context: &mut VisitContext) {
         if let Some(t) = self {
-            t.visit(sc, rd_builder);
+            t.visit(context);
         }
     }
 }
 
 impl<T: Visit> Visit for Vec<T> {
-    fn visit(&mut self, sc: &mut SerializeContext, rd_builder: &mut ResourceDictionaryBuilder) {
-        self.iter_mut().for_each(|item| item.visit(sc, rd_builder));
+    fn visit(&mut self, context: &mut VisitContext) {
+        self.iter_mut().for_each(|item| item.visit(context));
     }
 }

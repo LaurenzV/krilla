@@ -828,7 +828,7 @@ impl SerializeContext {
     fn serialize_forms(&mut self, chunk_container: &mut ChunkContainer) {
         if self.global_objects.forms.field_tree.is_some() {
             let mut acroform = self.global_objects.forms.take();
-            acroform.prepare_for_serialization(self);
+            acroform.prepare_for_serialization(self, chunk_container);
             let acroform_ref = self.new_ref();
             acroform.serialize(self, chunk_container, acroform_ref);
         }
