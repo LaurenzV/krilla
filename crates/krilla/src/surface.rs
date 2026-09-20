@@ -108,7 +108,7 @@ impl<'a> Surface<'a> {
     /// Set the fill that should be used for the next drawing operation.
     ///
     /// You can set it to `None` if you want to disable filling (though
-    /// if there is no active stroke, than krilla will choose to fill
+    /// if there is no active stroke, then krilla will choose to fill
     /// with black by default).
     pub fn set_fill(&mut self, fill: Option<Fill>) {
         self.fill = fill;
