@@ -15,7 +15,7 @@ use crate::{
     configure::{PdfVersion, ValidationError},
     form::{
         kind::{Checkbox, ChoiceOption, Radio},
-        variable_text::{TextAlignment, VariableAppearance, VariableText},
+        variable_text::{TextAlignment, VariableAppearance, VariableAppearanceData, VariableText},
     },
     geom::Rect,
     resource::ResourceDictionaryBuilder,
@@ -632,7 +632,7 @@ impl FormField<kind::Text> {
     /// Set the appearance characteristics the value of the field should have when drawn.
     /// This is not used by krilla, but by future PDF readers when changing the value of the field.
     pub fn set_appearance(&mut self, appearance: VariableAppearance) {
-        self.kind.variable_text.appearance = appearance;
+        self.kind.variable_text.appearance = VariableAppearanceData::Value(appearance);
     }
 
     /// Set the appearance characteristics the value of the field should have when drawn.
@@ -736,7 +736,7 @@ impl FormField<kind::ListBox> {
     /// Set the appearance characteristics the value of the field should have when drawn.
     /// This is not used by krilla, but by future PDF readers when changing the value of the field.
     pub fn set_appearance(&mut self, appearance: VariableAppearance) {
-        self.kind.variable_text.appearance = appearance;
+        self.kind.variable_text.appearance = VariableAppearanceData::Value(appearance);
     }
 
     /// Set the appearance characteristics the value of the field should have when drawn.
@@ -841,7 +841,7 @@ impl FormField<kind::ComboBox> {
     /// Set the appearance characteristics the value of the field should have when drawn.
     /// This is not used by krilla, but by future PDF readers when changing the value of the field.
     pub fn set_appearance(&mut self, appearance: VariableAppearance) {
-        self.kind.variable_text.appearance = appearance;
+        self.kind.variable_text.appearance = VariableAppearanceData::Value(appearance);
     }
 
     /// Set the appearance characteristics the value of the field should have when drawn.
@@ -1139,8 +1139,7 @@ pub mod variable_text {
 
     #[derive(Debug, Clone, Default)]
     pub(super) struct VariableText {
-        pub(super) appearance: VariableAppearance,
-        pub(super) appearance_buf: Option<Buf>,
+        pub(super) appearance: VariableAppearanceData,
         pub(super) text_alignment: TextAlignment,
     }
 
@@ -1150,12 +1149,32 @@ pub mod variable_text {
                 field.vartext_quadding(self.text_alignment.into());
             }
 
-            let buf = self
-                .appearance_buf
-                .as_ref()
-                .expect("text field must have its default appearance field set");
+            let buf = self.appearance.serialized().expect(
+                "variable text field must have its default appearance serialized separately first",
+            );
             let str = pdf_writer::Str(buf);
             field.vartext_default_appearance(str);
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    pub(super) enum VariableAppearanceData {
+        Value(VariableAppearance),
+        Serialized(Buf),
+    }
+
+    impl VariableAppearanceData {
+        fn serialized(&self) -> Option<&[u8]> {
+            match self {
+                VariableAppearanceData::Value(_) => None,
+                VariableAppearanceData::Serialized(buf) => Some(buf),
+            }
+        }
+    }
+
+    impl Default for VariableAppearanceData {
+        fn default() -> Self {
+            Self::Value(Default::default())
         }
     }
 
@@ -1337,10 +1356,10 @@ impl Visit for FieldKind {
 
 impl Visit for VariableText {
     fn visit(&mut self, context: &mut VisitContext) {
-        let buf =
-            self.appearance
-                .serialize(context.sc, context.chunk_container, context.rd_builder);
-        self.appearance_buf = Some(buf);
+        if let VariableAppearanceData::Value(appearance) = &self.appearance {
+            let buf = appearance.serialize(context.sc, context.chunk_container, context.rd_builder);
+            self.appearance = VariableAppearanceData::Serialized(buf);
+        }
     }
 }
 
