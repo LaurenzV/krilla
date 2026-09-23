@@ -110,7 +110,7 @@ impl Cacheable for Mask {
     ) {
         let x_object = sc.register_cacheable(
             chunk_container,
-            XObject::new(self.stream, false, true, self.custom_bbox, None),
+            XObject::new(self.stream, false, true, self.custom_bbox),
         );
 
         let chunk = &mut chunk_container.non_stream.masks;

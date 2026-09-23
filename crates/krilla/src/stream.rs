@@ -112,6 +112,21 @@ impl<'a> StreamBuilder<'a> {
 
     /// Get the surface of the stream builder.
     pub fn surface(&mut self) -> Surface<'_> {
+        let content_builder = ContentBuilder::new(Transform::identity(), true, self.sc);
+        self.surface_with_content_builder(content_builder)
+    }
+
+    /// Get the surface of the stream builder.
+    /// Unlike [`StreamBuilder::surface`], the returned surface has its y-axis inverted similarly to
+    /// a [page surface](crate::page::Page::surface).
+    pub fn surface_with_bbox(&mut self, bbox: Rect) -> Surface<'_> {
+        let transform = Transform::from_row(1.0, 0.0, 0.0, -1.0, 0.0, bbox.height());
+        let mut content_builder = ContentBuilder::new(transform, false, self.sc);
+        content_builder.expand_bbox(bbox);
+        self.surface_with_content_builder(content_builder)
+    }
+
+    fn surface_with_content_builder(&mut self, content_builder: ContentBuilder) -> Surface<'_> {
         // Stream builders cannot have any tags since we always pass a dummy
         // identifier. Only main page content streams can have one.
         let finish_fn = Box::new(|stream, _| {
@@ -121,7 +136,7 @@ impl<'a> StreamBuilder<'a> {
         Surface::new(
             self.sc,
             self.chunk_container,
-            ContentBuilder::new(Transform::identity(), true, self.sc),
+            content_builder,
             None,
             finish_fn,
         )

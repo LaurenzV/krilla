@@ -5,7 +5,7 @@ use pdf_writer::{Finish, Name, Ref};
 
 use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
-use crate::geom::{Rect, Transform};
+use crate::geom::Rect;
 use crate::graphics::color::{rgb, DEVICE_RGB};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
@@ -13,13 +13,12 @@ use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::{NameExt, Prehashed};
 
-#[derive(Debug, Hash, PartialEq)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
     stream: Stream,
     isolated: bool,
     transparency_group_color_space: bool,
     custom_bbox: Option<Rect>,
-    transform: Option<Transform>,
 }
 
 #[derive(Debug, Hash, Clone, Eq, PartialEq)]
@@ -31,7 +30,6 @@ impl XObject {
         isolated: bool,
         mut transparency_group_color_space: bool,
         custom_bbox: Option<Rect>,
-        transform: Option<Transform>,
     ) -> Self {
         // In case a mask was invoked in the content stream, we _always_ create
         // a new transparency group. Please see <https://github.com/typst/typst/issues/5509>.
@@ -50,7 +48,6 @@ impl XObject {
             isolated,
             transparency_group_color_space,
             custom_bbox,
-            transform,
         })))
     }
 
@@ -141,10 +138,6 @@ impl Cacheable for XObject {
 
             transparency.finish();
             group.finish();
-        }
-
-        if let Some(transform) = self.0.transform {
-            x_object.matrix(transform.to_pdf_transform());
         }
 
         x_object.finish();

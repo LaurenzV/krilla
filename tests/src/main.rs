@@ -18,7 +18,7 @@ use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{cmyk, luma, rgb};
 use krilla::configure::{Accessibility, Archival, Configuration, ConfigurationBuilder, PdfVersion};
 use krilla::error::KrillaError;
-use krilla::geom::{Path, PathBuilder, Point, Transform};
+use krilla::geom::{Path, PathBuilder, Point, Rect, Transform};
 use krilla::icc::ICCProfile;
 use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
 use krilla::mask::{Mask, MaskType};
@@ -330,6 +330,10 @@ pub fn rect_to_path(x1: f32, y1: f32, x2: f32, y2: f32) -> Path {
     builder.close();
 
     builder.finish().unwrap()
+}
+
+fn wh_to_rect(w: f32, h: f32) -> Rect {
+    Rect::from_xywh(0.0, 0.0, w, h).unwrap()
 }
 
 pub fn load_png_image(name: &str) -> Image {
@@ -804,7 +808,7 @@ pub fn stops_with_3_luma() -> Vec<Stop> {
 
 pub fn youtube_link(x: f32, y: f32, w: f32, h: f32) -> Annotation {
     LinkAnnotation::new(
-        krilla::geom::Rect::from_xywh(x, y, w, h).unwrap(),
+        Rect::from_xywh(x, y, w, h).unwrap(),
         Target::Action(LinkAction::new("https://www.youtube.com".to_string()).into()),
     )
     .into()
@@ -826,7 +830,8 @@ pub fn basic_pattern_stream(mut stream_builder: StreamBuilder) -> Stream {
 }
 
 pub fn square_stream(mut stream_builder: StreamBuilder, fill: Fill) -> Stream {
-    let mut stream_surface = stream_builder.surface();
+    let bbox = wh_to_rect(10.0, 10.0);
+    let mut stream_surface = stream_builder.surface_with_bbox(bbox);
     stream_surface.set_fill(Some(fill));
     stream_surface.draw_path(&rect_to_path(0.0, 0.0, 10.0, 10.0));
     stream_surface.finish();

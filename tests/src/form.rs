@@ -13,7 +13,9 @@ use krilla::text::{Font, StandardFont, TextDirection};
 use krilla::Document;
 use krilla_macros::snapshot;
 
-use crate::{blue_fill, green_fill, rect_to_path, red_fill, square_stream, LIBERTINUS_SERIF};
+use crate::{
+    blue_fill, green_fill, rect_to_path, red_fill, square_stream, wh_to_rect, LIBERTINUS_SERIF,
+};
 
 #[snapshot(document)]
 fn forms_push_button(d: &mut Document) {
@@ -129,7 +131,7 @@ fn forms_text_field(d: &mut Document) {
     let paint: Paint = cmyk::Color::new(100, 150, 50, 15).into();
     let appearance = {
         let mut stream_builder = surface.stream_builder();
-        let mut stream_surface = stream_builder.surface();
+        let mut stream_surface = stream_builder.surface_with_bbox(wh_to_rect(40.0, 20.0));
 
         stream_surface.start_variable_text();
 
@@ -186,7 +188,7 @@ fn forms_combobox(d: &mut Document) {
     let paint: Paint = luma::Color::new(100).into();
     let appearance = {
         let mut stream_builder = surface.stream_builder();
-        let mut stream_surface = stream_builder.surface();
+        let mut stream_surface = stream_builder.surface_with_bbox(wh_to_rect(40.0, 20.0));
         stream_surface.start_variable_text();
 
         stream_surface.set_fill(Some(Fill {
@@ -244,7 +246,7 @@ fn forms_listbox(d: &mut Document) {
     let paint: Paint = rgb::Color::new(255, 0, 0).into();
     let appearance = {
         let mut stream_builder = surface.stream_builder();
-        let mut stream_surface = stream_builder.surface();
+        let mut stream_surface = stream_builder.surface_with_bbox(wh_to_rect(40.0, 40.0));
         stream_surface.start_variable_text();
 
         stream_surface.set_fill(Some(Fill {

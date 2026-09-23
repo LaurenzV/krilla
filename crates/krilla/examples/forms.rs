@@ -122,7 +122,7 @@ fn main() {
     // Create an appearance for when a checkbox is checked.
     let checkbox_on_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(20.0, 20.0));
 
         surface.draw_text(
             Point::from_xy(0.0, 12.0),
@@ -140,7 +140,7 @@ fn main() {
     // Create an appearance for when a checkbox is unchecked.
     let checkbox_off_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(20.0, 20.0));
 
         surface.draw_text(
             Point::from_xy(0.0, 12.0),
@@ -175,7 +175,7 @@ fn main() {
     // Create an appearance for when a radio button is selected.
     let radio_on_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(20.0, 20.0));
 
         surface.set_fill(None);
         surface.set_stroke(Some(Stroke {
@@ -198,7 +198,7 @@ fn main() {
     // Create an appearance for when a radio button is unselected.
     let radio_off_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(20.0, 20.0));
 
         surface.set_fill(None);
         surface.set_stroke(Some(Stroke {
@@ -251,7 +251,7 @@ fn main() {
     // It is our responsibility to ensure the styles and the value match those of the field.
     let text_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(40.0, 20.0));
 
         // Start the part of the appearance stream that represents the value of the field.
         surface.start_variable_text();
@@ -286,7 +286,7 @@ fn main() {
     // Create an appearance for the combobox field.
     let combobox_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(60.0, 20.0));
 
         // Draw a border around the field.
         surface.set_stroke(Some(Stroke {
@@ -317,7 +317,7 @@ fn main() {
     // It is our responsibility to draw the available options.
     let listbox_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(60.0, 40.0));
 
         // Draw a border around the field.
         surface.set_stroke(Some(Stroke {
@@ -372,7 +372,7 @@ fn main() {
     // Create an appearance for the reset push button.
     let button_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(40.0, 20.0));
 
         surface.draw_text(
             Point::from_xy(0.0, 12.0),
@@ -444,4 +444,9 @@ fn rect_to_path(x: f32, y: f32, w: f32, h: f32) -> Path {
     let mut builder = PathBuilder::new();
     builder.push_rect(Rect::from_xywh(x, y, w, h).unwrap());
     builder.finish().unwrap()
+}
+
+// A simple convenience function that creates an origin-anchored rect with the given dimensions.
+fn wh_to_rect(w: f32, h: f32) -> Rect {
+    Rect::from_xywh(0.0, 0.0, w, h).unwrap()
 }
