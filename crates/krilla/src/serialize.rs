@@ -796,6 +796,9 @@ impl SerializeContext {
         for font in StandardFont::ALL {
             let identifier = FontIdentifier::Standard(font);
             if let Some(&ref_) = self.cached_mappings.get(&identifier.sip_hash()) {
+                if self.serialize_settings.pdf_version() >= PdfVersion::Pdf20 {
+                    panic!("cannot use standard fonts in PDF 2.0");
+                }
                 chunk_container
                     .non_stream
                     .fonts
