@@ -1127,12 +1127,12 @@ pub mod variable_text {
 
     use crate::{
         chunk_container::ChunkContainer,
-        color::{Color, RegularColor},
+        content::{set_solid_fill, ContentColorSpace},
         graphics_state::ExtGState,
         num::NormalizedF32,
         paint::{InnerPaint, Paint},
         resource::ResourceDictionaryBuilder,
-        serialize::{MaybeDeviceColorSpace, SerializeContext},
+        serialize::SerializeContext,
         text::StandardFont,
         util::NameExt,
     };
@@ -1226,33 +1226,13 @@ pub mod variable_text {
                 match &paint.0 {
                     InnerPaint::Color(color) => {
                         let color_space = color.color_space(sc);
-                        let color_space = sc.register_colorspace(chunk_container, color_space);
-
-                        match color_space {
-                            MaybeDeviceColorSpace::DeviceGray
-                            | MaybeDeviceColorSpace::DeviceRgb
-                            | MaybeDeviceColorSpace::DeviceCMYK => match color {
-                                Color::Regular(RegularColor::Rgb(r)) => {
-                                    let comps = r.to_pdf_color();
-                                    content.set_fill_rgb(comps[0], comps[1], comps[2]);
-                                }
-                                Color::Regular(RegularColor::Luma(l)) => {
-                                    content.set_fill_gray(l.to_pdf_color());
-                                }
-                                Color::Regular(RegularColor::Cmyk(c)) => {
-                                    let comps = c.to_pdf_color();
-                                    content.set_fill_cmyk(comps[0], comps[1], comps[2], comps[3]);
-                                }
-                                Color::Special(_) => {
-                                    panic!("Device color space cannot be used with special colors")
-                                }
-                            },
-                            MaybeDeviceColorSpace::ColorSpace(color_space) => {
-                                let color_space_name = rd_builder.register_resource(color_space);
-                                content.set_fill_color_space(color_space_name.to_pdf_name());
-                                content.set_fill_color(color.to_pdf_color());
-                            }
-                        }
+                        let content_color_space = ContentColorSpace::from_color_space(
+                            sc,
+                            chunk_container,
+                            rd_builder,
+                            color_space,
+                        );
+                        set_solid_fill(&mut content, content_color_space, color);
                     }
                     _ => {
                         panic!("Only solid colors are supported on variable text");
