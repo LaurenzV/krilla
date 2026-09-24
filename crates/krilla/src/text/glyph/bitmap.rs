@@ -1,4 +1,4 @@
-use skrifa::bitmap::{BitmapData, BitmapFormat, BitmapGlyph, Origin};
+use skrifa::bitmap::{BitmapData, BitmapGlyph, Origin};
 use skrifa::MetadataProvider;
 
 use crate::geom::{Size, Transform};
@@ -36,37 +36,23 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
 
             // Adapted from vello.
             let scale_factor = upem / (bitmap_glyph.ppem_y);
-            let mut transform =
-                Transform::from_translate(-bitmap_glyph.bearing_x, bitmap_glyph.bearing_y)
-                    .pre_concat(Transform::from_scale(scale_factor, scale_factor))
-                    .pre_concat(Transform::from_translate(
-                        -bitmap_glyph.inner_bearing_x,
-                        -bitmap_glyph.inner_bearing_y,
-                    ));
+            let outer_bearing = if font.is_apple_color_emoji() {
+                (0.0, upem / 8.0)
+            } else {
+                (bitmap_glyph.bearing_x, -bitmap_glyph.bearing_y)
+            };
+            let mut transform = Transform::from_translate(outer_bearing.0, outer_bearing.1)
+                .pre_concat(Transform::from_scale(scale_factor, scale_factor))
+                .pre_concat(Transform::from_translate(
+                    bitmap_glyph.inner_bearing_x,
+                    -bitmap_glyph.inner_bearing_y,
+                ));
 
             transform = match bitmap_glyph.placement_origin {
                 Origin::TopLeft => transform,
                 Origin::BottomLeft => {
                     transform.pre_concat(Transform::from_translate(0.0, -(image.size().1 as f32)))
                 }
-            };
-
-            transform = if let Some(format) = bitmap_strikes.format() {
-                if format == BitmapFormat::Sbix {
-                    // For unknown reasons, using Apple Color Emoji will lead to a vertical shift on MacOS, but this shift
-                    // doesn't seem to be coming from the font and most likely is somehow hardcoded. On Windows,
-                    // this shift will not be applied. However, if this shift is not applied the emojis are a bit
-                    // too high up when being together with other text, so we try to imitate this.
-                    // See also https://github.com/harfbuzz/harfbuzz/issues/2679#issuecomment-1345595425
-                    // We approximate this vertical shift that seems to be produced by it.
-                    // This value seems to be pretty close to what is happening on MacOS.
-                    transform
-                        .pre_concat(Transform::from_translate(0.0, 0.128 * upem / scale_factor))
-                } else {
-                    transform
-                }
-            } else {
-                transform
             };
 
             surface.push_transform(&transform);
