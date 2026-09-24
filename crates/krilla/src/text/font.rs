@@ -5,6 +5,8 @@ use std::sync::Arc;
 
 #[cfg(feature = "simple-text")]
 use harfrust::{Shaper, ShaperData, ShaperInstance};
+#[cfg(feature = "raster-images")]
+use skrifa::bitmap::BitmapFormat;
 use skrifa::instance::{Location, LocationRef, Size};
 use skrifa::metrics::GlyphMetrics;
 use skrifa::raw::types::NameId;
@@ -104,6 +106,11 @@ impl Font {
 
     pub(crate) fn postscript_name(&self) -> Option<&str> {
         self.0.font_info.postscript_name.as_deref()
+    }
+
+    #[cfg(feature = "raster-images")]
+    pub(crate) fn is_apple_color_emoji(&self) -> bool {
+        self.0.font_info.is_apple_color_emoji
     }
 
     /// Return the index of the font.
@@ -260,6 +267,8 @@ pub(crate) struct FontInfo {
     global_bbox: Rect,
     num_glyphs: u32,
     postscript_name: Option<String>,
+    #[cfg(feature = "raster-images")]
+    is_apple_color_emoji: bool,
     ascent: FiniteF32,
     descent: FiniteF32,
     cap_height: Option<FiniteF32>,
@@ -345,6 +354,11 @@ impl FontInfo {
                 None
             }
         };
+        #[cfg(feature = "raster-images")]
+        let is_apple_color_emoji = font_ref.bitmap_strikes().format() == Some(BitmapFormat::Sbix)
+            && font_ref
+                .localized_strings(skrifa::string::StringId::POSTSCRIPT_NAME)
+                .any(|name| name.chars().eq("AppleColorEmoji".chars()));
 
         let has_glyf = font_ref.glyf().is_ok();
         let has_cff = font_ref.cff().is_ok();
@@ -362,6 +376,8 @@ impl FontInfo {
             num_glyphs,
             units_per_em,
             postscript_name,
+            #[cfg(feature = "raster-images")]
+            is_apple_color_emoji,
             ascent,
             cap_height,
             has_glyf,
