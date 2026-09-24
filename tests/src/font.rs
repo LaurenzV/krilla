@@ -1,8 +1,51 @@
 mod bitmap {
+    use krilla::color::rgb;
+    use krilla::geom::{PathBuilder, Point, Rect};
+    use krilla::num::NormalizedF32;
+    use krilla::page::PageSettings;
+    use krilla::paint::Fill;
+    use krilla::text::{Font, GlyphId, KrillaGlyph};
     use krilla::Document;
     use krilla_macros::visreg;
 
-    use crate::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
+    use crate::{all_glyphs_to_pdf, Data, FONT_PATH, NOTO_COLOR_EMOJI_CBDT};
+
+    #[visreg(document)]
+    fn font_sbix_grid(document: &mut Document) {
+        let font_data: Data = std::fs::read(FONT_PATH.join("sbix.ttf")).unwrap().into();
+        let font = Font::new(font_data, 0).unwrap();
+        let mut page = document.start_page_with(PageSettings::from_wh(288.0, 240.0).unwrap());
+        let mut surface = page.surface();
+
+        let mut grid = PathBuilder::new();
+        for column in 0..=6 {
+            let x = (column as f32 * 48.0).min(287.0);
+            grid.push_rect(Rect::from_xywh(x, 0.0, 1.0, 240.0).unwrap());
+        }
+        for row in 0..=5 {
+            let y = (row as f32 * 48.0).min(239.0);
+            grid.push_rect(Rect::from_xywh(0.0, y, 288.0, 1.0).unwrap());
+        }
+        surface.set_fill(Some(Fill {
+            paint: rgb::Color::new(219, 226, 237).into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        }));
+        surface.draw_path(&grid.finish().unwrap());
+
+        surface.set_fill(Some(Fill::default()));
+        for i in 0..27 {
+            let glyph = KrillaGlyph::new(GlyphId::new(i + 2), 0.0, 0.0, 0.0, 0.0, 0..0, None);
+            surface.draw_glyphs(
+                Point::from_xy((i % 6) as f32 * 48.0 - 34.0, (i / 6) as f32 * 48.0 + 106.0),
+                &[glyph],
+                font.clone(),
+                "",
+                64.0,
+                false,
+            );
+        }
+    }
 
     #[visreg(document, all)]
     fn font_noto_color_emoji_cbdt(document: &mut Document) {
