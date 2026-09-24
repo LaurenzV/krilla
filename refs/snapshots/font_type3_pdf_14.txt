@@ -12,10 +12,19 @@ endobj
 2 0 obj
 <<
   /ProcSet [/PDF /Text /ImageC /ImageB]
+  /Font <<
+    /f0 5 0 R
+  >>
 >>
 endobj
 
 3 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+4 0 obj
 <<
   /ProcSet [/PDF /Text /ImageC /ImageB]
   /XObject <<
@@ -24,20 +33,11 @@ endobj
 >>
 endobj
 
-4 0 obj
-<<
-  /ProcSet [/PDF /Text /ImageC /ImageB]
-  /Font <<
-    /f0 5 0 R
-  >>
->>
-endobj
-
 5 0 obj
 <<
   /Type /Font
   /Subtype /Type3
-  /Resources 3 0 R
+  /Resources 4 0 R
   /Name /TwitterColorEmojiSVGinOT
   /FontBBox [-0.00000000000020210994 -402.84998 2048 1645.15]
   /ToUnicode 8 0 R
@@ -58,7 +58,7 @@ endobj
 6 0 obj
 <<
   /Type /Page
-  /Resources 4 0 R
+  /Resources 2 0 R
   /MediaBox [0 0 200 200]
   /Parent 1 0 R
   /Contents 9 0 R
@@ -139,7 +139,7 @@ endobj
   /Length 1086
   /Type /XObject
   /Subtype /Form
-  /Resources 2 0 R
+  /Resources 3 0 R
   /BBox [-0.00000000000020210994 -402.84998 2048 1645.15]
 >>
 stream
@@ -215,8 +215,8 @@ xref
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
-0000000142 00000 n
-0000000238 00000 n
+0000000172 00000 n
+0000000234 00000 n
 0000000330 00000 n
 0000000716 00000 n
 0000000831 00000 n
@@ -228,7 +228,7 @@ trailer
 <<
   /Size 12
   /Root 11 0 R
-  /ID [(iCpr9kR5nzV87iYROR1OOQ==) (iCpr9kR5nzV87iYROR1OOQ==)]
+  /ID [(boVHJRq1xI6S0ASuBHDSzQ==) (boVHJRq1xI6S0ASuBHDSzQ==)]
 >>
 startxref
 3030

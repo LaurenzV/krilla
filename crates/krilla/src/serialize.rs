@@ -32,9 +32,8 @@ use crate::pdf::{PdfDocument, PdfSerializerContext};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
-use crate::text::GlyphId;
-use crate::text::{Font, FontContainer, FontIdentifier};
-use crate::util::SipHashable;
+use crate::text::{Font, FontContainer, FontIdentifier, GlyphId, StandardFont};
+use crate::util::{NameExt, SipHashable};
 
 const STR_LEN: usize = 32767;
 const NAME_LEN: usize = 127;
@@ -471,10 +470,10 @@ impl SerializeContext {
         self.serialize_destination_profiles(&mut chunk_container);
         self.serialize_page_label_tree(&mut chunk_container);
         self.serialize_outline(&mut chunk_container);
-        self.serialize_fonts(&mut chunk_container)?;
         self.serialize_pages(&mut chunk_container)?;
         self.serialize_page_tree(&mut chunk_container);
         self.serialize_forms(&mut chunk_container);
+        self.serialize_fonts(&mut chunk_container)?;
         #[cfg(feature = "pdf")]
         self.serialize_embedded_pdfs(&mut chunk_container)?;
         self.serialize_xyz_destinations(&mut chunk_container)?;
@@ -794,6 +793,20 @@ impl SerializeContext {
             }
         }
 
+        for font in StandardFont::ALL {
+            let identifier = FontIdentifier::Standard(font);
+            if let Some(&ref_) = self.cached_mappings.get(&identifier.sip_hash()) {
+                if self.serialize_settings.pdf_version() >= PdfVersion::Pdf20 {
+                    panic!("cannot use standard fonts in PDF 2.0");
+                }
+                chunk_container
+                    .non_stream
+                    .fonts
+                    .type1_font(ref_)
+                    .base_font(font.base_font().to_pdf_name());
+            }
+        }
+
         Ok(())
     }
 
@@ -817,7 +830,8 @@ impl SerializeContext {
 
     fn serialize_forms(&mut self, chunk_container: &mut ChunkContainer) {
         if self.global_objects.forms.field_tree.is_some() {
-            let acroform = self.global_objects.forms.take();
+            let mut acroform = self.global_objects.forms.take();
+            acroform.prepare_for_serialization(self, chunk_container);
             let acroform_ref = self.new_ref();
             acroform.serialize(self, chunk_container, acroform_ref);
         }
