@@ -89,6 +89,202 @@ impl<T> Tag<T> {
     }
 }
 
+/// Standard PDF 1.7 structure roles.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[allow(missing_docs)]
+pub enum StandardRole {
+    Document,
+    Part,
+    Art,
+    Sect,
+    Div,
+    BlockQuote,
+    Caption,
+    TOC,
+    TOCI,
+    Index,
+    NonStruct,
+    Private,
+    P,
+    StructuredHeading,
+    H1,
+    H2,
+    H3,
+    H4,
+    H5,
+    H6,
+    L,
+    LI,
+    Lbl,
+    LBody,
+    Table,
+    TR,
+    TH,
+    TD,
+    THead,
+    TBody,
+    TFoot,
+    Span,
+    Quote,
+    Note,
+    Reference,
+    BibEntry,
+    Code,
+    Link,
+    Annot,
+    Ruby,
+    RB,
+    RT,
+    RP,
+    Warichu,
+    WT,
+    WP,
+    Figure,
+    Formula,
+    Form,
+}
+
+impl From<StandardRole> for pdf_writer::types::StructRole {
+    fn from(role: StandardRole) -> Self {
+        match role {
+            StandardRole::Document => Self::Document,
+            StandardRole::Part => Self::Part,
+            StandardRole::Art => Self::Art,
+            StandardRole::Sect => Self::Sect,
+            StandardRole::Div => Self::Div,
+            StandardRole::BlockQuote => Self::BlockQuote,
+            StandardRole::Caption => Self::Caption,
+            StandardRole::TOC => Self::TOC,
+            StandardRole::TOCI => Self::TOCI,
+            StandardRole::Index => Self::Index,
+            StandardRole::NonStruct => Self::NonStruct,
+            StandardRole::Private => Self::Private,
+            StandardRole::P => Self::P,
+            StandardRole::StructuredHeading => Self::StructuredHeading,
+            StandardRole::H1 => Self::H1,
+            StandardRole::H2 => Self::H2,
+            StandardRole::H3 => Self::H3,
+            StandardRole::H4 => Self::H4,
+            StandardRole::H5 => Self::H5,
+            StandardRole::H6 => Self::H6,
+            StandardRole::L => Self::L,
+            StandardRole::LI => Self::LI,
+            StandardRole::Lbl => Self::Lbl,
+            StandardRole::LBody => Self::LBody,
+            StandardRole::Table => Self::Table,
+            StandardRole::TR => Self::TR,
+            StandardRole::TH => Self::TH,
+            StandardRole::TD => Self::TD,
+            StandardRole::THead => Self::THead,
+            StandardRole::TBody => Self::TBody,
+            StandardRole::TFoot => Self::TFoot,
+            StandardRole::Span => Self::Span,
+            StandardRole::Quote => Self::Quote,
+            StandardRole::Note => Self::Note,
+            StandardRole::Reference => Self::Reference,
+            StandardRole::BibEntry => Self::BibEntry,
+            StandardRole::Code => Self::Code,
+            StandardRole::Link => Self::Link,
+            StandardRole::Annot => Self::Annot,
+            StandardRole::Ruby => Self::Ruby,
+            StandardRole::RB => Self::RB,
+            StandardRole::RT => Self::RT,
+            StandardRole::RP => Self::RP,
+            StandardRole::Warichu => Self::Warichu,
+            StandardRole::WT => Self::WT,
+            StandardRole::WP => Self::WP,
+            StandardRole::Figure => Self::Figure,
+            StandardRole::Formula => Self::Formula,
+            StandardRole::Form => Self::Form,
+        }
+    }
+}
+
+/// An arbitrary custom tag with role mapping to a standard PDF role.
+///
+/// Custom tags are emitted with a custom `/S` name and registered in the
+/// PDF's `/RoleMap` (PDF 1.7) or namespace role map (PDF 2.0), mapping them
+/// to a standard structure role.
+///
+/// # Example
+/// ```
+/// use krilla::tagging::{Tag, StandardRole};
+///
+/// let tag = Tag::custom("Slide", StandardRole::NonStruct)
+///     .with_lang(Some("en".to_string()));
+/// ```
+#[derive(Clone, Debug, PartialEq)]
+pub struct CustomTag {
+    /// The raw PDF tag name (e.g., "Slide", "Textbox").
+    pub(crate) name: String,
+    /// The standard PDF 1.7 role this maps to.
+    pub(crate) maps_to: StandardRole,
+    /// Global attributes (lang, alt, id, etc.)
+    pub(crate) inner: AnyTag,
+}
+
+impl CustomTag {
+    /// The raw PDF tag name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// The standard role this custom tag maps to.
+    pub fn maps_to(&self) -> StandardRole {
+        self.maps_to
+    }
+
+    /// A raw tag, which allows reading all attributes.
+    pub fn as_any(&self) -> &AnyTag {
+        &self.inner
+    }
+
+    /// A raw tag, which allows reading all attributes and additionally writing
+    /// all global ones.
+    pub fn as_any_mut(&mut self) -> &mut AnyTag {
+        &mut self.inner
+    }
+
+    /// Set the language.
+    pub fn with_lang(mut self, lang: Option<String>) -> Self {
+        self.inner.set_lang(lang);
+        self
+    }
+
+    /// Set the alt text.
+    pub fn with_alt_text(mut self, alt_text: Option<String>) -> Self {
+        self.inner.set_alt_text(alt_text);
+        self
+    }
+
+    /// Set the tag id.
+    pub fn with_id(mut self, id: Option<TagId>) -> Self {
+        self.inner.set_id(id);
+        self
+    }
+}
+
+impl From<CustomTag> for TagKind {
+    fn from(value: CustomTag) -> Self {
+        Self::Custom(value)
+    }
+}
+
+// Constructor for custom tags via `Tag::custom()`.
+impl Tag<()> {
+    /// Create a custom tag with the given name, role-mapped to a standard role.
+    ///
+    /// The tag name will be used as-is in the PDF structure tree's `/S` entry,
+    /// and registered in the `/RoleMap` to map to the given standard role.
+    pub fn custom(name: impl Into<String>, maps_to: StandardRole) -> CustomTag {
+        CustomTag {
+            name: name.into(),
+            maps_to,
+            inner: AnyTag::new(),
+        }
+    }
+}
+
 /// A raw tag, which allows reading all attributes and additionally writing all
 /// global ones.
 #[derive(Clone, Debug, PartialEq)]
