@@ -374,7 +374,7 @@ impl Image {
         Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || {
                 let (color_channel, alpha_channel, bits_per_component) =
-                    handle_u8_image(&data, ColorSpace::RGBA);
+                    handle_image(&data, ColorSpace::RGBA, BitsPerComponent::Eight);
 
                 Ok(Repr::Sampled(SampledRepr {
                     color_channel,
@@ -640,8 +640,8 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
     };
 
     let (color_channel, alpha_channel, bits_per_component) = match bit_depth {
-        BitDepth::Eight => handle_u8_image(&img_data, color_space),
-        BitDepth::Sixteen => handle_u16_image(&img_data, color_space),
+        BitDepth::Eight => handle_image(&img_data, color_space, BitsPerComponent::Eight),
+        BitDepth::Sixteen => handle_image(&img_data, color_space, BitsPerComponent::Sixteen),
         _ => return Err("image has an unsupported bit-depth".to_string()),
     };
 
@@ -745,8 +745,11 @@ fn decode_gif(data: Data) -> Result<Repr, String> {
         .map_err(|e| e.to_string())?
         .ok_or("GIF image seems to be empty".to_string())?;
 
-    let (color_channel, alpha_channel, bits_per_component) =
-        handle_u8_image(first_frame.buffer.as_ref(), ColorSpace::RGBA);
+    let (color_channel, alpha_channel, bits_per_component) = handle_image(
+        first_frame.buffer.as_ref(),
+        ColorSpace::RGBA,
+        BitsPerComponent::Eight,
+    );
 
     Ok(Repr::Sampled(SampledRepr {
         color_channel,
@@ -802,7 +805,7 @@ fn decode_webp(data: Data) -> Result<Repr, String> {
     };
 
     let (color_channel, alpha_channel, bits_per_component) =
-        handle_u8_image(&first_frame, color_space);
+        handle_image(&first_frame, color_space, BitsPerComponent::Eight);
 
     Ok(Repr::Sampled(SampledRepr {
         color_channel,
@@ -811,82 +814,47 @@ fn decode_webp(data: Data) -> Result<Repr, String> {
     }))
 }
 
-fn handle_u8_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
-    let mut alphas = if cs.has_alpha() {
-        Vec::with_capacity(data.len() / cs.num_components())
-    } else {
-        Vec::new()
-    };
-
-    let color_channel = match cs {
-        ColorSpace::RGB => deflate_encode(data),
-        ColorSpace::RGBA => {
-            let mut buf = Vec::with_capacity(data.len() * 3 / 4);
-            data.chunks_exact(4).for_each(|data| {
-                buf.extend_from_slice(&data[0..3]);
-                alphas.push(data[3]);
-            });
-            deflate_encode(&buf)
-        }
-        ColorSpace::Luma => deflate_encode(data),
-        ColorSpace::LumaA => {
-            let mut buf = Vec::with_capacity(data.len() / 2);
-            data.chunks_exact(2).for_each(|data| {
-                buf.push(data[0]);
-                alphas.push(data[1]);
-            });
-            deflate_encode(&buf)
-        }
-        // PNG/WEBP/GIF only support those three, so should be enough?
+fn handle_image(
+    data: &[u8],
+    cs: ColorSpace,
+    bits_per_component: BitsPerComponent,
+) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
+    let (color, alpha) = match (cs, bits_per_component) {
+        (ColorSpace::RGB | ColorSpace::Luma, _) => (deflate_encode(data), None),
+        (ColorSpace::RGBA, BitsPerComponent::Eight) => deflate_image_channels::<3, 1>(data),
+        (ColorSpace::RGBA, BitsPerComponent::Sixteen) => deflate_image_channels::<6, 2>(data),
+        (ColorSpace::LumaA, BitsPerComponent::Eight) => deflate_image_channels::<1, 1>(data),
+        (ColorSpace::LumaA, BitsPerComponent::Sixteen) => deflate_image_channels::<2, 2>(data),
         _ => unimplemented!(),
     };
 
-    let alpha_channel = if !alphas.is_empty() && alphas.iter().any(|v| *v != 255) {
-        Some(deflate_encode(&alphas))
-    } else {
-        None
-    };
-
-    (color_channel, alpha_channel, BitsPerComponent::Eight)
+    (color, alpha, bits_per_component)
 }
 
-fn handle_u16_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, BitsPerComponent) {
-    let mut alphas = if cs.has_alpha() {
-        Vec::with_capacity(data.len() / cs.num_components())
-    } else {
-        Vec::new()
+fn deflate_image_channels<const COLOR_BYTES: usize, const ALPHA_BYTES: usize>(
+    data: &[u8],
+) -> (Vec<u8>, Option<Vec<u8>>) {
+    let pixel_bytes = COLOR_BYTES + ALPHA_BYTES;
+    let mut alphas = Vec::with_capacity(data.len() / pixel_bytes * ALPHA_BYTES);
+    let color_channel = {
+        let mut colors = Vec::with_capacity(data.len() / pixel_bytes * COLOR_BYTES);
+
+        for pixel in data.chunks_exact(pixel_bytes) {
+            colors.extend_from_slice(&pixel[..COLOR_BYTES]);
+            alphas.extend_from_slice(&pixel[COLOR_BYTES..]);
+        }
+
+        deflate_encode(&colors)
     };
 
-    let encoded_image = match cs {
-        ColorSpace::RGB => deflate_encode(data),
-        ColorSpace::RGBA => {
-            let mut buf = Vec::with_capacity(data.len() * 3 / 4);
-            data.chunks_exact(8).for_each(|data| {
-                buf.extend_from_slice(&data[0..6]);
-                alphas.extend_from_slice(&data[6..]);
-            });
-            deflate_encode(&buf)
-        }
-        ColorSpace::Luma => deflate_encode(data),
-        ColorSpace::LumaA => {
-            let mut buf = Vec::with_capacity(data.len() / 2);
-            data.chunks_exact(4).for_each(|data| {
-                buf.extend_from_slice(&data[0..2]);
-                alphas.extend_from_slice(&data[2..]);
-            });
-            deflate_encode(&buf)
-        }
-        // PNG/WEBP/GIF only support those three, so should be enough?
-        _ => unimplemented!(),
-    };
-
-    let encoded_mask = if !alphas.is_empty() && alphas.iter().any(|v| *v != 255) {
+    // Fully opaque images don't need an alpha mask.
+    let alpha_channel = if !alphas.is_empty() && alphas.iter().any(|&v| v != 255) {
         Some(deflate_encode(&alphas))
     } else {
         None
     };
 
-    (encoded_image, encoded_mask, BitsPerComponent::Sixteen)
+    (color_channel, alpha_channel)
 }
 
 fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<GenericICCProfile> {
