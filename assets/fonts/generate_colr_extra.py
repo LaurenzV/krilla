@@ -10,7 +10,7 @@ from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables.DefaultTable import DefaultTable
-from fontTools.ttLib.tables.otTables import PaintFormat
+from fontTools.ttLib.tables.otTables import CompositeMode, PaintFormat
 
 
 DEFAULT_OUTPUT = Path(__file__).with_name("COLR_extra.ttf")
@@ -26,15 +26,19 @@ OUTLINES = {
 }
 
 
+def solid(palette_index):
+    return {
+        "Format": PaintFormat.PaintSolid,
+        "PaletteIndex": palette_index,
+        "Alpha": 1.0,
+    }
+
+
 def solid_glyph(glyph, palette_index):
     return {
         "Format": PaintFormat.PaintGlyph,
         "Glyph": glyph,
-        "Paint": {
-            "Format": PaintFormat.PaintSolid,
-            "PaletteIndex": palette_index,
-            "Alpha": 1.0,
-        },
+        "Paint": solid(palette_index),
     }
 
 
@@ -43,6 +47,24 @@ COLOR_GLYPHS = {
     "palette_offset": {
         "Format": PaintFormat.PaintColrLayers,
         "Layers": [solid_glyph("left", 0), solid_glyph("right", 1)],
+    },
+    # Tests unrestricted visible/mask paints in bounded In composites; blue/green.
+    "unbounded_composite": {
+        "Format": PaintFormat.PaintColrLayers,
+        "Layers": [
+            {
+                "Format": PaintFormat.PaintComposite,
+                "CompositeMode": CompositeMode.SRC_IN,
+                "SourcePaint": solid(0),
+                "BackdropPaint": solid_glyph("left", 1),
+            },
+            {
+                "Format": PaintFormat.PaintComposite,
+                "CompositeMode": CompositeMode.DEST_IN,
+                "SourcePaint": solid(0),
+                "BackdropPaint": solid_glyph("right", 1),
+            },
+        ],
     },
 }
 
