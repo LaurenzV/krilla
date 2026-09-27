@@ -81,9 +81,12 @@ mod colr {
     use krilla::text::{Font, GlyphId};
     use krilla::Document;
     use krilla_macros::visreg;
+    use skrifa::raw::TableProvider;
+    use skrifa::{FontRef, MetadataProvider};
 
     use crate::{
-        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
+        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_EXTRA, COLR_TEST_GLYPHS,
+        NOTO_COLOR_EMOJI_COLR,
     };
 
     #[visreg(document)]
@@ -93,6 +96,23 @@ mod colr {
         let glyphs = (0..=220)
             .map(|n| (GlyphId::new(n), "".to_string()))
             .collect::<Vec<_>>();
+
+        all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
+    }
+
+    #[visreg(document)]
+    fn font_colr_extra(document: &mut Document) {
+        let font_data = COLR_EXTRA.clone();
+        let font_ref = FontRef::new(font_data.as_ref()).unwrap();
+        let color_glyphs = font_ref.color_glyphs();
+        let glyphs = (0..font_ref.maxp().unwrap().num_glyphs())
+            .filter(|id| {
+                color_glyphs
+                    .get(skrifa::GlyphId::new(u32::from(*id)))
+                    .is_some()
+            })
+            .map(|id| (GlyphId::new(u32::from(id)), String::new()))
+            .collect();
 
         all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
     }
