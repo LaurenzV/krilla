@@ -273,6 +273,8 @@ impl ColrBuilder {
         palette_index: u16,
         alpha: f32,
     ) -> Option<(rgb::Color, NormalizedF32)> {
+        let alpha = alpha.clamp(0.0, 1.0);
+
         if palette_index != u16::MAX {
             let palettes = self.font.font_ref().color_palettes();
             let palette = palettes.get(0)?;

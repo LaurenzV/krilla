@@ -18,7 +18,7 @@ UNITS_PER_EM = 1000
 TIMESTAMP = 3850070400
 
 # RGBA
-PALETTE = [(0, 0, 255, 255), (0, 255, 0, 255)]
+PALETTE = [(0, 0, 255, 255), (0, 255, 0, 255), (0, 0, 255, 128)]
 
 OUTLINES = {
     "left": (0, 0, 250, 700),
@@ -26,19 +26,19 @@ OUTLINES = {
 }
 
 
-def solid(palette_index):
+def solid(palette_index, alpha=1.0):
     return {
         "Format": PaintFormat.PaintSolid,
         "PaletteIndex": palette_index,
-        "Alpha": 1.0,
+        "Alpha": alpha,
     }
 
 
-def solid_glyph(glyph, palette_index):
+def solid_glyph(glyph, palette_index, alpha=1.0):
     return {
         "Format": PaintFormat.PaintGlyph,
         "Glyph": glyph,
-        "Paint": solid(palette_index),
+        "Paint": solid(palette_index, alpha),
     }
 
 
@@ -64,6 +64,15 @@ COLOR_GLYPHS = {
                 "SourcePaint": solid(0),
                 "BackdropPaint": solid_glyph("right", 1),
             },
+        ],
+    },
+    # Tests alpha clamping before palette multiplication; pale blue/green.
+    "alpha_clamp": {
+        "Format": PaintFormat.PaintColrLayers,
+        "Layers": [
+            solid_glyph("left", 2, 1.5),
+            solid_glyph("right", 1),
+            solid_glyph("right", 0, -0.5),
         ],
     },
 }
