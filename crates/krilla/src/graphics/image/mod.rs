@@ -880,7 +880,7 @@ fn handle_u16_image(data: &[u8], cs: ColorSpace) -> (Vec<u8>, Option<Vec<u8>>, B
         _ => unimplemented!(),
     };
 
-    let encoded_mask = if !alphas.is_empty() {
+    let encoded_mask = if !alphas.is_empty() && alphas.iter().any(|v| *v != 255) {
         Some(deflate_encode(&alphas))
     } else {
         None
