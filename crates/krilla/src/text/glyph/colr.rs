@@ -1,7 +1,6 @@
 use skrifa::color::{Brush, ColorPainter, ColorStop, CompositeMode};
 use skrifa::outline::DrawSettings;
 use skrifa::raw::types::BoundingBox;
-use skrifa::raw::TableProvider;
 use skrifa::MetadataProvider;
 use tiny_skia_path::{Path, PathBuilder};
 
@@ -246,13 +245,9 @@ impl ColrBuilder {
         alpha: f32,
     ) -> Option<(rgb::Color, NormalizedF32)> {
         if palette_index != u16::MAX {
-            let color = self
-                .font
-                .font_ref()
-                .cpal()
-                .ok()?
-                .color_records_array()?
-                .ok()?[palette_index as usize];
+            let palettes = self.font.font_ref().color_palettes();
+            let palette = palettes.get(0)?;
+            let color = palette.colors().get(usize::from(palette_index))?;
 
             Some((
                 rgb::Color::new(color.red, color.green, color.blue),
