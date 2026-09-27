@@ -865,7 +865,7 @@ fn deflate_image_channels<const COLOR_BYTES: usize, const ALPHA_BYTES: usize>(
         .any(|p| p[COLOR_BYTES..].iter().any(|&v| v != 255));
 
     const BATCH_BYTES: usize = 16 * 1024;
-    const { assert!(BATCH_BYTES % (COLOR_BYTES + ALPHA_BYTES) == 0) };
+    const { assert!(BATCH_BYTES.is_multiple_of(COLOR_BYTES + ALPHA_BYTES)) };
 
     let mut colors = ImageChannelEncoder::new(BATCH_BYTES / pixel_bytes * COLOR_BYTES);
     let mut alphas =
