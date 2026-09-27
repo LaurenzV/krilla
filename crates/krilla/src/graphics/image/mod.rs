@@ -12,11 +12,12 @@ mod png;
 
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use std::io::Cursor;
+use std::io::{Cursor, Write};
 use std::ops::DerefMut;
 use std::sync::Arc;
 
 use ::png::{BitDepth, ColorType, Transformations};
+use flate2::write::ZlibEncoder;
 use pdf_writer::{Dict, Finish, Name, Ref, Str};
 use zune_jpeg::zune_core::colorspace::ColorSpace;
 use zune_jpeg::JpegDecoder;
@@ -28,7 +29,7 @@ use crate::graphics::color::DEVICE_GRAY;
 use crate::graphics::color::{cmyk, luma, rgb};
 use crate::graphics::icc::{GenericICCProfile, ICCBasedColorSpace, ICCProfile};
 use crate::serialize::{MaybeDeviceColorSpace, SerializeContext};
-use crate::stream::{deflate_encode, FilterStreamBuilder};
+use crate::stream::{deflate_encode, deflate_encoder, FilterStreamBuilder};
 use crate::util::{Deferred, NameExt, SipHashable};
 use crate::Data;
 
@@ -831,30 +832,75 @@ fn handle_image(
     (color, alpha, bits_per_component)
 }
 
+struct ImageChannelEncoder {
+    encoder: ZlibEncoder<Vec<u8>>,
+    buffer: Vec<u8>,
+}
+
+impl ImageChannelEncoder {
+    fn new(capacity: usize) -> Self {
+        Self {
+            encoder: deflate_encoder(),
+            buffer: Vec::with_capacity(capacity),
+        }
+    }
+
+    fn encode_batch(&mut self) {
+        self.encoder.write_all(&self.buffer).unwrap();
+        self.buffer.clear();
+    }
+
+    fn finish(self) -> Vec<u8> {
+        self.encoder.finish().unwrap()
+    }
+}
+
 fn deflate_image_channels<const COLOR_BYTES: usize, const ALPHA_BYTES: usize>(
     data: &[u8],
 ) -> (Vec<u8>, Option<Vec<u8>>) {
     let pixel_bytes = COLOR_BYTES + ALPHA_BYTES;
-    let mut alphas = Vec::with_capacity(data.len() / pixel_bytes * ALPHA_BYTES);
-    let color_channel = {
-        let mut colors = Vec::with_capacity(data.len() / pixel_bytes * COLOR_BYTES);
 
-        for pixel in data.chunks_exact(pixel_bytes) {
-            colors.extend_from_slice(&pixel[..COLOR_BYTES]);
-            alphas.extend_from_slice(&pixel[COLOR_BYTES..]);
+    let has_mask = data
+        .chunks_exact(pixel_bytes)
+        .any(|p| p[COLOR_BYTES..].iter().any(|&v| v != 255));
+
+    const BATCH_BYTES: usize = 16 * 1024;
+    const { assert!(BATCH_BYTES.is_multiple_of(COLOR_BYTES + ALPHA_BYTES)) };
+
+    let mut colors = ImageChannelEncoder::new(BATCH_BYTES / pixel_bytes * COLOR_BYTES);
+    let mut alphas =
+        has_mask.then(|| ImageChannelEncoder::new(BATCH_BYTES / pixel_bytes * ALPHA_BYTES));
+
+    for batch in data.chunks(BATCH_BYTES) {
+        colors
+            .buffer
+            .resize(batch.len() / pixel_bytes * COLOR_BYTES, 0);
+        let pixels = batch.chunks_exact(pixel_bytes);
+        let color_chunks = colors.buffer.chunks_exact_mut(COLOR_BYTES);
+        if let Some(alphas) = &mut alphas {
+            alphas
+                .buffer
+                .resize(batch.len() / pixel_bytes * ALPHA_BYTES, 0);
+            for ((pixel, color), alpha) in pixels
+                .zip(color_chunks)
+                .zip(alphas.buffer.chunks_exact_mut(ALPHA_BYTES))
+            {
+                color.copy_from_slice(&pixel[..COLOR_BYTES]);
+                alpha.copy_from_slice(&pixel[COLOR_BYTES..]);
+            }
+        } else {
+            for (pixel, color) in pixels.zip(color_chunks) {
+                color.copy_from_slice(&pixel[..COLOR_BYTES]);
+            }
         }
 
-        deflate_encode(&colors)
-    };
+        colors.encode_batch();
+        if let Some(alphas) = &mut alphas {
+            alphas.encode_batch();
+        }
+    }
 
-    // Fully opaque images don't need an alpha mask.
-    let alpha_channel = if !alphas.is_empty() && alphas.iter().any(|&v| v != 255) {
-        Some(deflate_encode(&alphas))
-    } else {
-        None
-    };
-
-    (color_channel, alpha_channel)
+    (colors.finish(), alphas.map(ImageChannelEncoder::finish))
 }
 
 fn get_icc_profile_type(data: &[u8], color_space: ImageColorspace) -> Option<GenericICCProfile> {

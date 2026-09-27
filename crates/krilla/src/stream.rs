@@ -439,10 +439,14 @@ fn deflate_encode_memoized(data: &[u8]) -> Vec<u8> {
 pub(crate) fn deflate_encode(data: &[u8]) -> Vec<u8> {
     use std::io::Write;
 
-    const COMPRESSION_LEVEL: u8 = 6;
-    let mut e = ZlibEncoder::new(Vec::new(), Compression::new(COMPRESSION_LEVEL as u32));
+    let mut e = deflate_encoder();
     e.write_all(data).unwrap();
     e.finish().unwrap()
+}
+
+pub(crate) fn deflate_encoder() -> ZlibEncoder<Vec<u8>> {
+    const COMPRESSION_LEVEL: u8 = 6;
+    ZlibEncoder::new(Vec::new(), Compression::new(COMPRESSION_LEVEL as u32))
 }
 
 fn hex_encode(data: &[u8]) -> Vec<u8> {
