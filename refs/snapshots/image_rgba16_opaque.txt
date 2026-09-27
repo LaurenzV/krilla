@@ -13,7 +13,7 @@ endobj
 <<
   /ProcSet [/PDF /Text /ImageC /ImageB]
   /XObject <<
-    /x0 6 0 R
+    /x0 5 0 R
   >>
 >>
 endobj
@@ -42,24 +42,6 @@ endobj
 
 5 0 obj
 <<
-  /Length 202
-  /Type /XObject
-  /Subtype /Image
-  /Filter [/ASCIIHexDecode /FlateDecode]
-  /Width 200
-  /Height 200
-  /ColorSpace /DeviceGray
-  /BitsPerComponent 16
->>
-stream
-789CEDC08100000000C2307FEA0790C256000000000000000000000000000000000000
-0000000000000000000000000000000000000000000000000000000000000000000000
-000000000000000000000000000000000000000000000000F006454D59BA
-endstream
-endobj
-
-6 0 obj
-<<
   /Length 3978
   /Type /XObject
   /Subtype /Image
@@ -68,7 +50,6 @@ endobj
   /Height 200
   /ColorSpace /DeviceRGB
   /BitsPerComponent 16
-  /SMask 5 0 R
 >>
 stream
 789CEDD4E90B18721CC7F10F8928394ACA518494522229499244524A44288542912491
@@ -131,7 +112,7 @@ BCAA12AF78C52B5E558957BCE215AFAAC42B5EF18A5755E215AF78C52B499224499224
 endstream
 endobj
 
-7 0 obj
+6 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -139,21 +120,20 @@ endobj
 endobj
 
 xref
-0 8
+0 7
 0000000000 65535 f
 0000000016 00000 n
 0000000080 00000 n
 0000000175 00000 n
 0000000290 00000 n
 0000000372 00000 n
-0000000780 00000 n
-0000004979 00000 n
+0000004556 00000 n
 trailer
 <<
-  /Size 8
-  /Root 7 0 R
-  /ID [(hEgYF2qbMlM7shOdVfgQEg==) (hEgYF2qbMlM7shOdVfgQEg==)]
+  /Size 7
+  /Root 6 0 R
+  /ID [(ZfHEeC+T0bKyHb3LMBh4BQ==) (ZfHEeC+T0bKyHb3LMBh4BQ==)]
 >>
 startxref
-5033
+4610
 %%EOF
