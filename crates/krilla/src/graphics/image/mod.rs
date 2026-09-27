@@ -115,6 +115,17 @@ struct PngRepr {
     palette: Option<Vec<u8>>,
 }
 
+impl From<png::PngData> for PngRepr {
+    fn from(data: png::PngData) -> Self {
+        Self {
+            data: data.idat,
+            bit_depth: data.bit_depth,
+            color_type: data.color_type,
+            palette: data.palette,
+        }
+    }
+}
+
 enum Repr {
     Sampled(SampledRepr),
     Jpeg(JpegRepr),
@@ -209,12 +220,34 @@ pub struct Image(Arc<ImageRepr>);
 
 impl Image {
     /// Create a new bitmap image from a `.png` file.
+    ///
+    /// If possible, the PNG image will be embedded directly into the PDF. Otherwise,
+    /// krilla falls back to decoding and then re-compressing the image.
     pub fn from_png(data: Data, interpolate: bool) -> Result<Image, String> {
         let hash = data.as_ref().sip_hash();
         let metadata = png_metadata(data.as_ref())?;
 
         Ok(Self(Arc::new(ImageRepr {
             inner: Deferred::new(move || decode_png(data.as_ref())),
+            metadata,
+            sip: hash,
+            interpolate,
+        })))
+    }
+
+    /// Create a new bitmap image from a `.png` file without decoding its pixels.
+    ///
+    /// If possible, the PNG image will be embedded directly into the PDF. Otherwise,
+    /// **unlike [`Image::from_png`], this method will return an error!** This is mainly useful
+    /// if you want to avoid krilla from silently decoding the image.
+    pub fn from_png_native(data: Data, interpolate: bool) -> Result<Image, String> {
+        let hash = data.as_ref().sip_hash();
+        let metadata = png_metadata(data.as_ref())?;
+        let png_data =
+            png::PngData::new(data.as_ref()).ok_or("PNG cannot be embedded without decoding")?;
+
+        Ok(Self(Arc::new(ImageRepr {
+            inner: Deferred::new(move || Ok(Repr::Png(png_data.into()))),
             metadata,
             sip: hash,
             interpolate,
@@ -589,12 +622,7 @@ fn decode_png(data: &[u8]) -> Result<Repr, String> {
         .map_err(|e| e.to_string().to_ascii_lowercase())?;
 
     if let Some(png_data) = png::PngData::new(data) {
-        return Ok(Repr::Png(PngRepr {
-            data: png_data.idat,
-            bit_depth: png_data.bit_depth,
-            color_type: png_data.color_type,
-            palette: png_data.palette,
-        }));
+        return Ok(Repr::Png(png_data.into()));
     }
 
     let mut img_data = vec![0; reader.output_buffer_size().ok_or("image is too large")?];

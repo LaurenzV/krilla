@@ -6,6 +6,16 @@ use krilla_macros::{snapshot, visreg};
 
 use crate::ASSETS_PATH;
 
+#[test]
+fn png_native_requires_no_decoding() {
+    let data = std::fs::read(ASSETS_PATH.join("images/png_native/rgba_8.png")).unwrap();
+    assert_eq!(
+        Image::from_png_native(data.clone().into(), false).unwrap_err(),
+        "PNG cannot be embedded without decoding"
+    );
+    Image::from_png(data.into(), false).unwrap();
+}
+
 fn png_impl(surface: &mut Surface, name: &str) {
     let image = Image::from_png(
         std::fs::read(
