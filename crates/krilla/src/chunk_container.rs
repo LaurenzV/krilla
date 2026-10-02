@@ -125,7 +125,7 @@ impl ChunkContainer {
 
         // Chunk length is not an exact number because the length might change as we renumber,
         // so we add a bit of a padding by multiplying with 1.1. The 200 is additional padding
-        // for the document catalog. This hopefully allows us to avoid re-alloactions in the general
+        // for the document catalog. This hopefully allows us to avoid re-allocations in the general
         // case, and thus give us better performance.
         let capacity = (chunks_byte_len as f32 * 1.1 + 200.0) as usize;
         let mut pdf = sc.new_pdf_with_capacity(capacity);
