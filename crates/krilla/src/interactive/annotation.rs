@@ -346,8 +346,6 @@ impl<T> WidgetAnnotation<T> {
 
 /// Applies to widget annotations with a single state appearance.
 impl WidgetAnnotation<SimpleAppearanceStream> {
-    // TODO: will be used for variable text form fields
-    #[allow(dead_code)]
     pub(crate) fn simple(rect: Rect, appearance: Stream) -> Self {
         Self {
             rect,
@@ -540,9 +538,7 @@ impl<T: SerializableAppearance> WidgetAnnotation<T> {
         page_height: f32,
         location: Option<Location>,
     ) -> KrillaResult<pdf_writer::writers::Annotation<'a>> {
-        let appearance_refs =
-            self.appearance
-                .register_refs(sc, chunk_container, self.rect, location);
+        let appearance_refs = self.appearance.register_refs(sc, chunk_container, location);
 
         let chunk = &mut chunk_container.non_stream.annotations;
         let mut annotation = chunk
@@ -626,7 +622,6 @@ trait SerializableAppearance {
         self,
         sc: &mut SerializeContext,
         chunk_container: &mut ChunkContainer,
-        rect: Rect,
         location: Option<Location>,
     ) -> Self::RefsHolder;
 
@@ -640,11 +635,8 @@ fn register_appearance_entry(
     sc: &mut SerializeContext,
     chunk_container: &mut ChunkContainer,
     appearance: Stream,
-    rect: Rect,
 ) -> Ref {
-    let bbox = Rect::from_xywh(0.0, 0.0, rect.width(), rect.height()).unwrap();
-    let transform = page_root_transform(bbox.height());
-    let xobject = XObject::new(appearance, false, false, Some(bbox), Some(transform));
+    let xobject = XObject::new(appearance, false, false, None);
     sc.register_cacheable(chunk_container, xobject)
 }
 
@@ -712,7 +704,6 @@ impl SerializableAppearance for SimpleAppearanceStream {
         self,
         sc: &mut SerializeContext,
         chunk_container: &mut ChunkContainer,
-        rect: Rect,
         location: Option<Location>,
     ) -> Self::RefsHolder {
         if self.rollover.is_some() || self.down.is_some() {
@@ -721,13 +712,13 @@ impl SerializableAppearance for SimpleAppearanceStream {
             ));
         }
 
-        let normal_ref = register_appearance_entry(sc, chunk_container, self.normal, rect);
+        let normal_ref = register_appearance_entry(sc, chunk_container, self.normal);
         let rollover_ref = self
             .rollover
-            .map(|stream| register_appearance_entry(sc, chunk_container, stream, rect));
+            .map(|stream| register_appearance_entry(sc, chunk_container, stream));
         let down_ref = self
             .down
-            .map(|stream| register_appearance_entry(sc, chunk_container, stream, rect));
+            .map(|stream| register_appearance_entry(sc, chunk_container, stream));
 
         Self::RefsHolder {
             normal: normal_ref,
@@ -762,12 +753,9 @@ impl SerializableAppearance for NamedAppearanceStream {
         self,
         sc: &mut SerializeContext,
         chunk_container: &mut ChunkContainer,
-        rect: Rect,
         location: Option<Location>,
     ) -> Self::RefsHolder {
-        let refs = self
-            .appearance
-            .register_refs(sc, chunk_container, rect, location);
+        let refs = self.appearance.register_refs(sc, chunk_container, location);
 
         Self::RefsHolder {
             name: self.name,
@@ -805,11 +793,10 @@ impl SerializableAppearance for DualStateAppearanceStream {
         self,
         sc: &mut SerializeContext,
         chunk_container: &mut ChunkContainer,
-        rect: Rect,
         location: Option<Location>,
     ) -> Self::RefsHolder {
-        let off = self.off.register_refs(sc, chunk_container, rect, location);
-        let on = self.on.register_refs(sc, chunk_container, rect, location);
+        let off = self.off.register_refs(sc, chunk_container, location);
+        let on = self.on.register_refs(sc, chunk_container, location);
 
         Self::RefsHolder {
             value: self.value,
