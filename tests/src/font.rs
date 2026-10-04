@@ -229,16 +229,51 @@ mod colr {
 }
 
 mod svg {
-    use krilla::geom::Point;
+    use krilla::geom::{PathBuilder, Point, Rect};
+    use krilla::page::PageSettings;
     use krilla::surface::Surface;
-    use krilla::text::{Font, TextDirection};
+    use krilla::text::{Font, GlyphId, KrillaGlyph, TextDirection};
     use krilla::Document;
     use krilla_macros::visreg;
 
     use crate::{
-        all_glyphs_to_pdf, purple_fill, red_fill, EMOJI_ONE, NOTO_COLOR_EMOJI_SVG, SVG_EXTRA,
-        TWITTER_COLOR_EMOJI,
+        all_glyphs_to_pdf, purple_fill, red_fill, red_stroke, EMOJI_ONE, NOTO_COLOR_EMOJI_SVG,
+        SVG_EXTRA, TWITTER_COLOR_EMOJI,
     };
+
+    #[visreg(document)]
+    fn font_svg_preserves_paint(document: &mut Document) {
+        let font = Font::new(SVG_EXTRA.clone(), 0).unwrap();
+        let mut page = document.start_page_with(PageSettings::from_wh(130.0, 60.0).unwrap());
+        let mut surface = page.surface();
+        surface.set_fill(Some(purple_fill(1.0)));
+        surface.set_stroke(Some(red_stroke(1.0, 2.0)));
+
+        let mut before = PathBuilder::new();
+        before.push_rect(Rect::from_xywh(10.0, 15.0, 25.0, 30.0).unwrap());
+        surface.draw_path(&before.finish().unwrap());
+
+        surface.draw_glyphs(
+            Point::from_xy(55.0, 45.0),
+            &[KrillaGlyph::new(
+                GlyphId::new(2),
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0..0,
+                None,
+            )],
+            font,
+            "",
+            40.0,
+            true,
+        );
+
+        let mut after = PathBuilder::new();
+        after.push_rect(Rect::from_xywh(95.0, 15.0, 25.0, 30.0).unwrap());
+        surface.draw_path(&after.finish().unwrap());
+    }
 
     #[visreg(document, all)]
     fn font_twitter_color_emoji(document: &mut Document) {
