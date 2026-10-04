@@ -6,6 +6,8 @@
 
 use std::num::NonZeroU64;
 
+use pdf_writer::Name;
+
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::configure::validate::VersionedFeature;
@@ -173,7 +175,8 @@ impl<'a> Surface<'a> {
     /// Start a new tagged content section.
     ///
     /// # Panics
-    /// Panics if a tagged section has already been started.
+    /// Panics if a tagged section has already been started (either via this function or via
+    /// [`Surface::start_variable_text`]).
     /// Panics if an artifact with a required bbox has none.
     pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
         if let Some(id) = &mut self.page_identifier {
@@ -234,6 +237,23 @@ impl<'a> Surface<'a> {
         if self.page_identifier.is_some() {
             self.bd.get_mut().end_marked_content();
         }
+    }
+
+    /// Start a new variable text marked section.
+    ///
+    /// # Panics
+    /// Panics if a tagged/marked section has already been started (either via this function or via
+    /// [`Surface::start_tagged`]).
+    pub fn start_variable_text(&mut self) {
+        self.bd.get_mut().start_marked_content(Name(b"Tx"));
+    }
+
+    /// End the current variable text marked section.
+    ///
+    /// # Panics
+    /// Panics if no variable text marked section has been started.
+    pub fn end_variable_text(&mut self) {
+        self.bd.get_mut().end_marked_content();
     }
 
     fn outline_glyphs(

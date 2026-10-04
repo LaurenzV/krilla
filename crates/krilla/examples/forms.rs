@@ -5,11 +5,14 @@ use std::path::PathBuf;
 
 use krilla::action::ResetFormAction;
 use krilla::color::rgb;
+use krilla::form::kind::ChoiceOption;
+use krilla::form::variable_text::{FormFont, TextAlignment, VariableAppearance};
 use krilla::form::{FieldGroup, FieldTree, FormField};
-use krilla::geom::{PathBuilder, Point, Rect};
+use krilla::geom::{Path, PathBuilder, Point, Rect};
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
 use krilla::text::Font;
+use krilla::text::StandardFont;
 use krilla::text::TextDirection;
 use krilla::Document;
 
@@ -17,10 +20,16 @@ fn main() {
     // Create a new document.
     let mut document = Document::new();
 
-    // Load a font.
+    // Load some fonts.
     let font = {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../assets/fonts/NotoSans-Regular.ttf");
+        let data = std::fs::read(&path).unwrap();
+        Font::new(data.into(), 0).unwrap()
+    };
+    let font_serif = {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../assets/fonts/LibertinusSerif-Regular.otf");
         let data = std::fs::read(&path).unwrap();
         Font::new(data.into(), 0).unwrap()
     };
@@ -36,6 +45,60 @@ fn main() {
     radio_group.set_alt_name("A radio group".to_string());
     // Disallow toggling the radio group back to off.
     radio_group.set_allow_toggling_off(false);
+
+    // Create a text field.
+    let mut text_field = FormField::text("text".to_string());
+    // Set an alternative name, for accessibility purposes.
+    text_field.set_alt_name("A text field".to_string());
+    // Set the appearance PDF processors should use when filling out this text field.
+    text_field.set_appearance(VariableAppearance {
+        font: FormFont::Standard(StandardFont::TimesRoman),
+        font_size: 10.0,
+        paint: Some(rgb::Color::new(255, 0, 255).into()),
+        ..Default::default()
+    });
+    // Tell PDF processors to center the text when filling out this text field.
+    text_field.set_text_alignment(TextAlignment::Center);
+    // Pre-fill this field with the given value.
+    text_field.set_value("testing".to_string());
+
+    // Create a combobox field.
+    let mut combobox_field = FormField::combobox("combobox".to_string());
+    // Set an alternative name, for accessibility purposes.
+    combobox_field.set_alt_name("A combobox field with 3 colors as options".to_string());
+    // Set the available options of this field, along with their display names
+    combobox_field.set_options(vec![
+        ChoiceOption::new("red".into(), Some("Red".into())),
+        ChoiceOption::new("green".into(), Some("Green".into())),
+        ChoiceOption::new("blue".into(), Some("Blue".into())),
+    ]);
+    // Allow users to add their own values instead.
+    combobox_field.set_edit(true);
+    // Set the appearance PDF processors should use when filling out this combobox field.
+    combobox_field.set_appearance(VariableAppearance {
+        font: FormFont::Standard(StandardFont::Helvetica),
+        font_size: 10.0,
+        ..Default::default()
+    });
+
+    // Create a listbox field.
+    let mut listbox_field = FormField::listbox("listbox".to_string());
+    // Set an alternative name, for accessibility purposes.
+    listbox_field.set_alt_name("A listbox field with 3 colors as options".to_string());
+    // Set the available options of this field, along with their display names
+    listbox_field.set_options(vec![
+        ChoiceOption::new("red".into(), Some("Red".into())),
+        ChoiceOption::new("green".into(), Some("Green".into())),
+        ChoiceOption::new("blue".into(), Some("Blue".into())),
+    ]);
+    // Allow users to select multiple options.
+    listbox_field.set_multiple_options(true);
+    // Set the appearance PDF processors should use when filling out this listbox field.
+    listbox_field.set_appearance(VariableAppearance {
+        font: FormFont::Standard(StandardFont::Helvetica),
+        font_size: 10.0,
+        ..Default::default()
+    });
 
     // Create a button that will reset the form when clicked.
     let mut reset_button = FormField::push_button("reset-button".to_string());
@@ -59,7 +122,7 @@ fn main() {
     // Create an appearance for when a checkbox is checked.
     let checkbox_on_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(20.0, 20.0));
 
         surface.draw_text(
             Point::from_xy(0.0, 12.0),
@@ -77,7 +140,7 @@ fn main() {
     // Create an appearance for when a checkbox is unchecked.
     let checkbox_off_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(20.0, 20.0));
 
         surface.draw_text(
             Point::from_xy(0.0, 12.0),
@@ -112,25 +175,21 @@ fn main() {
     // Create an appearance for when a radio button is selected.
     let radio_on_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(20.0, 20.0));
 
         surface.set_fill(None);
         surface.set_stroke(Some(Stroke {
             paint: rgb::Color::black().into(),
             ..Default::default()
         }));
-        let mut pb = PathBuilder::new();
-        pb.push_rect(Rect::from_xywh(0.0, 0.0, 20.0, 20.0).unwrap());
-        surface.draw_path(&pb.finish().unwrap());
+        surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
 
         surface.set_fill(Some(Fill {
             paint: rgb::Color::black().into(),
             ..Default::default()
         }));
         surface.set_stroke(None);
-        let mut pb = PathBuilder::new();
-        pb.push_rect(Rect::from_xywh(3.0, 3.0, 14.0, 14.0).unwrap());
-        surface.draw_path(&pb.finish().unwrap());
+        surface.draw_path(&rect_to_path(3.0, 3.0, 14.0, 14.0));
 
         surface.finish();
         builder.finish()
@@ -139,16 +198,14 @@ fn main() {
     // Create an appearance for when a radio button is unselected.
     let radio_off_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(20.0, 20.0));
 
         surface.set_fill(None);
         surface.set_stroke(Some(Stroke {
             paint: rgb::Color::black().into(),
             ..Default::default()
         }));
-        let mut pb = PathBuilder::new();
-        pb.push_rect(Rect::from_xywh(0.0, 0.0, 20.0, 20.0).unwrap());
-        surface.draw_path(&pb.finish().unwrap());
+        surface.draw_path(&rect_to_path(0.0, 0.0, 20.0, 20.0));
 
         surface.finish();
         builder.finish()
@@ -190,10 +247,132 @@ fn main() {
         TextDirection::Auto,
     );
 
+    // Create an appearance for the text field.
+    // It is our responsibility to ensure the styles and the value match those of the field.
+    let text_appearance = {
+        let mut builder = surface.stream_builder();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(40.0, 20.0));
+
+        // Start the part of the appearance stream that represents the value of the field.
+        surface.start_variable_text();
+
+        // Write the current value, taking into consideration the appearance of the field.
+        surface.set_fill(Some(Fill {
+            paint: rgb::Color::new(255, 0, 255).into(),
+            ..Default::default()
+        }));
+        surface.draw_text(
+            Point::from_xy(6.0, 13.0),
+            font_serif.clone(),
+            10.0,
+            "testing",
+            false,
+            TextDirection::Auto,
+        );
+
+        // Do not forget to end the section!
+        surface.end_variable_text();
+
+        surface.finish();
+        builder.finish()
+    };
+
+    // Create a widget annotation (visual representation) for the text field.
+    let text_widget = text_field.new_widget(
+        Rect::from_xywh(40.0, 120.0, 40.0, 20.0).unwrap(),
+        text_appearance,
+    );
+
+    // Create an appearance for the combobox field.
+    let combobox_appearance = {
+        let mut builder = surface.stream_builder();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(60.0, 20.0));
+
+        // Draw a border around the field.
+        surface.set_stroke(Some(Stroke {
+            paint: rgb::Color::black().into(),
+            ..Default::default()
+        }));
+        surface.draw_path(&rect_to_path(0.0, 0.0, 60.0, 20.0));
+
+        // Start the part of the appearance stream that represents the value of the field.
+        surface.start_variable_text();
+
+        // There is no value, so we can leave this empty instead.
+
+        // Do not forget to end the section!
+        surface.end_variable_text();
+
+        surface.finish();
+        builder.finish()
+    };
+
+    // Create a widget annotation (visual representation) for the combobox field.
+    let combobox_widget = combobox_field.new_widget(
+        Rect::from_xywh(120.0, 120.0, 60.0, 20.0).unwrap(),
+        combobox_appearance,
+    );
+
+    // Create an appearance for the listbox field.
+    // It is our responsibility to draw the available options.
+    let listbox_appearance = {
+        let mut builder = surface.stream_builder();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(60.0, 40.0));
+
+        // Draw a border around the field.
+        surface.set_stroke(Some(Stroke {
+            paint: rgb::Color::black().into(),
+            ..Default::default()
+        }));
+        surface.draw_path(&rect_to_path(0.0, 0.0, 60.0, 40.0));
+        surface.set_stroke(None);
+
+        // Start the part of the appearance stream that represents the value of the field.
+        surface.start_variable_text();
+
+        // Draw the options
+        surface.draw_text(
+            Point::from_xy(2.0, 10.0),
+            font.clone(),
+            8.0,
+            "Red",
+            false,
+            TextDirection::Auto,
+        );
+        surface.draw_text(
+            Point::from_xy(2.0, 20.0),
+            font.clone(),
+            8.0,
+            "Green",
+            false,
+            TextDirection::Auto,
+        );
+        surface.draw_text(
+            Point::from_xy(2.0, 30.0),
+            font.clone(),
+            8.0,
+            "Blue",
+            false,
+            TextDirection::Auto,
+        );
+
+        // Do not forget to end the section!
+        surface.end_variable_text();
+
+        surface.finish();
+        builder.finish()
+    };
+
+    // Create a widget annotation (visual representation) for the listbox field.
+    let listbox_widget = listbox_field.new_widget(
+        Rect::from_xywh(120.0, 150.0, 60.0, 40.0).unwrap(),
+        listbox_appearance,
+    );
+
     // Create an appearance for the reset push button.
     let button_appearance = {
         let mut builder = surface.stream_builder();
-        let mut surface = builder.surface();
+        let mut surface = builder.surface_with_bbox(wh_to_rect(40.0, 20.0));
 
         surface.draw_text(
             Point::from_xy(0.0, 12.0),
@@ -210,7 +389,7 @@ fn main() {
 
     // Create a widget annotation (visual representation) for the push button.
     let mut reset_button_widget = reset_button.new_widget(
-        Rect::from_xywh(40.0, 120.0, 40.0, 20.0).unwrap(),
+        Rect::from_xywh(40.0, 150.0, 40.0, 20.0).unwrap(),
         button_appearance,
     );
     // Set an on click action (reset all fields except for button itself).
@@ -226,6 +405,9 @@ fn main() {
     page.add_widget_annotation(&mut checkbox, checkbox_widget.into());
     page.add_widget_annotation(&mut radio_group, radio_option_1.into());
     page.add_widget_annotation(&mut radio_group, radio_option_2.into());
+    page.add_widget_annotation(&mut text_field, text_widget.into());
+    page.add_widget_annotation(&mut combobox_field, combobox_widget.into());
+    page.add_widget_annotation(&mut listbox_field, listbox_widget.into());
     page.add_widget_annotation(&mut reset_button, reset_button_widget.into());
 
     // Finish the page.
@@ -236,6 +418,9 @@ fn main() {
         fields: vec![
             checkbox.into(),
             radio_group.into(),
+            text_field.into(),
+            combobox_field.into(),
+            listbox_field.into(),
             // Fields can be grouped arbitrarily.
             FieldGroup {
                 name: "actions".to_string(),
@@ -252,4 +437,16 @@ fn main() {
 
     // Write the PDF to a file.
     std::fs::write(path, &pdf).unwrap();
+}
+
+// A simple convenience function that allow us to generate rectangle paths.
+fn rect_to_path(x: f32, y: f32, w: f32, h: f32) -> Path {
+    let mut builder = PathBuilder::new();
+    builder.push_rect(Rect::from_xywh(x, y, w, h).unwrap());
+    builder.finish().unwrap()
+}
+
+// A simple convenience function that creates an origin-anchored rect with the given dimensions.
+fn wh_to_rect(w: f32, h: f32) -> Rect {
+    Rect::from_xywh(0.0, 0.0, w, h).unwrap()
 }
