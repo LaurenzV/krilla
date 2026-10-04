@@ -473,6 +473,8 @@ impl SerializeContext {
         self.serialize_pages(&mut chunk_container)?;
         self.serialize_page_tree(&mut chunk_container);
         self.serialize_forms(&mut chunk_container);
+        // Forms register fonts for variable text /DA strings,
+        // so it's important we serialize fonts afterwards!
         self.serialize_fonts(&mut chunk_container)?;
         #[cfg(feature = "pdf")]
         self.serialize_embedded_pdfs(&mut chunk_container)?;
