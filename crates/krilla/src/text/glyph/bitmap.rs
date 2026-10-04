@@ -35,14 +35,16 @@ pub(crate) fn draw_glyph(font: Font, glyph: GlyphId, surface: &mut Surface) -> O
             let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
 
             // Adapted from vello.
-            let scale_factor = upem / (bitmap_glyph.ppem_y);
             let outer_bearing = if font.is_apple_color_emoji() {
                 (0.0, upem / 8.0)
             } else {
                 (bitmap_glyph.bearing_x, -bitmap_glyph.bearing_y)
             };
             let mut transform = Transform::from_translate(outer_bearing.0, outer_bearing.1)
-                .pre_concat(Transform::from_scale(scale_factor, scale_factor))
+                .pre_concat(Transform::from_scale(
+                    upem / bitmap_glyph.ppem_x,
+                    upem / bitmap_glyph.ppem_y,
+                ))
                 .pre_concat(Transform::from_translate(
                     bitmap_glyph.inner_bearing_x,
                     -bitmap_glyph.inner_bearing_y,
