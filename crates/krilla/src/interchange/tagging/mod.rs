@@ -570,8 +570,14 @@ impl TagKind {
             // Custom structure roles that are registered in the `RoleMap`.
             Self::Datetime(_) => write_kind_custom(sc, struct_elem, Name(b"Datetime")),
             Self::Terms(_) => write_kind_custom(sc, struct_elem, Name(b"Terms")),
-            Self::Title(_) => write_kind_custom(sc, struct_elem, Name(b"Title")),
             // PDF 2.0 structure roles that are conditionally registered.
+            Self::Title(_) => {
+                if pdf_version < PdfVersion::Pdf20 {
+                    struct_elem.custom_kind(Name(b"Title"));
+                } else {
+                    struct_elem.kind_2(StructRole2::Title, sc.pdf2_ns.ssn_ref);
+                }
+            }
             Self::Hn(tag) => {
                 let role2 = StructRole2::Heading(tag.level());
                 if pdf_version < PdfVersion::Pdf20 {
@@ -1188,7 +1194,12 @@ impl TagTree {
         }
 
         let mut struct_elem = struct_elems.indirect(root_ref).start::<StructElement>();
-        struct_elem.kind(StructRole::Document);
+        if sc.serialize_settings().pdf_version() < PdfVersion::Pdf20 {
+            struct_elem.kind(StructRole::Document);
+        } else {
+            // PDF/UA-2 requires the root `Document` to be in the PDF 2.0 namespace.
+            struct_elem.kind_2(StructRole2::Document, sc.pdf2_ns.ssn_ref);
+        }
         struct_elem.parent(struct_tree_ref);
         if let Some(lang) = &self.lang {
             if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf14 {

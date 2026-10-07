@@ -662,6 +662,37 @@ fn tagging_custom_namespace_pdf_20(document: &mut Document) {
     document.set_tag_tree(tag_tree);
 }
 
+#[snapshot(document, settings_15)]
+fn tagging_title_pdf_17(document: &mut Document) {
+    tagging_title_impl(document);
+}
+
+#[snapshot(document, settings_25)]
+fn tagging_title_pdf_20(document: &mut Document) {
+    tagging_title_impl(document);
+}
+
+fn tagging_title_impl(document: &mut Document) {
+    document.set_metadata(Metadata::new().title("Title".into()).language("en".into()));
+    document.set_outline(Outline::new());
+
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "A title");
+    surface.end_tagged();
+    let mut title = TagGroup::new(Tag::Title);
+    title.push(id);
+
+    surface.finish();
+    page.finish();
+
+    tag_tree.push(title);
+    document.set_tag_tree(tag_tree);
+}
+
 fn tagging_strong_and_em_impl(document: &mut Document) {
     document.set_metadata(
         Metadata::new()
