@@ -645,6 +645,42 @@ fn tagging_strong_and_em_pdf_20(document: &mut Document) {
     tagging_strong_and_em_impl(document);
 }
 
+fn tagging_strong_and_em_impl(document: &mut Document) {
+    document.set_metadata(
+        Metadata::new()
+            .title("Strong and Em".into())
+            .language("en".into()),
+    );
+    document.set_outline(Outline::new());
+
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "STRONG TEXT");
+    surface.end_tagged();
+    let mut strong = TagGroup::new(Tag::Strong);
+    strong.push(id1);
+
+    let id2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "emphasized text");
+    surface.end_tagged();
+    let mut em = TagGroup::new(Tag::Em);
+    em.push(id2);
+
+    surface.finish();
+    page.finish();
+
+    let mut p = TagGroup::new(Tag::P);
+    p.push(strong);
+    p.push(em);
+
+    tag_tree.push(p);
+
+    document.set_tag_tree(tag_tree);
+}
+
 #[snapshot(document, settings_25)]
 fn tagging_custom_namespace_pdf_20(document: &mut Document) {
     let mut page = document.start_page();
@@ -690,42 +726,6 @@ fn tagging_title_impl(document: &mut Document) {
     page.finish();
 
     tag_tree.push(title);
-    document.set_tag_tree(tag_tree);
-}
-
-fn tagging_strong_and_em_impl(document: &mut Document) {
-    document.set_metadata(
-        Metadata::new()
-            .title("Strong and Em".into())
-            .language("en".into()),
-    );
-    document.set_outline(Outline::new());
-
-    let mut tag_tree = TagTree::new();
-    let mut page = document.start_page();
-    let mut surface = page.surface();
-
-    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
-    surface.fill_text_(100.0, "STRONG TEXT");
-    surface.end_tagged();
-    let mut strong = TagGroup::new(Tag::Strong);
-    strong.push(id1);
-
-    let id2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
-    surface.fill_text_(100.0, "emphasized text");
-    surface.end_tagged();
-    let mut em = TagGroup::new(Tag::Em);
-    em.push(id2);
-
-    surface.finish();
-    page.finish();
-
-    let mut p = TagGroup::new(Tag::P);
-    p.push(strong);
-    p.push(em);
-
-    tag_tree.push(p);
-
     document.set_tag_tree(tag_tree);
 }
 
