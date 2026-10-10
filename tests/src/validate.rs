@@ -1,4 +1,4 @@
-use krilla::action::{LinkAction, ResetFormAction};
+use krilla::action::{ActionFieldFilter, LinkAction, ResetFormAction};
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{rgb, separation};
 use krilla::configure::validate::VersionedFeature;
@@ -307,7 +307,7 @@ fn reset_form_action_document_impl(document: &mut Document) {
                 Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
                 button_appearance.clone(),
             )
-            .with_action_mouse_press(ResetFormAction::All.into()),
+            .with_action_mouse_press(ResetFormAction::new(ActionFieldFilter::All).into()),
     )
     .with_location(Some(annot_loc));
     page.add_widget_annotation(&mut button, annot);
