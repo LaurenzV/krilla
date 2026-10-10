@@ -1,4 +1,6 @@
-use krilla::action::ResetFormAction;
+use krilla::action::{
+    ActionFieldFilter, HttpMethod, ResetFormAction, SubmissionFormat, SubmitFormAction,
+};
 use krilla::color::{cmyk, luma, rgb};
 use krilla::form::kind::{ChoiceOption, PushButton};
 use krilla::form::variable_text::{FormFont, VariableAppearance};
@@ -32,7 +34,7 @@ fn forms_push_button(d: &mut Document) {
         button_appearance,
     );
     button_widget.set_rollover_appearance(button_hover_appearance);
-    button_widget.set_action_mouse_press(ResetFormAction::All.into());
+    button_widget.set_action_mouse_press(ResetFormAction::new(ActionFieldFilter::All).into());
     page.add_widget_annotation(&mut button, button_widget.into());
 
     page.finish();
@@ -302,7 +304,7 @@ fn forms_listbox(d: &mut Document) {
 }
 
 #[snapshot(document)]
-fn forms_reset_action(d: &mut Document) {
+fn forms_button_actions(d: &mut Document) {
     let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
 
     let mut surface = page.surface();
@@ -333,22 +335,67 @@ fn forms_reset_action(d: &mut Document) {
         button_appearance.clone(),
     );
     reset_button_1_widget.set_action_mouse_press(
-        ResetFormAction::Include(vec!["checkboxes.checkbox1".to_string()]).into(),
+        ResetFormAction::new(ActionFieldFilter::Include(vec![
+            "checkboxes.checkbox1".to_string()
+        ]))
+        .into(),
     );
 
     let mut reset_button_2 = FormField::push_button("reset2".to_string());
     let mut reset_button_2_widget = reset_button_2.new_widget(
         Rect::from_xywh(60.0, 0.0, 10.0, 10.0).unwrap(),
-        button_appearance,
+        button_appearance.clone(),
     );
     reset_button_2_widget.set_action_mouse_press(
-        ResetFormAction::Exclude(vec!["checkboxes.checkbox1".to_string()]).into(),
+        ResetFormAction::new(ActionFieldFilter::Exclude(vec![
+            "checkboxes.checkbox1".to_string()
+        ]))
+        .into(),
+    );
+
+    let mut submit_button_1 = FormField::push_button("submit1".to_string());
+    let mut submit_button_1_widget = submit_button_1.new_widget(
+        Rect::from_xywh(50.0, 20.0, 10.0, 10.0).unwrap(),
+        button_appearance.clone(),
+    );
+    submit_button_1_widget
+        .set_action_mouse_press(SubmitFormAction::new("https://example.com".to_string()).into());
+
+    let mut submit_button_2 = FormField::push_button("submit2".to_string());
+    let mut submit_button_2_widget = submit_button_2.new_widget(
+        Rect::from_xywh(60.0, 20.0, 10.0, 10.0).unwrap(),
+        button_appearance.clone(),
+    );
+    submit_button_2_widget.set_action_mouse_press(
+        SubmitFormAction::new("https://example.net".to_string())
+            .with_fields(ActionFieldFilter::Include(vec![
+                "checkboxes.checkbox1".to_string()
+            ]))
+            .with_format(SubmissionFormat::UrlEncoded(HttpMethod::Post))
+            .into(),
+    );
+
+    let mut submit_button_3 = FormField::push_button("submit2".to_string());
+    let mut submit_button_3_widget = submit_button_3.new_widget(
+        Rect::from_xywh(70.0, 20.0, 10.0, 10.0).unwrap(),
+        button_appearance.clone(),
+    );
+    submit_button_3_widget.set_action_mouse_press(
+        SubmitFormAction::new("https://example.net".to_string())
+            .with_fields(ActionFieldFilter::Exclude(vec![
+                "checkboxes.checkbox1".to_string()
+            ]))
+            .with_format(SubmissionFormat::Xfdf)
+            .into(),
     );
 
     page.add_widget_annotation(&mut checkbox_1, checkbox_1_widget.into());
     page.add_widget_annotation(&mut checkbox_2, checkbox_2_widget.into());
     page.add_widget_annotation(&mut reset_button_1, reset_button_1_widget.into());
     page.add_widget_annotation(&mut reset_button_2, reset_button_2_widget.into());
+    page.add_widget_annotation(&mut submit_button_1, submit_button_1_widget.into());
+    page.add_widget_annotation(&mut submit_button_2, submit_button_2_widget.into());
+    page.add_widget_annotation(&mut submit_button_3, submit_button_3_widget.into());
 
     page.finish();
 
@@ -361,6 +408,9 @@ fn forms_reset_action(d: &mut Document) {
             .into(),
             reset_button_1.into(),
             reset_button_2.into(),
+            submit_button_1.into(),
+            submit_button_2.into(),
+            submit_button_3.into(),
         ],
     });
 }
