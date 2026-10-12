@@ -642,6 +642,19 @@ impl FormField<kind::Text> {
         self
     }
 
+    /// Set whether to enable spell checking on this field.
+    /// Default: true
+    pub fn set_spellcheck(&mut self, spellcheck: bool) {
+        self.flags.set(FieldFlags::DO_NOT_SPELL_CHECK, !spellcheck);
+    }
+
+    /// Set whether to enable spell checking on this field.
+    /// Default: true
+    pub fn with_spellcheck(mut self, spellcheck: bool) -> Self {
+        self.set_spellcheck(spellcheck);
+        self
+    }
+
     /// Set the appearance characteristics the value of the field should have when drawn.
     /// This is not used by krilla, but by future PDF readers when changing the value of the field.
     pub fn set_appearance(&mut self, appearance: VariableAppearance) {
@@ -818,6 +831,21 @@ impl FormField<kind::ComboBox> {
     /// Default: false
     pub fn with_edit(mut self, edit: bool) -> Self {
         self.set_edit(edit);
+        self
+    }
+
+    /// Set whether to enable spell checking on this field.
+    /// Only has effect if [the edit flag](Self::set_edit) is true.
+    /// Default: true
+    pub fn set_spellcheck(&mut self, spellcheck: bool) {
+        self.flags.set(FieldFlags::DO_NOT_SPELL_CHECK, !spellcheck);
+    }
+
+    /// Set whether to enable spell checking on this field.
+    /// Only has effect if [the edit flag](Self::set_edit) is true.
+    /// Default: true
+    pub fn with_spellcheck(mut self, spellcheck: bool) -> Self {
+        self.set_spellcheck(spellcheck);
         self
     }
 
