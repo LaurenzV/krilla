@@ -45,7 +45,7 @@ resvg = "0.47.0"
 rustc-hash = "2.1.1"
 harfrust = "0.12.0"
 siphasher = "1.0.1"
-sitro = { git = "https://github.com/LaurenzV/sitro", rev = "78cc364", default-features = false }
+sitro = { git = "https://github.com/LaurenzV/sitro", rev = "ac3b91d", default-features = false }
 skrifa = "0.44.0"
 smallvec = { version = "1.15.1", features = ["union", "const_new", "write"] }
 subsetter = { version = "0.2.6", features = ["variable-fonts"] }
@@ -57,4 +57,4 @@ xmp-writer = "0.3.3"
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.18.1"
 zune-jpeg = "0.5.5"
- 
+
