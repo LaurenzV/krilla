@@ -11,7 +11,7 @@ use pdf_writer::Name;
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::configure::validate::VersionedFeature;
-use crate::configure::ValidationError;
+use crate::configure::{PdfVersion, ValidationError};
 use crate::content::ContentBuilder;
 use crate::geom::Path;
 #[cfg(any(feature = "raster-images", feature = "pdf"))]
@@ -237,6 +237,24 @@ impl<'a> Surface<'a> {
         if self.page_identifier.is_some() {
             self.bd.get_mut().end_marked_content();
         }
+    }
+
+    /// Draw content with replacement text for selection and extraction.
+    ///
+    /// The replacement does not change how the content is painted. It works on both
+    /// page and sub-stream surfaces and can nest inside tagged content. For PDF
+    /// versions before 1.5, the closure is called without a replacement sequence.
+    pub fn with_actual_text<T>(&mut self, text: &str, draw: impl FnOnce(&mut Self) -> T) -> T {
+        if self.sc.serialize_settings().pdf_version() < PdfVersion::Pdf15 {
+            return draw(self);
+        }
+
+        // Unlike tagged sections, these bounded spans need no MCID and may nest
+        // around glyph-level replacements or an existing page tag.
+        self.bd.get_mut().begin_actual_text(text);
+        let result = draw(self);
+        self.bd.get_mut().end_actual_text();
+        result
     }
 
     /// Start a new variable text marked section.

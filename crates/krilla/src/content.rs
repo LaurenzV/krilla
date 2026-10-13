@@ -174,6 +174,17 @@ impl ContentBuilder {
         self.active_marked_content = false;
     }
 
+    pub(crate) fn begin_actual_text(&mut self, text: &str) {
+        self.content
+            .begin_marked_content_with_properties(Name(b"Span"))
+            .properties()
+            .actual_text(TextStr(text));
+    }
+
+    pub(crate) fn end_actual_text(&mut self) {
+        self.content.end_marked_content();
+    }
+
     pub(crate) fn concat_transform(&mut self, transform: &Transform) {
         self.graphics_states.transform(*transform);
     }
