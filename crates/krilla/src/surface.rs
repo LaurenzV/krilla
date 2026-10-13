@@ -327,7 +327,7 @@ impl<'a> Surface<'a> {
             && self
                 .bd
                 .get_mut()
-                .cur_transform()
+                .actual_text_glyph_transform()
                 .similarity_scale()
                 .is_none()
         {
