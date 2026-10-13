@@ -17,3 +17,6 @@ flate2 = { workspace = true }
 fontdb = { workspace = true }
 skrifa = { workspace = true }
 smallvec = { workspace = true }
+
+[dev-dependencies]
+pdf-extract = "0.10"

@@ -22,7 +22,12 @@ pub(crate) fn render(
     surface: &mut Surface,
     process_context: &mut ProcessContext,
 ) {
-    for span in text.layouted() {
+    let spans = text.layouted();
+    let mut consumed = 0;
+    for (index, span) in spans.iter().enumerate() {
+        if index < consumed {
+            continue;
+        }
         if !span.visible {
             continue;
         }
@@ -33,6 +38,18 @@ pub(crate) fn render(
 
         if let Some(underline) = &span.underline {
             path::render(underline, surface, process_context);
+        }
+
+        let mut end = index + 1;
+        while end < spans.len() && compatible_solid_spans(span, &spans[end]) {
+            end += 1;
+        }
+        if render_solid_text_run(&spans[index..end], surface, process_context) {
+            consumed = end;
+            if let Some(line_through) = &span.line_through {
+                path::render(line_through, surface, process_context);
+            }
+            continue;
         }
 
         for glyph in &span.positioned_glyphs {
@@ -147,6 +164,124 @@ pub(crate) fn render(
     }
 }
 
+fn compatible_solid_spans(first: &usvg::layout::Span, next: &usvg::layout::Span) -> bool {
+    next.visible
+        && first.stroke.is_none()
+        && next.stroke.is_none()
+        && first.overline.is_none()
+        && next.overline.is_none()
+        && first.underline.is_none()
+        && next.underline.is_none()
+        && first.line_through.is_none()
+        && next.line_through.is_none()
+        && first.font_size == next.font_size
+        && first.font_optical_sizing == next.font_optical_sizing
+        && first.variations == next.variations
+        && match (first.fill.as_ref(), next.fill.as_ref()) {
+            (Some(a), Some(b)) => {
+                matches!((a.paint(), b.paint()), (usvg::Paint::Color(c), usvg::Paint::Color(d)) if c == d)
+                    && a.opacity() == b.opacity()
+                    && a.rule() == b.rule()
+            }
+            _ => false,
+        }
+}
+
+/// Coalesce compatible consecutive solid-fill glyphs in one PDF text operation. Separate transformed
+/// operations make extractors insert spaces inside otherwise contiguous words.
+/// Stroked/complex paint retains its per-glyph paint order.
+fn render_solid_text_run(
+    spans: &[usvg::layout::Span],
+    surface: &mut Surface,
+    process_context: &mut ProcessContext,
+) -> bool {
+    let span = &spans[0];
+    if span.stroke.is_some()
+        || !span
+            .fill
+            .as_ref()
+            .is_some_and(|fill| matches!(fill.paint(), usvg::Paint::Color(_)))
+    {
+        return false;
+    }
+    let source: Vec<_> = spans
+        .iter()
+        .flat_map(|span| &span.positioned_glyphs)
+        .collect();
+    let size = span.font_size.get();
+    let mut index = 0;
+    while index < source.len() {
+        let first = &source[index];
+        let Some(font) = process_context.fonts.retrieve(span, first.font) else {
+            index += 1;
+            continue;
+        };
+        let scale = Transform::from_scale(font.units_per_em() / size, font.units_per_em() / size);
+        let base = first.transform().pre_concat(scale);
+        let Some(inverse) = base.invert() else {
+            index += 1;
+            continue;
+        };
+        let mut end = index + 1;
+        while end < source.len() && source[end].font == first.font {
+            let next = source[end].transform().pre_concat(scale);
+            if (next.sx, next.kx, next.ky, next.sy) != (base.sx, base.kx, base.ky, base.sy) {
+                break;
+            }
+            end += 1;
+        }
+        let positions: Vec<_> = source[index..end]
+            .iter()
+            .map(|glyph| {
+                let transform = glyph.transform().pre_concat(scale);
+                (
+                    inverse.sx * transform.tx + inverse.kx * transform.ty + inverse.tx,
+                    inverse.ky * transform.tx + inverse.sy * transform.ty + inverse.ty,
+                )
+            })
+            .collect();
+        let mut text = String::new();
+        let glyphs: Vec<_> = source[index..end]
+            .iter()
+            .enumerate()
+            .map(|(i, glyph)| {
+                let start = text.len();
+                text.push_str(&glyph.text);
+                let advance = positions
+                    .get(i + 1)
+                    .map_or(0.0, |next| (next.0 - positions[i].0) / size);
+                KrillaGlyph::new(
+                    GlyphId::new(glyph.id.0 as u32),
+                    advance,
+                    0.0,
+                    -positions[i].1 / size,
+                    0.0,
+                    start..text.len(),
+                    None,
+                )
+            })
+            .collect();
+        let fill = span
+            .fill
+            .as_ref()
+            .map(|fill| convert_fill(fill, surface.stream_builder(), process_context, inverse));
+        surface.push_transform(&base.to_krilla());
+        surface.set_fill(fill);
+        surface.set_stroke(None);
+        surface.draw_glyphs(
+            Point::from_xy(positions[0].0, 0.0),
+            &glyphs,
+            font,
+            &text,
+            size,
+            !process_context.svg_settings.embed_text,
+        );
+        surface.pop();
+        index = end;
+    }
+    true
+}
+
 /// Manages the krilla fonts used by an SVG.
 pub(crate) struct Fonts<'a> {
     db: &'a mut Database,
@@ -228,5 +363,71 @@ impl<'a> Fonts<'a> {
         }
 
         variations
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use krilla::geom::Size;
+    use krilla::page::PageSettings;
+    use krilla::Document;
+
+    use crate::{SurfaceExt, SvgSettings};
+
+    #[test]
+    fn svg_words_remain_contiguous_in_extracted_text() {
+        let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80">
+            <text x="10" y="30" font-family="Noto Sans" font-size="18">Vector table 0.125</text>
+        </svg>"#;
+        let text = extract_svg_text(svg);
+        assert!(text.contains("Vector table 0.125"), "{text:?}");
+    }
+
+    #[test]
+    fn svg_horizontally_positioned_and_rotated_words_remain_contiguous() {
+        for content in [
+            r#"<text x="10 22 34 46 58 70" y="30">Amount</text>"#,
+            r#"<text x="10" y="30" transform="rotate(12 10 30)">Amount</text>"#,
+        ] {
+            let svg = format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80"><g font-family="Noto Sans" font-size="18">{content}</g></svg>"#
+            );
+            let text = extract_svg_text(svg.as_bytes());
+            assert!(text.contains("Amount"), "{content}: {text:?}");
+        }
+    }
+
+    #[test]
+    fn svg_unicode_words_keep_their_original_text() {
+        let svg = r#"<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80"><text x="10" y="30" font-family="Noto Sans" font-size="18">Καλημέρα Привет</text></svg>"#;
+        let text = extract_svg_text(svg.as_bytes());
+        assert!(text.contains("Καλημέρα Привет"), "{text:?}");
+    }
+
+    fn extract_svg_text(svg: &[u8]) -> String {
+        let mut db = fontdb::Database::new();
+        db.load_font_data(
+            include_bytes!("../../../assets/svg_fonts/NotoSans-Regular.ttf").to_vec(),
+        );
+
+        let tree = usvg::Tree::from_data(
+            svg,
+            &usvg::Options {
+                fontdb: Arc::new(db),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let mut document = Document::new();
+        let size = Size::from_wh(300.0, 80.0).unwrap();
+        let mut page = document.start_page_with(PageSettings::new(size));
+        let mut surface = page.surface();
+        surface.draw_svg(&tree, size, SvgSettings::default());
+        surface.finish();
+        page.finish();
+        let pdf = document.finish().unwrap();
+        pdf_extract::extract_text_from_mem(&pdf).unwrap()
     }
 }
