@@ -321,6 +321,40 @@ impl<'a> Surface<'a> {
         outlined: bool,
     ) {
         let context_color = self.context_color();
+        if !outlined
+            && self.bd.get_mut().has_actual_text()
+            && self.stroke.is_some()
+            && self
+                .bd
+                .get_mut()
+                .cur_transform()
+                .similarity_scale()
+                .is_none()
+        {
+            // Text matrices preserve selection coordinates within a replacement scope.
+            // An affine pen cannot be represented by a scalar text stroke width. Paint
+            // such strokes as paths while retaining the same selectable glyphs.
+            let fill = self.fill.clone().unwrap_or(Fill {
+                opacity: NormalizedF32::ZERO,
+                ..Fill::default()
+            });
+            self.bd.get_mut().draw_glyphs(
+                start,
+                self.sc,
+                self.chunk_container,
+                Some(&fill),
+                None,
+                context_color,
+                glyphs,
+                font.clone(),
+                text,
+                font_size,
+            );
+            let saved_fill = self.fill.take();
+            self.outline_glyphs(glyphs, context_color, start, font, font_size);
+            self.fill = saved_fill;
+            return;
+        }
         if outlined {
             self.outline_glyphs(glyphs, context_color, start, font, font_size);
         } else {

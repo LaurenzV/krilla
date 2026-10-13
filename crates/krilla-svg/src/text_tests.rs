@@ -58,6 +58,15 @@ fn extract_svg_text(svg: &[u8]) -> String {
 }
 
 fn render_svg_pdf(svg: &[u8], svg_settings: SvgSettings, settings: SerializeSettings) -> Vec<u8> {
+    render_svg_pdf_on_surface(svg, svg_settings, settings, false)
+}
+
+fn render_svg_pdf_on_surface(
+    svg: &[u8],
+    svg_settings: SvgSettings,
+    settings: SerializeSettings,
+    in_form: bool,
+) -> Vec<u8> {
     let tree = usvg::Tree::from_data(
         svg,
         &usvg::Options {
@@ -70,7 +79,16 @@ fn render_svg_pdf(svg: &[u8], svg_settings: SvgSettings, settings: SerializeSett
     let size = Size::from_wh(300.0, 80.0).unwrap();
     let mut page = document.start_page_with(PageSettings::new(size));
     let mut surface = page.surface();
-    surface.draw_svg(&tree, size, svg_settings);
+    if in_form {
+        let mut builder = surface.stream_builder();
+        let mut sub_surface = builder.surface();
+        sub_surface.draw_svg(&tree, size, svg_settings);
+        sub_surface.finish();
+        let graphic = krilla::graphic::Graphic::new(builder.finish(), true);
+        surface.draw_graphic(graphic);
+    } else {
+        surface.draw_svg(&tree, size, svg_settings);
+    }
     surface.finish();
     page.finish();
     document.finish().unwrap()
@@ -205,5 +223,84 @@ fn replacement_scopes_work_in_forms_and_inside_page_tags() {
             pdf_extract::extract_text_from_mem(&pdf).unwrap().trim(),
             "Diagram"
         );
+    }
+}
+
+#[test]
+#[ignore = "requires Poppler pdftotext"]
+fn poppler_preserves_separate_svg_label_positions() {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    let svg = br#"<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80">
+        <g font-family="Noto Sans" font-size="18">
+            <text x="10" y="30">Sample</text>
+            <text x="170" y="30">Count</text>
+        </g>
+    </svg>"#;
+    for in_form in [false, true] {
+        let pdf = render_svg_pdf_on_surface(
+            svg,
+            SvgSettings::default(),
+            SerializeSettings::default(),
+            in_form,
+        );
+        let mut process = Command::new("pdftotext")
+            .args(["-bbox", "-", "-"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("Poppler pdftotext must be installed for this integration test");
+        process.stdin.take().unwrap().write_all(&pdf).unwrap();
+        let output = process.wait_with_output().unwrap();
+        assert!(output.status.success());
+        let bounds = String::from_utf8(output.stdout).unwrap();
+        for (word, expected_x, minimum_width) in [("Sample", 10.0, 40.0), ("Count", 170.0, 35.0)] {
+            let end = bounds
+                .find(&format!(">{word}</word>"))
+                .unwrap_or_else(|| panic!("word must extract separately: {word}; {bounds}"));
+            let start = bounds[..end].rfind("<word ").unwrap();
+            let attributes = &bounds[start..end];
+            let value = attributes
+                .split_once("xMin=\"")
+                .unwrap()
+                .1
+                .split('"')
+                .next()
+                .unwrap();
+            let actual_x: f64 = value.parse().unwrap();
+            assert!(
+                (actual_x - expected_x).abs() < 0.5,
+                "{word}: expected x={expected_x}, got {actual_x}; {bounds}"
+            );
+            let maximum: f64 = attributes
+                .split_once("xMax=\"")
+                .unwrap()
+                .1
+                .split('"')
+                .next()
+                .unwrap()
+                .parse()
+                .unwrap();
+            assert!(
+                maximum - actual_x > minimum_width,
+                "replacement must cover the painted word: {word}; {bounds}"
+            );
+            let coordinate = |name: &str| -> f64 {
+                attributes
+                    .split_once(&format!("{name}=\""))
+                    .unwrap()
+                    .1
+                    .split('"')
+                    .next()
+                    .unwrap()
+                    .parse()
+                    .unwrap()
+            };
+            assert!(
+                coordinate("yMax") - coordinate("yMin") > 10.0,
+                "replacement must retain the painted font height: {word}; {bounds}"
+            );
+        }
     }
 }

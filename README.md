@@ -64,6 +64,9 @@ complex color spaces and shadings. The goal of `krilla` is not to expose high-le
 for all functionality, but instead expose only a relevant subset of it. Implementing features like encryption or digital signatures, as well as many other PDF features, are (for now) out-of-scope for this crate.
 
 ## Testing
+With Poppler installed, run `cargo test --locked -p krilla-svg poppler_preserves_separate_svg_label_positions -- --ignored`
+to check extracted label positions and selection bounds on page and form surfaces.
+
 Testing is a major pain point for most PDF-creation libraries. The reason is that it is very hard to do:
 It is very easy to accidentally create invalid PDF files, and just testing PDF files in one
 PDF viewer is not enough to be confident about its correctness. The reason for this

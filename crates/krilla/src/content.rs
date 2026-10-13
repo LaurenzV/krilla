@@ -56,6 +56,9 @@ pub(crate) struct ContentBuilder {
     /// A temporary buffer that's reused across the builder.
     scratch: Vec<u8>,
     pub(crate) active_marked_content: bool,
+    actual_text_depth: usize,
+    actual_text_font: Option<(String, f32, Transform)>,
+    glyph_text_transform: Transform,
 }
 
 /// Stores either a device-specific color space,
@@ -101,6 +104,9 @@ impl ContentBuilder {
             bbox: None,
             scratch: Vec::new(),
             active_marked_content: false,
+            actual_text_depth: 0,
+            actual_text_font: None,
+            glyph_text_transform: Transform::identity(),
         }
     }
 
@@ -175,14 +181,43 @@ impl ContentBuilder {
     }
 
     pub(crate) fn begin_actual_text(&mut self, text: &str) {
-        self.content
-            .begin_marked_content_with_properties(Name(b"Span"))
-            .properties()
-            .actual_text(TextStr(text));
+        if self.actual_text_depth == 0 {
+            self.actual_text_font = None;
+            self.content_save_state();
+            self.content
+                .begin_marked_content_with_properties(Name(b"Span"))
+                .properties()
+                .actual_text(TextStr(text));
+        }
+        self.actual_text_depth += 1;
+    }
+
+    pub(crate) fn has_actual_text(&self) -> bool {
+        self.actual_text_depth > 0
     }
 
     pub(crate) fn end_actual_text(&mut self) {
-        self.content.end_marked_content();
+        self.actual_text_depth -= 1;
+        if self.actual_text_depth != 0 {
+            return;
+        }
+        // Poppler interprets the collected glyph coordinates using the state at EMC.
+        // Glyphs in this scope share the root CTM; restore their text state without
+        // painting before closing, then leave the caller's state unchanged.
+        if let Some((font_name, size, matrix)) = self.actual_text_font.take() {
+            self.content_save_state();
+            self.content
+                .transform(self.root_transform.to_pdf_transform());
+            self.content.begin_text();
+            self.content.set_font(font_name.to_pdf_name(), size);
+            self.content.set_text_matrix(matrix.to_pdf_transform());
+            self.content.end_marked_content();
+            self.content.end_text();
+            self.content.restore_state();
+        } else {
+            self.content.end_marked_content();
+        }
+        self.content.restore_state();
     }
 
     pub(crate) fn concat_transform(&mut self, transform: &Transform) {
@@ -422,6 +457,77 @@ impl ContentBuilder {
         text: &str,
         font_size: f32,
     ) {
+        if self.has_actual_text() {
+            let transform = self.cur_transform();
+            let previous_text_transform = self.glyph_text_transform;
+            self.graphics_states.save_state();
+            self.graphics_states
+                .cur_mut()
+                .set_transform(Transform::identity());
+            self.glyph_text_transform = transform;
+            let fill = fill.map(|fill| Fill {
+                paint: fill.paint.transformed(transform),
+                ..fill.clone()
+            });
+            let stroke = stroke.map(|stroke| {
+                let scale = transform
+                    .similarity_scale()
+                    .expect("affine text strokes are outlined");
+                let mut stroke = stroke.clone();
+                stroke.paint = stroke.paint.transformed(transform);
+                stroke.width *= scale;
+                if let Some(dash) = &mut stroke.dash {
+                    dash.offset *= scale;
+                    for length in &mut dash.array {
+                        *length *= scale;
+                    }
+                }
+                stroke
+            });
+            self.draw_glyphs_inner(
+                start,
+                sc,
+                chunk_container,
+                fill.as_ref(),
+                stroke.as_ref(),
+                context_color,
+                glyphs,
+                font,
+                text,
+                font_size,
+            );
+            self.glyph_text_transform = previous_text_transform;
+            self.graphics_states.restore_state();
+        } else {
+            self.draw_glyphs_inner(
+                start,
+                sc,
+                chunk_container,
+                fill,
+                stroke,
+                context_color,
+                glyphs,
+                font,
+                text,
+                font_size,
+            );
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn draw_glyphs_inner(
+        &mut self,
+        start: Point,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        fill: Option<&Fill>,
+        stroke: Option<&Stroke>,
+        context_color: rgb::Color,
+        glyphs: &[impl Glyph],
+        font: Font,
+        text: &str,
+        font_size: f32,
+    ) {
         if fill.is_none() && stroke.is_none() {
             return;
         }
@@ -432,6 +538,7 @@ impl ContentBuilder {
         // Calculating the glyphs bbox is very expensive but not always necessary, so omit
         // if not needed.
         let bbox_important = self.bbox_important;
+        let text_transform = self.glyph_text_transform;
         let calculate_bbox = |is_solid: bool| bbox_important || !is_solid;
 
         let fill_action = |sb: &mut ContentBuilder,
@@ -439,7 +546,9 @@ impl ContentBuilder {
                            chunk_container: &mut ChunkContainer,
                            fill: &Fill| {
             let bbox = if calculate_bbox(matches!(&fill.paint.0, InnerPaint::Color(_))) {
-                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone())
+                    .transform(text_transform)
+                    .unwrap();
                 sb.expand_bbox(bbox);
                 bbox
             } else {
@@ -455,7 +564,9 @@ impl ContentBuilder {
                              stroke: &Stroke| {
             let bbox = if calculate_bbox(matches!(&stroke.paint.0, InnerPaint::Color(_))) {
                 // TODO: Bbox should also account for stroke.
-                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone());
+                let bbox = get_glyphs_bbox(glyphs, x, y, font_size, font.clone())
+                    .transform(text_transform)
+                    .unwrap();
                 sb.expand_bbox(bbox);
                 bbox
             } else {
@@ -572,9 +683,13 @@ impl ContentBuilder {
             .rd_builder
             .register_resource(sc.register_font_identifier(font_identifier));
         self.content.set_font(font_name.to_pdf_name(), size);
-        self.content.set_text_matrix(
-            Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y).to_pdf_transform(),
-        );
+        let matrix = self
+            .glyph_text_transform
+            .pre_concat(Transform::from_row(1.0, 0.0, 0.0, -1.0, *cur_x, cur_y));
+        self.content.set_text_matrix(matrix.to_pdf_transform());
+        if self.has_actual_text() {
+            self.actual_text_font = Some((font_name, size, matrix));
+        }
 
         for glyph in glyphs {
             if glyph.glyph_id() == GlyphId::new(0)
@@ -707,6 +822,27 @@ impl ContentBuilder {
             return;
         }
 
+        if self.has_actual_text() {
+            // Keep a real font and its physical text matrix in the enclosing state.
+            // Restoring an isolated glyph operation then refreshes Poppler's cached
+            // font metrics, rather than resetting replacement bounds to zero height.
+            let container = sc.register_font_container(font.clone());
+            let (identifier, _) = container
+                .borrow_mut()
+                .add_glyph(ColoredGlyph::new(glyphs[0].glyph_id(), context_color));
+            let name = self
+                .rd_builder
+                .register_resource(sc.register_font_identifier(identifier));
+            let matrix = self
+                .root_transform
+                .pre_concat(self.glyph_text_transform)
+                .pre_concat(Transform::from_row(1.0, 0.0, 0.0, -1.0, x, ys));
+            self.content.begin_text();
+            self.content.set_font(name.to_pdf_name(), font_size);
+            self.content.set_text_matrix(matrix.to_pdf_transform());
+            self.content.end_text();
+        }
+
         self.apply_isolated_op(
             |_, _, _| {},
             |sb, sc, chunk_container| {
@@ -798,7 +934,8 @@ impl ContentBuilder {
         font_size: f32,
         reversed: bool,
     ) {
-        if let Some(text) = fragment.actual_text() {
+        let actual_text = fragment.actual_text().filter(|_| !self.has_actual_text());
+        if let Some(text) = actual_text {
             let mut actual_text = self
                 .content
                 .begin_marked_content_with_properties(Name(b"Span"));
@@ -831,7 +968,7 @@ impl ContentBuilder {
             self.content.end_marked_content();
         }
 
-        if fragment.actual_text().is_some() {
+        if actual_text.is_some() {
             self.content.end_marked_content();
         }
     }

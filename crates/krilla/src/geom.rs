@@ -255,6 +255,22 @@ impl Transform {
         Self(self.0.pre_concat(other.0))
     }
 
+    pub(crate) fn similarity_scale(&self) -> Option<f32> {
+        let horizontal = self.sx().powi(2) + self.ky().powi(2);
+        let vertical = self.kx().powi(2) + self.sy().powi(2);
+        let cross = self.sx() * self.kx() + self.ky() * self.sy();
+        let tolerance = horizontal.max(vertical) * 0.00001;
+        if horizontal > 0.0
+            && horizontal.is_finite()
+            && (horizontal - vertical).abs() <= tolerance
+            && cross.abs() <= tolerance
+        {
+            Some(horizontal.sqrt())
+        } else {
+            None
+        }
+    }
+
     pub(crate) fn post_concat(&self, other: Self) -> Self {
         Self(self.0.post_concat(other.0))
     }
