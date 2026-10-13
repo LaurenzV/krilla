@@ -17,3 +17,6 @@ flate2 = { workspace = true }
 fontdb = { workspace = true }
 skrifa = { workspace = true }
 smallvec = { workspace = true }
+
+[dev-dependencies]
+pdf-extract = { git = "https://github.com/developer0hye/pdf-extract", rev = "bec5322398212f4bcd08e7b45664e575028c4141" }

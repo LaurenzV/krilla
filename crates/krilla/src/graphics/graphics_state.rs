@@ -197,6 +197,10 @@ impl GraphicsState {
         self.ctm
     }
 
+    pub(crate) fn set_transform(&mut self, transform: Transform) {
+        self.ctm = transform;
+    }
+
     pub(crate) fn ext_g_state(&self) -> &ExtGState {
         &self.ext_g_state
     }

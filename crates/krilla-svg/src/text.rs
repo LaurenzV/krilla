@@ -16,12 +16,53 @@ use usvg::{FontOpticalSizing, FontVariation, PaintOrder};
 use crate::util::{convert_fill, convert_stroke, UsvgTransformExt};
 use crate::{path, ProcessContext};
 
+#[cfg(test)]
+#[path = "text_tests.rs"]
+mod tests;
+
 /// Render a text into a surface.
 pub(crate) fn render(
     text: &usvg::Text,
     surface: &mut Surface,
     process_context: &mut ProcessContext,
 ) {
+    let can_replace = process_context.svg_settings.embed_text
+        && !text.layouted().is_empty()
+        && text
+            .layouted()
+            .iter()
+            .filter(|span| span.visible)
+            .all(|span| {
+                span.positioned_glyphs.iter().all(|glyph| {
+                    glyph.transform().invert().is_some()
+                        && process_context.fonts.retrieve(span, glyph.font).is_some()
+                })
+            });
+    if can_replace {
+        // Use logical source ranges, not shaped glyph strings: shaping may reorder
+        // glyphs or repeat the same cluster text, and hidden spans must stay absent.
+        let logical_text: String = text
+            .chunks()
+            .iter()
+            .flat_map(|chunk| {
+                chunk
+                    .spans()
+                    .iter()
+                    .filter(|span| span.is_visible())
+                    .map(|span| &chunk.text()[span.start()..span.end()])
+            })
+            .collect();
+        if !logical_text.is_empty() {
+            surface.with_actual_text(&logical_text, |surface| {
+                render_spans(text, surface, process_context);
+            });
+            return;
+        }
+    }
+    render_spans(text, surface, process_context);
+}
+
+fn render_spans(text: &usvg::Text, surface: &mut Surface, process_context: &mut ProcessContext) {
     for span in text.layouted() {
         if !span.visible {
             continue;

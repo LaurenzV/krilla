@@ -11,7 +11,7 @@ use pdf_writer::Name;
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::configure::validate::VersionedFeature;
-use crate::configure::ValidationError;
+use crate::configure::{PdfVersion, ValidationError};
 use crate::content::ContentBuilder;
 use crate::geom::Path;
 #[cfg(any(feature = "raster-images", feature = "pdf"))]
@@ -239,6 +239,24 @@ impl<'a> Surface<'a> {
         }
     }
 
+    /// Draw content with replacement text for selection and extraction.
+    ///
+    /// The replacement does not change how the content is painted. It works on both
+    /// page and sub-stream surfaces and can nest inside tagged content. For PDF
+    /// versions before 1.5, the closure is called without a replacement sequence.
+    pub fn with_actual_text<T>(&mut self, text: &str, draw: impl FnOnce(&mut Self) -> T) -> T {
+        if self.sc.serialize_settings().pdf_version() < PdfVersion::Pdf15 {
+            return draw(self);
+        }
+
+        // Unlike tagged sections, these bounded spans need no MCID and may nest
+        // around glyph-level replacements or an existing page tag.
+        self.bd.get_mut().begin_actual_text(text);
+        let result = draw(self);
+        self.bd.get_mut().end_actual_text();
+        result
+    }
+
     /// Start a new variable text marked section.
     ///
     /// # Panics
@@ -303,6 +321,40 @@ impl<'a> Surface<'a> {
         outlined: bool,
     ) {
         let context_color = self.context_color();
+        if !outlined
+            && self.bd.get_mut().has_actual_text()
+            && self.stroke.is_some()
+            && self
+                .bd
+                .get_mut()
+                .actual_text_glyph_transform()
+                .similarity_scale()
+                .is_none()
+        {
+            // Text matrices preserve selection coordinates within a replacement scope.
+            // An affine pen cannot be represented by a scalar text stroke width. Paint
+            // such strokes as paths while retaining the same selectable glyphs.
+            let fill = self.fill.clone().unwrap_or(Fill {
+                opacity: NormalizedF32::ZERO,
+                ..Fill::default()
+            });
+            self.bd.get_mut().draw_glyphs(
+                start,
+                self.sc,
+                self.chunk_container,
+                Some(&fill),
+                None,
+                context_color,
+                glyphs,
+                font.clone(),
+                text,
+                font_size,
+            );
+            let saved_fill = self.fill.take();
+            self.outline_glyphs(glyphs, context_color, start, font, font_size);
+            self.fill = saved_fill;
+            return;
+        }
         if outlined {
             self.outline_glyphs(glyphs, context_color, start, font, font_size);
         } else {

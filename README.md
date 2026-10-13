@@ -33,6 +33,7 @@ In addition to that, the library also supports the following PDF features:
 - Annotations, links, (named) destinations.
 - Adding document metadata.
 - Creating accessible PDFs via tagged PDF.
+- Replacement text for selection and extraction on page and sub-stream surfaces (PDF 1.5+).
 - Support for different PDF versions (1.4, 1.5, 1.6, 1.7, 2.0).
 - Support for validated some validated export modes (PDF/A-1, PDF/A-2, PDF/A-3, PDF/A-4, PDF/UA-1).
 
@@ -63,6 +64,9 @@ complex color spaces and shadings. The goal of `krilla` is not to expose high-le
 for all functionality, but instead expose only a relevant subset of it. Implementing features like encryption or digital signatures, as well as many other PDF features, are (for now) out-of-scope for this crate.
 
 ## Testing
+With Poppler installed, run `cargo test --locked -p krilla-svg poppler_preserves_ -- --ignored`
+to check extracted label bounds and stroked rendering on page and form surfaces.
+
 Testing is a major pain point for most PDF-creation libraries. The reason is that it is very hard to do:
 It is very easy to accidentally create invalid PDF files, and just testing PDF files in one
 PDF viewer is not enough to be confident about its correctness. The reason for this

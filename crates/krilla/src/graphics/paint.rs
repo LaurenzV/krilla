@@ -181,6 +181,27 @@ pub(crate) enum InnerPaint {
 pub struct Paint(pub(crate) InnerPaint);
 
 impl Paint {
+    pub(crate) fn transformed(&self, transform: Transform) -> Self {
+        let mut paint = self.clone();
+        match &mut paint.0 {
+            InnerPaint::Color(_) => {}
+            InnerPaint::LinearGradient(gradient) => {
+                gradient.transform = transform.pre_concat(gradient.transform);
+            }
+            InnerPaint::RadialGradient(gradient) => {
+                gradient.transform = transform.pre_concat(gradient.transform);
+            }
+            InnerPaint::SweepGradient(gradient) => {
+                gradient.transform = transform.pre_concat(gradient.transform);
+            }
+            InnerPaint::Pattern(pattern) => {
+                let pattern = Arc::make_mut(pattern);
+                pattern.transform = transform.pre_concat(pattern.transform);
+            }
+        }
+        paint
+    }
+
     pub(crate) fn as_rgb(&self) -> Option<rgb::Color> {
         match &self.0 {
             InnerPaint::Color(c) => match c {
