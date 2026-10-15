@@ -7,7 +7,7 @@
 on top of the [pdf-writer](https://github.com/typst/pdf-writer) crate,
 but abstracts away all complexities that are involved in creating a PDF file,
 instead providing an interface with high-level primitives, such
-as fills, strokes, gradient, glyphs and images which can be used and combined easily
+as fills, strokes, gradients, glyphs and images which can be used and combined easily
 without having to worry about low-level details.
 
 ## Features
@@ -24,7 +24,7 @@ without having to worry about low-level details.
 - Linear, radial and sweep gradients, as well as patterns.
 - Embedding bitmap images, and SVG images via `krilla-svg`.
 - Optional support for multi-threading via `rayon`, allowing for great speedups when creating
-compressed PDFs or PDF with lots of images.
+compressed PDFs or PDFs with lots of images.
 
 In addition to that, the library also supports the following PDF features:
 - Great subsetting for both, CFF-flavored and TTF-flavored fonts, ensuring small file sizes.
@@ -34,7 +34,7 @@ In addition to that, the library also supports the following PDF features:
 - Adding document metadata.
 - Creating accessible PDFs via tagged PDF.
 - Support for different PDF versions (1.4, 1.5, 1.6, 1.7, 2.0).
-- Support for validated some validated export modes (PDF/A-1, PDF/A-2, PDF/A-3, PDF/A-4, PDF/UA-1).
+- Support for some validated export modes (PDF/A-1, PDF/A-2, PDF/A-3, PDF/A-4, PDF/UA-1).
 
 ## Scope
 This crate labels itself as a high-level crate, and this is what it is: It abstracts away most
@@ -56,7 +56,7 @@ If not, depending on what exactly you want to do, there are other Rust crates yo
 page breaking, inserting headers and footers: [typst](https://github.com/typst/typst/).
 - Reading existing PDF documents and manipulating them in a certain way: [pdf-rs](https://github.com/pdf-rs/pdf).
 
-Also worth mentioning is [printpdf](https://github.com/fschutt/printpdf) which operates at a similar level of abstraction as `krilla`, but is based on `lopdf` has a greater focus on creating print-friendly PDFs.
+Also worth mentioning is [printpdf](https://github.com/fschutt/printpdf) which operates at a similar level of abstraction as `krilla`, but is based on `lopdf` and has a greater focus on creating print-friendly PDFs.
 
 The PDF specification is *huge* and supports tons of features with a lot of customization, including
 complex color spaces and shadings. The goal of `krilla` is not to expose high-level bindings
