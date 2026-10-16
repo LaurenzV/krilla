@@ -14,6 +14,7 @@ use crate::error::KrillaResult;
 use crate::interactive::destination::Destination;
 use crate::serialize::SerializeContext;
 use crate::surface::Location;
+use crate::util::NameExt;
 
 /// A type of action.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -24,6 +25,8 @@ pub enum Action {
     Goto(Destination),
     /// A reset form action.
     ResetForm(ResetFormAction),
+    /// A submit form action.
+    SubmitForm(SubmitFormAction),
 }
 
 impl Action {
@@ -47,6 +50,11 @@ impl Action {
                 reset_form.serialize(action);
 
                 sc.register_validation_error(ValidationError::ContainsMutatingAction(location));
+
+                Ok(())
+            }
+            Action::SubmitForm(submit_form) => {
+                submit_form.serialize(action);
 
                 Ok(())
             }
@@ -82,14 +90,26 @@ impl LinkAction {
 }
 
 /// A reset form action. Will reset the given form fields when triggered.
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum ResetFormAction {
-    /// Reset all fields in the document. Convenience variant for an empty [`ResetFormAction::Exclude`] variant.
-    All,
-    /// Reset only the fields with the given fully qualified names.
-    Include(Vec<String>),
-    /// Reset all fields in the document except the ones with the given fully qualified names.
-    Exclude(Vec<String>),
+#[derive(Debug, Clone, Default, Hash, Eq, PartialEq)]
+pub struct ResetFormAction {
+    /// Which fields to reset.
+    pub fields: ActionFieldFilter,
+}
+
+impl ResetFormAction {
+    /// Create a new reset action that targets the given fields.
+    pub fn new(fields: ActionFieldFilter) -> Self {
+        Self { fields }
+    }
+}
+impl ResetFormAction {
+    fn serialize(&self, mut action: pdf_writer::writers::Action) {
+        action.action_type(ActionType::ResetForm);
+        let flags = self.fields.serialize(&mut action);
+        if !flags.is_empty() {
+            action.form_flags(flags);
+        }
+    }
 }
 
 impl From<ResetFormAction> for Action {
@@ -98,24 +118,130 @@ impl From<ResetFormAction> for Action {
     }
 }
 
-impl ResetFormAction {
+/// A submit form action. Will submit the given form fields when triggered.
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub struct SubmitFormAction {
+    /// The URL to submit the form to.
+    pub url: String,
+    /// Which fields to submit.
+    pub fields: ActionFieldFilter,
+    /// The format to submit the form in.
+    pub format: SubmissionFormat,
+}
+
+impl SubmitFormAction {
+    /// Create a new submit action with the given URL.
+    pub fn new(url: String) -> Self {
+        Self {
+            url,
+            fields: ActionFieldFilter::default(),
+            format: SubmissionFormat::default(),
+        }
+    }
+
+    /// Set the fields to submit.
+    pub fn with_fields(mut self, fields: ActionFieldFilter) -> Self {
+        self.fields = fields;
+        self
+    }
+
+    /// Set the format to submit in.
+    pub fn with_format(mut self, format: SubmissionFormat) -> Self {
+        self.format = format;
+        self
+    }
+}
+
+impl From<SubmitFormAction> for Action {
+    fn from(value: SubmitFormAction) -> Self {
+        Action::SubmitForm(value)
+    }
+}
+
+impl SubmitFormAction {
     fn serialize(&self, mut action: pdf_writer::writers::Action) {
-        action.action_type(ActionType::ResetForm);
+        action.action_type(ActionType::SubmitForm);
+        action
+            .file_spec()
+            .file_system("URL".to_pdf_name())
+            .path(Str(self.url.as_bytes()))
+            .finish();
+        let mut flags = self.fields.serialize(&mut action);
+        flags |= self.format.serialize();
+        if !flags.is_empty() {
+            action.form_flags(flags);
+        }
+    }
+}
+
+/// Define which form fields are targeted/affected by an action.
+#[derive(Debug, Clone, Default, Hash, Eq, PartialEq)]
+pub enum ActionFieldFilter {
+    /// Target all fields in the document. Convenience variant for an empty [`ActionFieldFilter::Exclude`] variant.
+    #[default]
+    All,
+    /// Target only the fields with the given fully qualified names.
+    Include(Vec<String>),
+    /// Target all fields in the document except the ones with the given fully qualified names.
+    Exclude(Vec<String>),
+}
+
+impl ActionFieldFilter {
+    fn serialize(&self, action: &mut pdf_writer::writers::Action) -> FormActionFlags {
         match self {
-            ResetFormAction::All => {}
-            ResetFormAction::Include(items) => {
+            Self::All => FormActionFlags::empty(),
+            Self::Include(items) => {
                 action
                     .fields()
                     .items(items.iter().map(|name| TextStr(name)))
                     .finish();
+                FormActionFlags::empty()
             }
-            ResetFormAction::Exclude(items) => {
+            Self::Exclude(items) => {
                 action
                     .fields()
                     .items(items.iter().map(|name| TextStr(name)))
                     .finish();
-                action.form_flags(FormActionFlags::INCLUDE_EXCLUDE);
+                FormActionFlags::INCLUDE_EXCLUDE
             }
         }
     }
+}
+
+/// The format to submit the form in.
+#[derive(Debug, Copy, Clone, Default, Hash, Eq, PartialEq)]
+pub enum SubmissionFormat {
+    /// application/x-www-form-urlencoded as a body if method is POST or as a query string in the URL if GET.
+    UrlEncoded(HttpMethod),
+    /// application/fdf
+    #[default]
+    Fdf,
+    /// application/xfdf
+    Xfdf,
+    /// application/pdf
+    Pdf,
+}
+
+impl SubmissionFormat {
+    fn serialize(self) -> FormActionFlags {
+        match self {
+            Self::UrlEncoded(http_method) => match http_method {
+                HttpMethod::Get => FormActionFlags::EXPORT_FORMAT | FormActionFlags::GET_METHOD,
+                HttpMethod::Post => FormActionFlags::EXPORT_FORMAT,
+            },
+            Self::Fdf => FormActionFlags::empty(),
+            Self::Xfdf => FormActionFlags::XFDF,
+            Self::Pdf => FormActionFlags::SUBMIT_PDF,
+        }
+    }
+}
+
+/// The HTTP method to send the request in.
+#[derive(Debug, Copy, Clone, Default, Hash, Eq, PartialEq)]
+pub enum HttpMethod {
+    /// GET
+    Get,
+    /// POST
+    #[default]
+    Post,
 }
