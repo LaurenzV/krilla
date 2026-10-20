@@ -1,8 +1,9 @@
 mod shading {
+    use krilla::color::rgb;
     use krilla::geom::Transform;
     use krilla::num::NormalizedF32;
     use krilla::page::Page;
-    use krilla::paint::{Fill, LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
+    use krilla::paint::{Fill, LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
     use krilla::surface::Surface;
     use krilla_macros::{snapshot, visreg};
 
@@ -61,6 +62,51 @@ mod shading {
         surface.draw_path(&path);
 
         surface.pop();
+    }
+
+    fn linear_gradient_with_opacity() -> LinearGradient {
+        LinearGradient {
+            x1: 20.0,
+            y1: 0.0,
+            x2: 180.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: vec![
+                Stop {
+                    offset: NormalizedF32::ZERO,
+                    color: rgb::Color::new(255, 0, 0).into(),
+                    opacity: NormalizedF32::new(0.5).unwrap(),
+                },
+                Stop {
+                    offset: NormalizedF32::ONE,
+                    color: rgb::Color::new(255, 0, 0).into(),
+                    opacity: NormalizedF32::new(0.2).unwrap(),
+                },
+            ],
+            anti_alias: false,
+        }
+    }
+
+    #[visreg(all, settings_2)]
+    fn pattern_linear_gradient_with_opacity_icc(surface: &mut Surface) {
+        surface.set_fill(Some(Fill {
+            paint: linear_gradient_with_opacity().into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        }));
+        surface.draw_path(&rect_to_path(20.0, 20.0, 180.0, 180.0));
+    }
+
+    #[snapshot(settings_2)]
+    fn pattern_linear_gradient_with_opacity_icc(page: &mut Page) {
+        let mut surface = page.surface();
+        surface.set_fill(Some(Fill {
+            paint: linear_gradient_with_opacity().into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        }));
+        surface.draw_path(&rect_to_path(20.0, 20.0, 180.0, 180.0));
     }
 
     #[visreg(all, width = 160, height = 160)]
