@@ -261,7 +261,8 @@ impl ChunkContainer {
         let write_doc_title = sc
             .serialize_settings()
             .validators()
-            .requires_display_doc_title();
+            .requires_display_doc_title()
+            || self.metadata.as_ref().is_some_and(|m| m.display_doc_title);
         let text_direction = self.metadata.as_ref().and_then(|m| m.text_direction);
 
         if write_doc_title || text_direction.is_some() {
