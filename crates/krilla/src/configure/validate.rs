@@ -35,8 +35,8 @@ use crate::color::separation::SeparationSpace;
 use crate::color::RegularColor;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
-use crate::metadata::write_user_extension_schema;
-use crate::metadata::xmp::Namespace;
+use crate::metadata::write_extension_schemas;
+use crate::metadata::xmp::Schema;
 use crate::surface::Location;
 use crate::text::Font;
 use crate::text::GlyphId;
@@ -315,7 +315,7 @@ impl Validators {
         self.a.map(Archival::output_intent)
     }
 
-    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter, user_namespaces: &[&Namespace]) {
+    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter, user_schemas: &[&Schema]) {
         if self.requires_xmp_metadata_extension_schema() {
             let mut extension_schemas = xmp.extension_schemas();
             if let Some(a) = self.a {
@@ -324,9 +324,7 @@ impl Validators {
             if let Some(ua) = self.ua {
                 ua.write_xmp_extension_schema_description(&mut extension_schemas);
             }
-            for ns in user_namespaces {
-                write_user_extension_schema(&mut extension_schemas, ns);
-            }
+            write_extension_schemas(&mut extension_schemas, user_schemas);
         }
 
         if let Some(a) = self.a {

@@ -1,8 +1,11 @@
+use std::sync::Arc;
+
 use krilla::configure::ValidationError;
 use krilla::embed::{AssociationKind, EmbeddedFile, MimeType};
-use krilla::error::KrillaError;
+use krilla::error::{KrillaError, KrillaResult};
 use krilla::metadata::xmp::{
-    Namespace, Property, PropertyDescription, SimpleType, Value, XmpError,
+    Namespace, Property, PropertyDescription, Schema, SimpleType, StructType, Value, ValueType,
+    XmpError,
 };
 use krilla::metadata::{DateTime, Metadata, PageLayout, TextDirection};
 use krilla::Document;
@@ -96,32 +99,45 @@ fn metadata_pdf_20_author(document: &mut Document) {
 }
 
 fn text_description(name: &str, description: &str) -> PropertyDescription {
-    PropertyDescription::new(name, SimpleType::Text.into(), description)
+    PropertyDescription::new(name, SimpleType::Text, description)
 }
 
 fn cc_namespace() -> Namespace {
     Namespace::new("cc", "http://creativecommons.org/ns#")
-        .schema_name("Creative Commons")
-        .add_description(text_description("license", "License URL"))
-        .add_description(text_description("attributionName", "Attribution name"))
 }
 
 fn factur_x_namespace() -> Namespace {
     Namespace::new("fx", "urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#")
-        .schema_name("Factur-X PDFA Extension Schema")
-        .add_description(text_description("DocumentType", "Type of the embedded XML"))
-        .add_description(text_description(
+}
+
+fn factur_x_schema() -> Schema {
+    Schema::new(factur_x_namespace())
+        .name("Factur-X PDFA Extension Schema")
+        .property(text_description("DocumentType", "Type of the embedded XML"))
+        .property(text_description(
             "DocumentFileName",
             "File name of the embedded XML",
         ))
-        .add_description(text_description(
+        .property(text_description(
             "Version",
             "Version of the Factur-X profile",
         ))
-        .add_description(text_description(
+        .property(text_description(
             "ConformanceLevel",
             "Conformance level of the invoice",
         ))
+}
+
+fn factur_x_metadata(conformance_level: &str) -> Metadata {
+    let fx = factur_x_namespace();
+    Metadata::new()
+        .creation_date(datetime())
+        .language("en".to_string())
+        .custom_xmp_schema(factur_x_schema())
+        .custom_xmp_property(fx.property("DocumentType", "INVOICE"))
+        .custom_xmp_property(fx.property("DocumentFileName", "factur-x.xml"))
+        .custom_xmp_property(fx.property("Version", "1.0"))
+        .custom_xmp_property(fx.property("ConformanceLevel", conformance_level))
 }
 
 #[snapshot(document, settings_5)]
@@ -133,60 +149,71 @@ fn metadata_custom_xmp_basic(document: &mut Document) {
 
     let metadata = Metadata::new()
         .creation_date(datetime())
-        .custom_xmp_properties(vec![
-            Property::new(
-                cc.clone(),
-                "license",
-                Value::text("https://creativecommons.org/licenses/by/4.0/"),
-            ),
-            Property::new(
-                cc.clone(),
-                "attributionName",
-                Value::LanguageAlternative(vec![
-                    (None, "Krilla".to_string()),
-                    (Some("de".to_string()), "Krilla (DE)".to_string()),
-                ]),
-            ),
-            Property::new(
-                cc.clone(),
-                "tags",
-                Value::UnorderedArray(vec![Value::text("a"), Value::text("b")]),
-            ),
-            Property::new(
-                cc.clone(),
-                "ordering",
-                Value::OrderedArray(vec![Value::Integer(1), Value::Integer(2)]),
-            ),
-            Property::new(
-                cc.clone(),
-                "rating",
-                Value::AlternativeArray(vec![Value::Real(4.5), Value::Real(5.0)]),
-            ),
-            Property::new(cc.clone(), "reviewed", Value::Bool(true)),
-            Property::new(
-                cc,
-                "derivedFrom",
-                Value::Struct(vec![
-                    Property::new(mm.clone(), "DocumentID", Value::text("uuid:source-doc")),
-                    Property::new(mm, "VersionID", Value::text("1.0")),
-                ]),
-            ),
-        ]);
+        .custom_xmp_property(cc.property("license", "https://creativecommons.org/licenses/by/4.0/"))
+        .custom_xmp_property(cc.property(
+            "attributionName",
+            Value::LanguageAlternative(vec![
+                (None, "Krilla".to_string()),
+                (Some("de".to_string()), "Krilla (DE)".to_string()),
+            ]),
+        ))
+        .custom_xmp_property(
+            cc.property("tags", Value::UnorderedArray(vec!["a".into(), "b".into()])),
+        )
+        .custom_xmp_property(cc.property("ordering", Value::OrderedArray(vec![1.into(), 2.into()])))
+        .custom_xmp_property(cc.property(
+            "rating",
+            Value::AlternativeArray(vec![4.5.into(), 5.0.into()]),
+        ))
+        .custom_xmp_property(cc.property("reviewed", true))
+        .custom_xmp_property(cc.property(
+            "derivedFrom",
+            Value::Struct(vec![
+                mm.property("DocumentID", "uuid:source-doc"),
+                mm.property("VersionID", "1.0"),
+            ]),
+        ));
     document.set_metadata(metadata);
 }
 
 #[snapshot(document, settings_10)]
 fn metadata_custom_xmp_factur_x(document: &mut Document) {
-    let fx = factur_x_namespace();
+    document.set_metadata(factur_x_metadata("BASIC"));
+}
+
+#[snapshot(document, settings_10)]
+fn metadata_custom_xmp_struct_type(document: &mut Document) {
+    let ex = Namespace::new("ex", "http://example.com/xmp/address#");
+    let address = Arc::new(
+        StructType::new(ex.clone(), "Address", "A postal address")
+            .field(text_description("street", "The street and house number"))
+            .field(text_description("city", "The city")),
+    );
+    let schema = Schema::new(ex.clone())
+        .name("Address book")
+        .property(PropertyDescription::new(
+            "addresses",
+            ValueType::ordered_array(address.clone()),
+            "Known addresses",
+        ))
+        .property(PropertyDescription::new(
+            "ratio",
+            SimpleType::Rational,
+            "Aspect ratio",
+        ));
+
     let metadata = Metadata::new()
         .creation_date(datetime())
         .language("en".to_string())
-        .custom_xmp_properties(vec![
-            Property::new(fx.clone(), "DocumentType", Value::text("INVOICE")),
-            Property::new(fx.clone(), "DocumentFileName", Value::text("factur-x.xml")),
-            Property::new(fx.clone(), "Version", Value::text("1.0")),
-            Property::new(fx, "ConformanceLevel", Value::text("BASIC")),
-        ]);
+        .custom_xmp_schema(schema)
+        .custom_xmp_property(ex.property(
+            "addresses",
+            Value::OrderedArray(vec![Value::Struct(vec![
+                ex.property("street", "Main Street 1"),
+                ex.property("city", "Berlin"),
+            ])]),
+        ))
+        .custom_xmp_property(ex.property("ratio", Value::Rational(16, 9)));
     document.set_metadata(metadata);
 }
 
@@ -194,13 +221,15 @@ fn metadata_custom_xmp_factur_x(document: &mut Document) {
 /// predefined PDF/A schema from XMP 2005 on.
 #[snapshot(document, settings_19)]
 fn validate_pdf_a1_custom_xmp_builtin_namespace(document: &mut Document) {
-    let dm = Namespace::new("xmpDM", "http://ns.adobe.com/xmp/1.0/DynamicMedia/")
-        .schema_name("XMP Dynamic Media")
-        .add_description(text_description("scene", "The name of the scene"));
+    let dm = Namespace::new("xmpDM", "http://ns.adobe.com/xmp/1.0/DynamicMedia/");
+    let schema = Schema::new(dm.clone())
+        .name("XMP Dynamic Media")
+        .property(text_description("scene", "The name of the scene"));
     let metadata = Metadata::new()
         .creation_date(datetime())
         .language("en".to_string())
-        .custom_xmp_properties(vec![Property::new(dm, "scene", Value::text("intro"))]);
+        .custom_xmp_schema(schema)
+        .custom_xmp_property(dm.property("scene", "intro"));
     document.set_metadata(metadata);
 }
 
@@ -259,17 +288,7 @@ const FACTUR_X_MINIMUM_XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 /// XMP extension schema *and* the structured XML embedded.
 #[snapshot(document, settings_10)]
 fn metadata_custom_xmp_factur_x_embedded(document: &mut Document) {
-    let fx = factur_x_namespace();
-    let metadata = Metadata::new()
-        .creation_date(datetime())
-        .language("en".to_string())
-        .custom_xmp_properties(vec![
-            Property::new(fx.clone(), "DocumentType", Value::text("INVOICE")),
-            Property::new(fx.clone(), "DocumentFileName", Value::text("factur-x.xml")),
-            Property::new(fx.clone(), "Version", Value::text("1.0")),
-            Property::new(fx, "ConformanceLevel", Value::text("MINIMUM")),
-        ]);
-    document.set_metadata(metadata);
+    document.set_metadata(factur_x_metadata("MINIMUM"));
 
     document.embed_file(EmbeddedFile {
         path: "factur-x.xml".to_string(),
@@ -283,21 +302,14 @@ fn metadata_custom_xmp_factur_x_embedded(document: &mut Document) {
     });
 }
 
-#[test]
-fn metadata_custom_xmp_pdf_a_missing_description() {
-    let mut document = Document::new_with(settings_10());
-    let undeclared = Namespace::new("fx", "urn:factur-x:test#");
-    let metadata = Metadata::new()
+fn pdf_a_metadata(property: Property) -> Metadata {
+    Metadata::new()
         .creation_date(datetime())
         .language("en".to_string())
-        .custom_xmp_properties(vec![Property::new(
-            undeclared,
-            "DocumentType",
-            Value::text("INVOICE"),
-        )]);
-    document.set_metadata(metadata);
+        .custom_xmp_property(property)
+}
 
-    let result = document.finish();
+fn assert_missing_description(result: KrillaResult<Vec<u8>>, uri: &str, name: &str) {
     let Err(KrillaError::Validation(errors)) = result else {
         panic!("expected validation error, got {result:?}");
     };
@@ -305,10 +317,33 @@ fn metadata_custom_xmp_pdf_a_missing_description() {
         errors.iter().any(|(e, _)| matches!(
             e,
             ValidationError::MissingXmpPropertyDescription { property_name, namespace_uri }
-                if property_name == "DocumentType" && namespace_uri == "urn:factur-x:test#"
+                if property_name == name && namespace_uri == uri
         )),
         "expected MissingXmpPropertyDescription, got {errors:?}",
     );
+}
+
+#[test]
+fn metadata_custom_xmp_pdf_a_missing_description() {
+    let mut document = Document::new_with(settings_10());
+    let undeclared = Namespace::new("fx", "urn:factur-x:test#");
+    document.set_metadata(pdf_a_metadata(
+        undeclared.property("DocumentType", "INVOICE"),
+    ));
+
+    assert_missing_description(document.finish(), "urn:factur-x:test#", "DocumentType");
+}
+
+#[test]
+fn metadata_custom_xmp_no_schema_outside_pdf_a() {
+    let mut document = Document::new();
+    let tdm = Namespace::new("tdm", "http://www.w3.org/ns/tdmrep/");
+    let metadata = Metadata::new()
+        .custom_xmp_property(tdm.property("reservation", 1))
+        .custom_xmp_property(tdm.property("policy", "https://example.com/policy.json"));
+    document.set_metadata(metadata);
+
+    assert!(document.finish().is_ok());
 }
 
 #[test]
@@ -317,11 +352,7 @@ fn metadata_custom_xmp_predefined_namespace_pdf_a() {
     // Properties in predefined schemas don't need an extension schema, so
     // no property descriptions are required even in PDF/A.
     let xmp_rights = Namespace::new("xmpRights", "http://ns.adobe.com/xap/1.0/rights/");
-    let metadata = Metadata::new()
-        .creation_date(datetime())
-        .language("en".to_string())
-        .custom_xmp_properties(vec![Property::new(xmp_rights, "Marked", Value::Bool(true))]);
-    document.set_metadata(metadata);
+    document.set_metadata(pdf_a_metadata(xmp_rights.property("Marked", true)));
 
     assert!(document.finish().is_ok());
 }
@@ -332,11 +363,7 @@ fn metadata_custom_xmp_exif_predefined_pdf_a() {
     // EXIF is a predefined PDF/A schema even though xmp-writer has no native
     // variant for it, so it needs no extension schema and no descriptions.
     let exif = Namespace::new("exif", "http://ns.adobe.com/exif/1.0/");
-    let metadata = Metadata::new()
-        .creation_date(datetime())
-        .language("en".to_string())
-        .custom_xmp_properties(vec![Property::new(exif, "ColorSpace", Value::Integer(1))]);
-    document.set_metadata(metadata);
+    document.set_metadata(pdf_a_metadata(exif.property("ColorSpace", 1)));
 
     assert!(document.finish().is_ok());
 }
@@ -345,121 +372,81 @@ fn metadata_custom_xmp_exif_predefined_pdf_a() {
 fn metadata_custom_xmp_camera_raw_version_specific() {
     // Camera Raw is predefined only from XMP 2005 on. It is exempt from an
     // extension schema in PDF/A-2/-3 but not in PDF/A-1.
-    let camera_raw = || Namespace::new("crs", "http://ns.adobe.com/camera-raw-settings/1.0/");
-    let metadata = || {
-        Metadata::new()
-            .creation_date(datetime())
-            .language("en".to_string())
-            .custom_xmp_properties(vec![Property::new(
-                camera_raw(),
-                "WhiteBalance",
-                Value::text("Auto"),
-            )])
-    };
+    let crs = Namespace::new("crs", "http://ns.adobe.com/camera-raw-settings/1.0/");
+    let metadata = || pdf_a_metadata(crs.property("WhiteBalance", "Auto"));
 
-    // PDF/A-3 (XMP 2005): exempt, so no description required.
     let mut a3 = Document::new_with(settings_10());
     a3.set_metadata(metadata());
     assert!(a3.finish().is_ok());
 
-    // PDF/A-1 (XMP 2004): not predefined, so a description is required.
     let mut a1 = Document::new_with(settings_19());
     a1.set_metadata(metadata());
-    let result = a1.finish();
-    let Err(KrillaError::Validation(errors)) = result else {
-        panic!("expected validation error, got {result:?}");
-    };
-    assert!(
-        errors.iter().any(|(e, _)| matches!(
-            e,
-            ValidationError::MissingXmpPropertyDescription { property_name, namespace_uri }
-                if property_name == "WhiteBalance"
-                    && namespace_uri == "http://ns.adobe.com/camera-raw-settings/1.0/"
-        )),
-        "expected MissingXmpPropertyDescription, got {errors:?}",
-    );
+    assert_missing_description(a1.finish(), crs.uri(), "WhiteBalance");
+}
+
+fn assert_xmp_error(metadata: Metadata, error: XmpError) {
+    let mut document = Document::new();
+    document.set_metadata(metadata);
+    assert_eq!(document.finish(), Err(KrillaError::Xmp(error)));
 }
 
 #[test]
 fn metadata_custom_xmp_conflicting_namespace() {
-    let mut document = Document::new();
-    let metadata = Metadata::new().custom_xmp_properties(vec![
-        Property::new(
-            cc_namespace(),
-            "license",
-            Value::text("https://creativecommons.org/licenses/by/4.0/"),
-        ),
-        Property::new(
-            Namespace::new("cc", "http://creativecommons.org/ns#"),
-            "attributionName",
-            Value::text("Krilla"),
-        ),
-    ]);
-    document.set_metadata(metadata);
-
-    assert_eq!(
-        document.finish(),
-        Err(KrillaError::Xmp(XmpError::ConflictingNamespace(
-            "http://creativecommons.org/ns#".to_string()
-        )))
+    assert_xmp_error(
+        Metadata::new()
+            .custom_xmp_property(cc_namespace().property("license", "CC-BY"))
+            .custom_xmp_property(
+                Namespace::new("cc2", "http://creativecommons.org/ns#")
+                    .property("attributionName", "Krilla"),
+            ),
+        XmpError::ConflictingNamespace("http://creativecommons.org/ns#".to_string()),
     );
 }
 
 #[test]
 fn metadata_custom_xmp_conflicting_prefix() {
-    let mut document = Document::new();
-    let metadata = Metadata::new().custom_xmp_properties(vec![
-        Property::new(
-            Namespace::new("fx", "urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#"),
-            "DocumentType",
-            Value::text("INVOICE"),
-        ),
-        Property::new(
-            Namespace::new("fx", "urn:factur-x:other#"),
-            "Version",
-            Value::text("1.0"),
-        ),
-    ]);
-    document.set_metadata(metadata);
-
-    assert_eq!(
-        document.finish(),
-        Err(KrillaError::Xmp(XmpError::ConflictingPrefix(
-            "fx".to_string()
-        )))
+    assert_xmp_error(
+        Metadata::new()
+            .custom_xmp_property(factur_x_namespace().property("DocumentType", "INVOICE"))
+            .custom_xmp_property(
+                Namespace::new("fx", "urn:factur-x:other#").property("Version", "1.0"),
+            ),
+        XmpError::ConflictingPrefix("fx".to_string()),
     );
 }
 
 #[test]
 fn metadata_custom_xmp_reserved_prefix() {
-    let mut document = Document::new();
-    let metadata = Metadata::new().custom_xmp_properties(vec![Property::new(
-        Namespace::new("dc", "http://example.com/custom#"),
-        "something",
-        Value::text("value"),
-    )]);
-    document.set_metadata(metadata);
-
-    assert_eq!(
-        document.finish(),
-        Err(KrillaError::Xmp(XmpError::ReservedPrefix("dc".to_string())))
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(
+            Namespace::new("dc", "http://example.com/custom#").property("something", "value"),
+        ),
+        XmpError::ReservedPrefix("dc".to_string()),
     );
 }
 
 #[test]
-fn metadata_custom_xmp_non_finite_real() {
-    let mut document = Document::new();
-    let metadata = Metadata::new().custom_xmp_properties(vec![Property::new(
-        cc_namespace(),
-        "rating",
-        Value::OrderedArray(vec![Value::Real(4.5), Value::Real(f64::NAN)]),
-    )]);
-    document.set_metadata(metadata);
+fn metadata_custom_xmp_duplicate_schema() {
+    assert_xmp_error(
+        Metadata::new()
+            .custom_xmp_schema(factur_x_schema())
+            .custom_xmp_schema(Schema::new(factur_x_namespace())),
+        XmpError::DuplicateSchema(factur_x_namespace().uri().to_string()),
+    );
+}
 
-    assert_eq!(
-        document.finish(),
-        Err(KrillaError::Xmp(XmpError::NonFiniteReal(
-            "rating".to_string()
-        )))
+#[test]
+fn metadata_custom_xmp_invalid_number() {
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(cc_namespace().property(
+            "rating",
+            Value::OrderedArray(vec![4.5.into(), f64::NAN.into()]),
+        )),
+        XmpError::InvalidNumber("rating".to_string()),
+    );
+    assert_xmp_error(
+        Metadata::new()
+            .custom_xmp_property(cc_namespace().property("ratio", Value::Rational(1, 0))),
+        XmpError::InvalidNumber("ratio".to_string()),
     );
 }

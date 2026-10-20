@@ -5,121 +5,142 @@
 //! This is useful for embedding things like e-invoice descriptors
 //! (e.g. ZUGFeRD/Factur-X) or RDF license information into a PDF.
 //!
-//! Build a [`Property`] with a [`Namespace`] and a [`Value`], then attach
-//! the properties via [`Metadata::custom_xmp_properties`].
+//! Create a [`Namespace`], build [`Property`] values in it with
+//! [`Namespace::property`], and attach them via
+//! [`Metadata::custom_xmp_property`].
+//!
+//! ## Schemas
+//!
+//! A [`Schema`] describes the properties of a namespace: their value types
+//! and what they mean. Attach it via [`Metadata::custom_xmp_schema`].
+//! Properties are checked against the schema of their namespace, if there is
+//! one.
+//!
+//! PDF/A-1 to PDF/A-3 require every property outside the predefined XMP
+//! schemas to be described in a PDF/A extension schema, which krilla writes
+//! from the attached schemas. For other export targets, schemas are
+//! optional.
 //!
 //! ## Predefined schemas
 //!
 //! If a namespace URI matches a schema known to xmp-writer,
 //! properties are written under that schema's canonical prefix, and the
-//! namespace's prefix is ignored.
-//! It is your responsibility that the property actually exists in the
-//! predefined schema.
+//! namespace's prefix is ignored. Such a namespace can't be used to
+//! redefine properties of the predefined schema.
 //!
 //! Custom namespaces must not reuse the prefix of a predefined schema or
-//! bind one prefix to two different URIs, and all declarations of the same
-//! URI must be identical; otherwise [`Document::finish`] returns an
+//! bind one prefix to two different URIs, and each URI must always be used
+//! with the same prefix; otherwise [`Document::finish`] returns an
 //! [`XmpError`].
-//!
-//! ## PDF/A
-//!
-//! Any property in a custom namespace must be described in a PDF/A
-//! extension schema. Populate [`Namespace::property_descriptions`] with a
-//! [`PropertyDescription`] for every property you write.
 //!
 //! [`Document::finish`]: crate::document::Document::finish
 //! [`Metadata`]: super::Metadata
-//! [`Metadata::custom_xmp_properties`]: super::Metadata::custom_xmp_properties
+//! [`Metadata::custom_xmp_property`]: super::Metadata::custom_xmp_property
+//! [`Metadata::custom_xmp_schema`]: super::Metadata::custom_xmp_schema
+
+use std::sync::Arc;
 
 use super::DateTime;
 
-/// An XMP namespace.
+/// An XMP namespace, identified by its URI.
 ///
-/// A namespace is identified by its URI. The prefix is the short name used
-/// in the serialized XML. For PDF/A output, the
-/// namespace must describe each property through
-/// [`Self::property_descriptions`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// The prefix is the short name used in the serialized XML.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Namespace {
-    /// The XML prefix (e.g. `"fx"`).
-    ///
-    /// Ignored if the URI is natively known to krilla.
-    pub prefix: String,
-    /// The namespace URI (e.g. `"urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#"`).
-    pub uri: String,
-    /// Optional human-readable schema name for the PDF/A extension schema
-    /// description. Defaults to `"<prefix> schema"`.
-    pub schema_name: Option<String>,
-    /// Optional human-readable description of the schema.
-    pub description: Option<String>,
-    /// PDF/A extension schema property descriptions.
-    ///
-    /// Required for any property name written under this namespace
-    /// when exporting to PDF/A.
-    pub property_descriptions: Vec<PropertyDescription>,
+    prefix: Arc<str>,
+    uri: Arc<str>,
 }
 
 impl Namespace {
-    /// Create a new namespace with the given prefix and URI.
-    pub fn new(prefix: impl Into<String>, uri: impl Into<String>) -> Self {
+    /// Create a new namespace with the given prefix (e.g. `"fx"`) and URI
+    /// (e.g. `"urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#"`).
+    pub fn new(prefix: impl Into<Arc<str>>, uri: impl Into<Arc<str>>) -> Self {
         Self {
             prefix: prefix.into(),
             uri: uri.into(),
-            schema_name: None,
-            description: None,
-            property_descriptions: Vec::new(),
         }
     }
 
-    /// Set the human-readable schema name used for the PDF/A extension
-    /// schema description.
-    pub fn schema_name(mut self, name: impl Into<String>) -> Self {
-        self.schema_name = Some(name.into());
+    /// The prefix of the namespace.
+    pub fn prefix(&self) -> &str {
+        &self.prefix
+    }
+
+    /// The URI of the namespace.
+    pub fn uri(&self) -> &str {
+        &self.uri
+    }
+
+    /// Create a property in this namespace.
+    pub fn property(&self, name: impl Into<String>, value: impl Into<Value>) -> Property {
+        Property::new(self.clone(), name, value.into())
+    }
+}
+
+/// A description of the properties in a [`Namespace`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Schema {
+    pub(crate) namespace: Namespace,
+    pub(crate) name: Option<String>,
+    pub(crate) description: Option<String>,
+    pub(crate) properties: Vec<PropertyDescription>,
+}
+
+impl Schema {
+    /// Create a new schema without any properties.
+    pub fn new(namespace: Namespace) -> Self {
+        Self {
+            namespace,
+            name: None,
+            description: None,
+            properties: Vec::new(),
+        }
+    }
+
+    /// The human-readable name of the schema. Defaults to
+    /// `"<prefix> schema"`.
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
         self
     }
 
-    /// Set the human-readable description of the schema.
-    pub fn schema_description(mut self, description: impl Into<String>) -> Self {
+    /// A human-readable description of the schema.
+    pub fn description(mut self, description: impl Into<String>) -> Self {
         self.description = Some(description.into());
         self
     }
 
-    /// Add a property description used for the PDF/A extension schema.
-    pub fn add_description(mut self, description: PropertyDescription) -> Self {
-        self.property_descriptions.push(description);
+    /// Describe a property of the schema.
+    pub fn property(mut self, property: PropertyDescription) -> Self {
+        self.properties.push(property);
         self
+    }
+
+    pub(crate) fn get(&self, name: &str) -> Option<&PropertyDescription> {
+        self.properties.iter().find(|desc| desc.name == name)
     }
 }
 
-/// Description of a single XMP property under a [`Namespace`].
+/// Description of a single XMP property, or of a field of a [`StructType`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PropertyDescription {
-    /// The property name (e.g. `"DocumentType"`).
-    pub name: String,
-    /// The type of the property's value.
-    pub value_type: ValueType,
-    /// Whether the property is generated internally by the producer or
-    /// supplied externally by the user.
-    pub category: Category,
-    /// Whether the property must be present.
-    ///
-    /// PDF/A extension schemas cannot express this, so it is only used when
-    /// describing the metadata in RELAX NG.
-    pub required: bool,
-    /// Human-readable description of the property.
-    pub description: String,
+    pub(crate) name: String,
+    pub(crate) value_type: ValueType,
+    pub(crate) category: Category,
+    pub(crate) required: bool,
+    pub(crate) description: String,
 }
 
 impl PropertyDescription {
-    /// Create a new property description.
+    /// Create a new description of an optional, external property.
     pub fn new(
         name: impl Into<String>,
-        value_type: ValueType,
+        value_type: impl Into<ValueType>,
         description: impl Into<String>,
     ) -> Self {
         Self {
             name: name.into(),
-            value_type,
+            value_type: value_type.into(),
             category: Category::External,
             required: false,
             description: description.into(),
@@ -139,18 +160,59 @@ impl PropertyDescription {
     }
 }
 
+/// Whether a property is generated internally or supplied externally.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Category {
+    /// The property is computed by the producer (e.g. page count).
+    Internal,
+    /// The property is supplied by the user.
+    External,
+}
+
+/// A user-defined structure type.
+///
+/// The fields of a structure are properties in the namespace of the type.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StructType {
+    pub(crate) namespace: Namespace,
+    pub(crate) name: String,
+    pub(crate) description: String,
+    pub(crate) fields: Vec<PropertyDescription>,
+}
+
+impl StructType {
+    /// Create a new structure type without any fields.
+    pub fn new(
+        namespace: Namespace,
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
+        Self {
+            namespace,
+            name: name.into(),
+            description: description.into(),
+            fields: Vec::new(),
+        }
+    }
+
+    /// Describe a field of the structure.
+    pub fn field(mut self, field: PropertyDescription) -> Self {
+        self.fields.push(field);
+        self
+    }
+}
+
 /// The type of an XMP value.
 ///
-/// This mirrors the XMP type system: the simple types of the XMP
-/// specification, the three generic array types and language alternatives.
-/// Structures cannot be described yet.
+/// This mirrors the XMP type system: simple types, choices, the three array
+/// kinds, language alternatives and structures.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueType {
     /// A simple value.
     Simple(SimpleType),
-    /// A value drawn from an open-ended set of recommended values.
-    OpenChoice(SimpleType),
-    /// A value drawn from a fixed set. Contains the allowed values.
+    /// A value of the given type, typically one of the recommended values.
+    OpenChoice(SimpleType, Vec<String>),
+    /// One of the given values.
     ClosedChoice(SimpleType, Vec<String>),
     /// An ordered array (`rdf:Seq`) of the contained type.
     OrderedArray(Box<ValueType>),
@@ -160,6 +222,10 @@ pub enum ValueType {
     AlternativeArray(Box<ValueType>),
     /// A language alternative: an `rdf:Alt` of `xml:lang`-tagged text.
     LanguageAlternative,
+    /// A structure type defined by the XMP specification.
+    PredefinedStruct(PredefinedStruct),
+    /// A user-defined structure type.
+    Struct(Arc<StructType>),
 }
 
 impl ValueType {
@@ -178,7 +244,15 @@ impl ValueType {
         Self::AlternativeArray(Box::new(item.into()))
     }
 
-    /// A value drawn from a fixed set.
+    /// A value of the given type, typically one of `values`.
+    pub fn open_choice(
+        ty: SimpleType,
+        values: impl IntoIterator<Item = impl Into<String>>,
+    ) -> Self {
+        Self::OpenChoice(ty, values.into_iter().map(Into::into).collect())
+    }
+
+    /// One of `values`.
     pub fn closed_choice(
         ty: SimpleType,
         values: impl IntoIterator<Item = impl Into<String>>,
@@ -190,6 +264,24 @@ impl ValueType {
 impl From<SimpleType> for ValueType {
     fn from(value: SimpleType) -> Self {
         Self::Simple(value)
+    }
+}
+
+impl From<PredefinedStruct> for ValueType {
+    fn from(value: PredefinedStruct) -> Self {
+        Self::PredefinedStruct(value)
+    }
+}
+
+impl From<StructType> for ValueType {
+    fn from(value: StructType) -> Self {
+        Self::Struct(Arc::new(value))
+    }
+}
+
+impl From<Arc<StructType>> for ValueType {
+    fn from(value: Arc<StructType>) -> Self {
+        Self::Struct(value)
     }
 }
 
@@ -264,16 +356,43 @@ impl SimpleType {
     }
 }
 
-/// Whether a property is generated internally or supplied externally.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Category {
-    /// The property is computed by the producer (e.g. page count).
-    Internal,
-    /// The property is supplied by the user.
-    External,
+/// A structure type defined by the XMP specification.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum PredefinedStruct {
+    /// The dimensions of a document (`stDim`).
+    Dimensions,
+    /// A thumbnail image (`xmpGImg`).
+    Thumbnail,
+    /// A high-level event in the history of a resource (`stEvt`).
+    ResourceEvent,
+    /// A reference to another resource (`stRef`).
+    ResourceRef,
+    /// A version of a document (`stVer`).
+    Version,
+    /// A job (`stJob`).
+    Job,
+    /// A colorant (`xmpG`).
+    Colorant,
+    /// A font (`stFnt`).
+    Font,
 }
 
-/// A single XMP property attached to a [`Namespace`].
+impl PredefinedStruct {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Dimensions => "Dimensions",
+            Self::Thumbnail => "Thumbnail",
+            Self::ResourceEvent => "ResourceEvent",
+            Self::ResourceRef => "ResourceRef",
+            Self::Version => "Version",
+            Self::Job => "Job",
+            Self::Colorant => "Colorant",
+            Self::Font => "Font",
+        }
+    }
+}
+
+/// A single XMP property in a [`Namespace`].
 ///
 /// Also used for the fields of a [`Value::Struct`], which are named values in
 /// a namespace just like top-level properties.
@@ -300,9 +419,10 @@ impl Property {
 
 /// An XMP property value.
 ///
-/// The variants mirror the value shapes supported by XMP/RDF: primitive
-/// types, the three array kinds (`rdf:Seq`, `rdf:Bag`, `rdf:Alt`), language
-/// alternatives, and structs.
+/// The variants mirror the value shapes supported by XMP/RDF: simple
+/// values, the three array kinds (`rdf:Seq`, `rdf:Bag`, `rdf:Alt`), language
+/// alternatives, and structs. Derived types like URIs or agent names are
+/// written as [`Value::Text`].
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     /// A text value.
@@ -313,6 +433,9 @@ pub enum Value {
     Integer(i64),
     /// A floating-point value. Must be finite.
     Real(f64),
+    /// A rational number, given as numerator and denominator. The
+    /// denominator must not be zero.
+    Rational(i64, u64),
     /// A date value.
     Date(DateTime),
     /// An ordered array (`rdf:Seq`).
@@ -326,7 +449,7 @@ pub enum Value {
     /// Each entry pairs an optional RFC 3066 language tag (`None` ⇒
     /// `x-default`) with its text value.
     LanguageAlternative(Vec<(Option<String>, String)>),
-    /// A struct value (`rdf:parseType="Resource"`), given as its fields.
+    /// A struct value, given as its fields.
     Struct(Vec<Property>),
 }
 
@@ -335,29 +458,68 @@ impl Value {
     pub fn text(value: impl Into<String>) -> Self {
         Self::Text(value.into())
     }
+}
 
-    /// Convenience constructor for a [`Value::Date`].
-    pub fn date(value: DateTime) -> Self {
+impl From<&str> for Value {
+    fn from(value: &str) -> Self {
+        Self::Text(value.into())
+    }
+}
+
+impl From<String> for Value {
+    fn from(value: String) -> Self {
+        Self::Text(value)
+    }
+}
+
+impl From<bool> for Value {
+    fn from(value: bool) -> Self {
+        Self::Bool(value)
+    }
+}
+
+impl From<i64> for Value {
+    fn from(value: i64) -> Self {
+        Self::Integer(value)
+    }
+}
+
+impl From<i32> for Value {
+    fn from(value: i32) -> Self {
+        Self::Integer(value.into())
+    }
+}
+
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        Self::Real(value)
+    }
+}
+
+impl From<DateTime> for Value {
+    fn from(value: DateTime) -> Self {
         Self::Date(value)
     }
 }
 
-/// An invalid set of custom XMP properties.
+/// An invalid set of custom XMP properties or schemas.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum XmpError {
-    /// The same namespace URI was declared inconsistently: all declarations
-    /// of one URI must be identical, but two of them disagreed on the prefix,
-    /// schema name, or property descriptions. Contains the namespace URI.
+    /// One namespace URI was used with two different prefixes. Contains the
+    /// namespace URI.
     ConflictingNamespace(String),
-    /// One prefix was bound to two different namespace URLs. Contains the
+    /// One prefix was bound to two different namespace URIs. Contains the
     /// prefix.
     ConflictingPrefix(String),
     /// A custom namespace used a prefix reserved by a predefined XMP schema
     /// (e.g. `dc`, `xmp`, `pdf`). Contains the prefix.
     ReservedPrefix(String),
-    /// A [`Value::Real`] was NaN or infinite, which can't be represented in
-    /// XMP. Contains the name of the containing property.
-    NonFiniteReal(String),
+    /// More than one schema was attached for the same namespace. Contains
+    /// the namespace URI.
+    DuplicateSchema(String),
+    /// A [`Value::Real`] was NaN or infinite, or a [`Value::Rational`] had
+    /// a zero denominator. Contains the name of the containing property.
+    InvalidNumber(String),
 }
 
 impl std::fmt::Display for XmpError {
@@ -381,8 +543,11 @@ impl std::fmt::Display for XmpError {
                     "the prefix {prefix} is reserved by a predefined XMP schema"
                 )
             }
-            XmpError::NonFiniteReal(name) => {
-                write!(f, "the property {name} contained a non-finite real number")
+            XmpError::DuplicateSchema(uri) => {
+                write!(f, "the namespace {uri} was described by multiple schemas")
+            }
+            XmpError::InvalidNumber(name) => {
+                write!(f, "the property {name} contained an invalid number")
             }
         }
     }

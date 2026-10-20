@@ -179,21 +179,20 @@ impl ChunkContainer {
         };
 
         let mut xmp = XmpWriter::new();
-        let user_namespaces = self
-            .metadata
-            .as_ref()
-            .map(|m| m.deduped_custom_xmp_namespaces(sc.serialize_settings().validators()))
-            .unwrap_or_default();
         if let Some(metadata) = &self.metadata {
             metadata
-                .check_custom_xmp_properties()
+                .serialize_xmp_metadata(&mut xmp, sc, &instance_id)
                 .map_err(KrillaError::Xmp)?;
-            metadata.serialize_xmp_metadata(&mut xmp, sc, &instance_id);
         }
 
         let settings = sc.serialize_settings();
         let validators = settings.validators();
-        validators.write_xmp(&mut xmp, &user_namespaces);
+        let extension_schemas = self
+            .metadata
+            .as_ref()
+            .map(|m| m.extension_schemas(validators))
+            .unwrap_or_default();
+        validators.write_xmp(&mut xmp, &extension_schemas);
 
         xmp.num_pages(sc.page_infos().len() as u32);
         xmp.format("application/pdf");
