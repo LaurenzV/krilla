@@ -47,6 +47,7 @@ subsetter = { workspace = true }
 skrifa = { workspace = true }
 smallvec = { workspace = true }
 tiny-skia-path = { workspace = true }
+xmlwriter = { workspace = true }
 xmp-writer = { workspace = true }
 yoke = { workspace = true }
 png = { workspace = true, optional = true }

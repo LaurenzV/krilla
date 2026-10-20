@@ -3,7 +3,8 @@
 //! The simple type patterns are taken from the informative schemas of ISO 16684-2.
 
 use std::borrow::Cow;
-use std::fmt::Write;
+
+use xmlwriter::{Indent, Options, XmlWriter};
 
 use super::build_xmp_namespace;
 use super::xmp::{
@@ -18,40 +19,92 @@ pub(crate) fn relax_ng_schema(
     schemas: &[Cow<Schema>],
     undescribed: &[(&Namespace, &str)],
 ) -> String {
-    let mut grammar = Grammar::default();
-    let mut start = String::new();
-
+    let mut namespaces = Vec::new();
     for schema in schemas {
-        let uri = schema.namespace.uri();
-        let extra: Vec<_> = undescribed
-            .iter()
-            .filter(|(ns, _)| ns.uri() == uri)
-            .map(|(_, name)| *name)
-            .collect();
-        let name = grammar.schema(schema, &extra);
-        write!(start, r#"<rng:ref name="{name}"/>"#).unwrap();
-    }
-
-    for (ns, name) in undescribed {
-        if !schemas.iter().any(|s| s.namespace.uri() == ns.uri()) {
-            let prefix = grammar.namespace(ns);
-            grammar.any = true;
-            write!(
-                start,
-                r#"<rng:optional><rng:element name="{prefix}:{}"><rng:ref name="Any"/></rng:element></rng:optional>"#,
-                escape(name)
-            )
-            .unwrap();
+        add_namespace(&mut namespaces, &schema.namespace);
+        for desc in &schema.properties {
+            add_value_type_namespaces(&mut namespaces, &desc.value_type);
         }
     }
+    for (ns, _) in undescribed {
+        add_namespace(&mut namespaces, ns);
+    }
 
-    grammar.finish(&start)
+    let mut grammar = Grammar {
+        w: XmlWriter::new(Options {
+            use_single_quote: false,
+            indent: Indent::None,
+            attributes_indent: Indent::None,
+        }),
+        simple_types: Vec::new(),
+        struct_types: Vec::new(),
+        language_alternative: false,
+        any: !undescribed.is_empty(),
+    };
+
+    grammar.w.write_declaration();
+    grammar.w.start_element("rng:grammar");
+    grammar
+        .w
+        .write_attribute("xmlns:rng", "http://relaxng.org/ns/structure/1.0");
+    grammar
+        .w
+        .write_attribute("xmlns:rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+    grammar.w.write_attribute("xmlns:x", "adobe:ns:meta/");
+    grammar.w.write_attribute("xmlns:ui", UI_NAMESPACE);
+    for (prefix, uri) in &namespaces {
+        grammar
+            .w
+            .write_attribute(&format!("xmlns:{prefix}"), &escape(uri));
+    }
+    grammar.w.write_attribute(
+        "datatypeLibrary",
+        "http://www.w3.org/2001/XMLSchema-datatypes",
+    );
+
+    let orphans: Vec<_> = undescribed
+        .iter()
+        .filter(|(ns, _)| !schemas.iter().any(|s| s.namespace.uri() == ns.uri()))
+        .collect();
+
+    grammar.element("rng:start", |g| {
+        g.element("rng:element", |g| {
+            g.w.write_attribute("name", "x:xmpmeta");
+            g.element("rng:zeroOrMore", |g| g.any_attribute());
+            g.element("rng:element", |g| {
+                g.w.write_attribute("name", "rdf:RDF");
+                g.element("rng:element", |g| {
+                    g.w.write_attribute("name", "rdf:Description");
+                    g.element("rng:attribute", |g| {
+                        g.w.write_attribute("name", "rdf:about")
+                    });
+                    g.interleave(schemas.len() + orphans.len(), |g| {
+                        for schema in schemas {
+                            g.reference(&schema_define(&schema.namespace));
+                        }
+                        for (ns, name) in &orphans {
+                            g.any_property(&prefix(ns), name);
+                        }
+                    });
+                });
+            });
+        });
+    });
+
+    for schema in schemas {
+        let extra: Vec<_> = undescribed
+            .iter()
+            .filter(|(ns, _)| ns.uri() == schema.namespace.uri())
+            .map(|(_, name)| *name)
+            .collect();
+        grammar.schema(schema, &extra);
+    }
+
+    grammar.finish()
 }
 
-#[derive(Default)]
 struct Grammar<'a> {
-    defines: String,
-    namespaces: Vec<(String, &'a str)>,
+    w: XmlWriter,
     simple_types: Vec<SimpleType>,
     struct_types: Vec<&'a StructType>,
     language_alternative: bool,
@@ -59,264 +112,336 @@ struct Grammar<'a> {
 }
 
 impl<'a> Grammar<'a> {
-    fn namespace(&mut self, ns: &'a Namespace) -> String {
-        let prefix = build_xmp_namespace(ns).prefix().to_string();
-        if !self.namespaces.iter().any(|(_, uri)| *uri == ns.uri()) {
-            self.namespaces.push((prefix.clone(), ns.uri()));
-        }
-        prefix
+    fn element(&mut self, name: &str, f: impl FnOnce(&mut Self)) {
+        self.w.start_element(name);
+        f(self);
+        self.w.end_element();
     }
 
-    fn schema(&mut self, schema: &'a Schema, undescribed: &[&str]) -> String {
-        let prefix = self.namespace(&schema.namespace);
-        let define = format!("XMP_Properties-{prefix}");
+    fn define(&mut self, name: &str, f: impl FnOnce(&mut Self)) {
+        self.element("rng:define", |g| {
+            g.w.write_attribute("name", &escape(name));
+            g.w.write_attribute("combine", "choice");
+            f(g);
+        });
+    }
 
-        let mut interleave = String::new();
+    fn reference(&mut self, name: &str) {
+        self.element("rng:ref", |g| g.w.write_attribute("name", &escape(name)));
+    }
+
+    /// An `rng:interleave` of the `len` patterns written by `f`, or
+    /// `rng:empty` if there are none.
+    fn interleave(&mut self, len: usize, f: impl FnOnce(&mut Self)) {
+        if len == 0 {
+            self.element("rng:empty", |_| {});
+        } else {
+            self.element("rng:interleave", f);
+        }
+    }
+
+    fn optional(&mut self, optional: bool, f: impl FnOnce(&mut Self)) {
+        if optional {
+            self.element("rng:optional", f);
+        } else {
+            f(self);
+        }
+    }
+
+    fn any_attribute(&mut self) {
+        self.element("rng:attribute", |g| g.element("rng:anyName", |_| {}));
+    }
+
+    fn any_property(&mut self, prefix: &str, name: &str) {
+        self.any = true;
+        self.optional(true, |g| {
+            g.element("rng:element", |g| {
+                g.w.write_attribute("name", &escape(&format!("{prefix}:{name}")));
+                g.reference("Any");
+            });
+        });
+    }
+
+    fn ui_info(&mut self, label: &str, description: Option<&str>) {
+        self.element("ui:label", |g| {
+            g.w.write_attribute("xml:lang", "x-default");
+            g.w.write_attribute("value", &escape(label));
+        });
+        if let Some(description) = description {
+            self.element("ui:description", |g| {
+                g.w.write_attribute("xml:lang", "x-default");
+                g.w.write_attribute("value", &escape(description));
+            });
+        }
+    }
+
+    fn schema(&mut self, schema: &'a Schema, undescribed: &[&str]) {
+        let prefix = prefix(&schema.namespace);
+
+        self.define(&schema_define(&schema.namespace), |g| {
+            g.element("ui:schema", |g| {
+                let label = schema.name.as_deref().unwrap_or(&prefix);
+                g.ui_info(label, schema.description.as_deref());
+            });
+            g.interleave(schema.properties.len() + undescribed.len(), |g| {
+                for desc in &schema.properties {
+                    g.optional(!desc.required, |g| {
+                        g.reference(&format!("{prefix}.{}", desc.name))
+                    });
+                }
+                for name in undescribed {
+                    g.any_property(&prefix, name);
+                }
+            });
+        });
+
         for desc in &schema.properties {
-            let name = self.property(&prefix, desc);
-            if desc.required {
-                write!(interleave, r#"<rng:ref name="{name}"/>"#).unwrap();
-            } else {
-                write!(
-                    interleave,
-                    r#"<rng:optional><rng:ref name="{name}"/></rng:optional>"#
-                )
-                .unwrap();
-            }
+            self.define(&format!("{prefix}.{}", desc.name), |g| {
+                g.element("rng:element", |g| {
+                    g.w.write_attribute("name", &escape(&format!("{prefix}:{}", desc.name)));
+                    g.value_type(&desc.value_type);
+                    g.element("ui:property", |g| {
+                        g.ui_info(&desc.name, Some(&desc.description))
+                    });
+                });
+            });
         }
-
-        for name in undescribed {
-            self.any = true;
-            write!(
-                interleave,
-                r#"<rng:optional><rng:element name="{prefix}:{}"><rng:ref name="Any"/></rng:element></rng:optional>"#,
-                escape(name)
-            )
-            .unwrap();
-        }
-
-        let label = schema.name.as_deref().unwrap_or(&prefix);
-        write!(
-            self.defines,
-            r#"<rng:define name="{define}" combine="choice"><ui:schema>{}</ui:schema>{}</rng:define>"#,
-            ui_info(label, schema.description.as_deref()),
-            interleaved(&interleave),
-        )
-        .unwrap();
-
-        define
     }
 
-    fn property(&mut self, prefix: &str, desc: &'a PropertyDescription) -> String {
-        let name = escape(&desc.name);
-        let define = format!("{prefix}.{name}");
-        let pattern = self.value_type(&desc.value_type);
-        write!(
-            self.defines,
-            r#"<rng:define name="{define}" combine="choice"><rng:element name="{prefix}:{name}">{pattern}<ui:property>{}</ui:property></rng:element></rng:define>"#,
-            ui_info(&desc.name, Some(&desc.description)),
-        )
-        .unwrap();
-        define
-    }
-
-    fn value_type(&mut self, value_type: &'a ValueType) -> String {
+    fn value_type(&mut self, value_type: &'a ValueType) {
         match value_type {
             ValueType::Simple(ty) | ValueType::OpenChoice(ty, _) => {
                 if !self.simple_types.contains(ty) {
                     self.simple_types.push(*ty);
                 }
-                format!(
-                    r#"<rng:ref name="ISO16684-1.Types.QValue.{}"/>"#,
-                    ty.as_str()
-                )
+                self.reference(&format!("ISO16684-1.Types.QValue.{}", ty.as_str()));
             }
-            ValueType::ClosedChoice(_, values) => {
-                let mut choice = String::from("<rng:choice>");
+            ValueType::ClosedChoice(_, values) => self.element("rng:choice", |g| {
                 for value in values {
-                    write!(choice, "<rng:value>{}</rng:value>", escape(value)).unwrap();
+                    g.element("rng:value", |g| g.w.write_text(&escape(value)));
                 }
-                choice.push_str("</rng:choice>");
-                choice
-            }
+            }),
             ValueType::OrderedArray(item) => self.array("rdf:Seq", item),
             ValueType::UnorderedArray(item) => self.array("rdf:Bag", item),
             ValueType::AlternativeArray(item) => self.array("rdf:Alt", item),
             ValueType::LanguageAlternative => {
                 self.language_alternative = true;
-                r#"<rng:ref name="ISO16684-1.Types.QValue.LanguageAlternative"/>"#.into()
+                self.reference("ISO16684-1.Types.QValue.LanguageAlternative");
             }
             ValueType::PredefinedStruct(ty) => match predefined_struct_type(*ty) {
                 Some(ty) => self.struct_type(ty),
                 None => {
                     self.any = true;
-                    r#"<rng:element name="rdf:Description"><rng:ref name="Any"/></rng:element>"#
-                        .into()
+                    self.element("rng:element", |g| {
+                        g.w.write_attribute("name", "rdf:Description");
+                        g.reference("Any");
+                    });
                 }
             },
             ValueType::Struct(ty) => self.struct_type(ty),
         }
     }
 
-    fn array(&mut self, kind: &str, item: &'a ValueType) -> String {
-        let item = self.value_type(item);
-        format!(
-            r#"<rng:element name="{kind}"><rng:zeroOrMore><rng:element name="rdf:li">{item}</rng:element></rng:zeroOrMore></rng:element>"#
-        )
+    fn array(&mut self, kind: &str, item: &'a ValueType) {
+        self.element("rng:element", |g| {
+            g.w.write_attribute("name", kind);
+            g.element("rng:zeroOrMore", |g| {
+                g.element("rng:element", |g| {
+                    g.w.write_attribute("name", "rdf:li");
+                    g.value_type(item);
+                });
+            });
+        });
     }
 
-    fn struct_type(&mut self, ty: &'a StructType) -> String {
-        let prefix = self.namespace(&ty.namespace);
-        let name = format!("{prefix}.Types.{}", escape(&ty.name));
+    /// References the structure type, whose definition is written in
+    /// [`Self::finish`].
+    fn struct_type(&mut self, ty: &'a StructType) {
         if !self.struct_types.contains(&ty) {
             self.struct_types.push(ty);
-
-            let mut fields = String::new();
-            for field in &ty.fields {
-                let pattern = self.value_type(&field.value_type);
-                let element = format!(
-                    r#"<rng:element name="{prefix}:{}">{pattern}</rng:element>"#,
-                    escape(&field.name)
-                );
-                if field.required {
-                    fields.push_str(&element);
-                } else {
-                    write!(fields, "<rng:optional>{element}</rng:optional>").unwrap();
-                }
-            }
-
-            write!(
-                self.defines,
-                r#"<rng:define name="{name}.QValue" combine="choice">{}</rng:define><rng:define name="{name}.Base" combine="choice"><rng:element name="rdf:Description">{}</rng:element></rng:define>"#,
-                qualified(&format!("{name}.Base")),
-                interleaved(&fields),
-            )
-            .unwrap();
         }
-
-        format!(r#"<rng:ref name="{name}.QValue"/>"#)
+        self.reference(&format!("{}.QValue", struct_define(ty)));
     }
 
-    fn finish(mut self, start: &str) -> String {
+    /// The base type `name`, or the same value in an `rdf:Description` with
+    /// qualifiers.
+    fn qualified(&mut self, name: &str) {
+        self.element("rng:choice", |g| {
+            g.reference(name);
+            g.element("rng:element", |g| {
+                g.w.write_attribute("name", "rdf:Description");
+                g.element("rng:element", |g| {
+                    g.w.write_attribute("name", "rdf:value");
+                    g.reference(name);
+                });
+                g.element("rng:zeroOrMore", |g| {
+                    g.element("rng:element", |g| {
+                        g.element("rng:anyName", |_| {});
+                        g.element("rng:text", |_| {});
+                    });
+                });
+            });
+        });
+    }
+
+    fn finish(mut self) -> String {
+        // Writing a structure type can discover further ones.
+        let mut i = 0;
+        while let Some(&ty) = self.struct_types.get(i) {
+            let name = struct_define(ty);
+            let base = format!("{name}.Base");
+            let prefix = prefix(&ty.namespace);
+
+            self.define(&format!("{name}.QValue"), |g| g.qualified(&base));
+            self.define(&base, |g| {
+                g.element("rng:element", |g| {
+                    g.w.write_attribute("name", "rdf:Description");
+                    g.interleave(ty.fields.len(), |g| {
+                        for field in &ty.fields {
+                            g.optional(!field.required, |g| {
+                                g.element("rng:element", |g| {
+                                    g.w.write_attribute(
+                                        "name",
+                                        &escape(&format!("{prefix}:{}", field.name)),
+                                    );
+                                    g.value_type(&field.value_type);
+                                });
+                            });
+                        }
+                    });
+                });
+            });
+            i += 1;
+        }
+
         for ty in std::mem::take(&mut self.simple_types) {
-            let name = format!("ISO16684-1.Types.Base.{}", ty.as_str());
-            write!(
-                self.defines,
-                r#"<rng:define name="ISO16684-1.Types.QValue.{}" combine="choice">{}</rng:define><rng:define name="{name}" combine="choice">{}</rng:define>"#,
-                ty.as_str(),
-                qualified(&name),
-                simple_type_pattern(ty),
-            )
-            .unwrap();
+            let base = format!("ISO16684-1.Types.Base.{}", ty.as_str());
+            self.define(&format!("ISO16684-1.Types.QValue.{}", ty.as_str()), |g| {
+                g.qualified(&base)
+            });
+            self.define(&base, |g| match simple_type_data(ty) {
+                Some((data_type, pattern)) => g.element("rng:data", |g| {
+                    g.w.write_attribute("type", data_type);
+                    if let Some(pattern) = pattern {
+                        g.element("rng:param", |g| {
+                            g.w.write_attribute("name", "pattern");
+                            g.w.write_text(pattern);
+                        });
+                    }
+                }),
+                None => g.element("rng:text", |_| {}),
+            });
         }
 
         if self.language_alternative {
-            self.defines.push_str(concat!(
-                r#"<rng:define name="ISO16684-1.Types.QValue.LanguageAlternative" combine="choice">"#,
-                r#"<rng:element name="rdf:Alt"><rng:zeroOrMore><rng:element name="rdf:li">"#,
-                r#"<rng:attribute name="xml:lang"><rng:data type="string">"#,
-                r#"<rng:param name="pattern">x-default|([a-zA-Z]+(-[a-zA-Z0-9]+)*)</rng:param>"#,
-                r#"</rng:data></rng:attribute><rng:text/>"#,
-                r#"</rng:element></rng:zeroOrMore></rng:element></rng:define>"#,
-            ));
+            self.define("ISO16684-1.Types.QValue.LanguageAlternative", |g| {
+                g.array_of_language_tagged_text();
+            });
         }
 
         if self.any {
-            self.defines.push_str(concat!(
-                r#"<rng:define name="Any" combine="choice"><rng:zeroOrMore><rng:choice>"#,
-                r#"<rng:attribute><rng:anyName/></rng:attribute><rng:text/>"#,
-                r#"<rng:element><rng:anyName/><rng:ref name="Any"/></rng:element>"#,
-                r#"</rng:choice></rng:zeroOrMore></rng:define>"#,
-            ));
+            self.define("Any", |g| {
+                g.element("rng:zeroOrMore", |g| {
+                    g.element("rng:choice", |g| {
+                        g.any_attribute();
+                        g.element("rng:text", |_| {});
+                        g.element("rng:element", |g| {
+                            g.element("rng:anyName", |_| {});
+                            g.reference("Any");
+                        });
+                    });
+                });
+            });
         }
 
-        let mut out = String::from(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
-        out.push_str(concat!(
-            r#"<rng:grammar xmlns:rng="http://relaxng.org/ns/structure/1.0""#,
-            r#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#""#,
-            r#" xmlns:x="adobe:ns:meta/""#,
-            r#" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes""#,
-        ));
-        write!(out, r#" xmlns:ui="{UI_NAMESPACE}""#).unwrap();
-        for (prefix, uri) in &self.namespaces {
-            write!(out, r#" xmlns:{prefix}="{}""#, escape(uri)).unwrap();
+        self.w.end_document()
+    }
+
+    fn array_of_language_tagged_text(&mut self) {
+        self.element("rng:element", |g| {
+            g.w.write_attribute("name", "rdf:Alt");
+            g.element("rng:zeroOrMore", |g| {
+                g.element("rng:element", |g| {
+                    g.w.write_attribute("name", "rdf:li");
+                    g.element("rng:attribute", |g| {
+                        g.w.write_attribute("name", "xml:lang");
+                        g.element("rng:data", |g| {
+                            g.w.write_attribute("type", "string");
+                            g.element("rng:param", |g| {
+                                g.w.write_attribute("name", "pattern");
+                                g.w.write_text("x-default|([a-zA-Z]+(-[a-zA-Z0-9]+)*)");
+                            });
+                        });
+                    });
+                    g.element("rng:text", |_| {});
+                });
+            });
+        });
+    }
+}
+
+fn prefix(ns: &Namespace) -> String {
+    build_xmp_namespace(ns).prefix().to_string()
+}
+
+fn add_namespace<'a>(namespaces: &mut Vec<(String, &'a str)>, ns: &'a Namespace) {
+    if !namespaces.iter().any(|(_, uri)| *uri == ns.uri()) {
+        namespaces.push((prefix(ns), ns.uri()));
+    }
+}
+
+fn add_value_type_namespaces<'a>(namespaces: &mut Vec<(String, &'a str)>, ty: &'a ValueType) {
+    let struct_type = match ty {
+        ValueType::OrderedArray(item)
+        | ValueType::UnorderedArray(item)
+        | ValueType::AlternativeArray(item) => return add_value_type_namespaces(namespaces, item),
+        ValueType::PredefinedStruct(ty) => predefined_struct_type(*ty),
+        ValueType::Struct(ty) => Some(&**ty),
+        _ => None,
+    };
+
+    if let Some(ty) = struct_type {
+        if !namespaces.iter().any(|(_, uri)| *uri == ty.namespace.uri()) {
+            add_namespace(namespaces, &ty.namespace);
+            for field in &ty.fields {
+                add_value_type_namespaces(namespaces, &field.value_type);
+            }
         }
-        out.push('>');
-
-        write!(
-            out,
-            concat!(
-                r#"<rng:start><rng:element name="x:xmpmeta">"#,
-                r#"<rng:zeroOrMore><rng:attribute><rng:anyName/></rng:attribute></rng:zeroOrMore>"#,
-                r#"<rng:element name="rdf:RDF"><rng:element name="rdf:Description">"#,
-                r#"<rng:attribute name="rdf:about"/>{}"#,
-                r#"</rng:element></rng:element></rng:element></rng:start>"#,
-            ),
-            interleaved(start),
-        )
-        .unwrap();
-
-        out.push_str(&self.defines);
-        out.push_str("</rng:grammar>");
-        out
     }
 }
 
-/// The base type `name`, or the same value in an `rdf:Description` with
-/// qualifiers.
-fn qualified(name: &str) -> String {
-    format!(
-        r#"<rng:choice><rng:ref name="{name}"/><rng:element name="rdf:Description"><rng:element name="rdf:value"><rng:ref name="{name}"/></rng:element><rng:zeroOrMore><rng:element><rng:anyName/><rng:text/></rng:element></rng:zeroOrMore></rng:element></rng:choice>"#
-    )
+fn schema_define(ns: &Namespace) -> String {
+    format!("XMP_Properties-{}", prefix(ns))
 }
 
-fn interleaved(patterns: &str) -> String {
-    if patterns.is_empty() {
-        "<rng:empty/>".into()
-    } else {
-        format!("<rng:interleave>{patterns}</rng:interleave>")
-    }
+fn struct_define(ty: &StructType) -> String {
+    format!("{}.Types.{}", prefix(&ty.namespace), ty.name)
 }
 
-fn ui_info(label: &str, description: Option<&str>) -> String {
-    let mut info = format!(
-        r#"<ui:label xml:lang="x-default" value="{}"/>"#,
-        escape(label)
-    );
-    if let Some(description) = description {
-        write!(
-            info,
-            r#"<ui:description xml:lang="x-default" value="{}"/>"#,
-            escape(description)
-        )
-        .unwrap();
-    }
-    info
-}
-
-fn simple_type_pattern(ty: SimpleType) -> &'static str {
+/// The XML Schema datatype and pattern of a simple type, or `None` for
+/// unconstrained text.
+fn simple_type_data(ty: SimpleType) -> Option<(&'static str, Option<&'static str>)> {
     match ty {
-        SimpleType::Boolean => {
-            r#"<rng:data type="string"><rng:param name="pattern">True|False</rng:param></rng:data>"#
-        }
-        SimpleType::Integer => r#"<rng:data type="integer"/>"#,
-        SimpleType::Real => r#"<rng:data type="double"/>"#,
-        SimpleType::Rational => {
-            r#"<rng:data type="string"><rng:param name="pattern">-?\d+/[1-9]\d*</rng:param></rng:data>"#
-        }
-        SimpleType::Date => concat!(
-            r#"<rng:data type="string"><rng:param name="pattern">"#,
-            r#"(\d{4}((-)?(0[1-9]|1[0-2])((-)?(0[1-9]|[1-2][0-9]|3[0-1])(T(24:00(:00(\.[0]+)?)?|(([0-1][0-9]|2[0-3])(:)[0-5][0-9])((:)[0-5][0-9](\.[\d]+)?)?)((\+|-)(14:00|(0[0-9]|1[0-3])(:)[0-5][0-9])|Z)?)?)?)?)"#,
-            r#"</rng:param></rng:data>"#,
-        ),
-        SimpleType::Locale => {
-            r#"<rng:data type="string"><rng:param name="pattern">[a-zA-Z]+(-[a-zA-Z0-9]+)*</rng:param></rng:data>"#
-        }
-        SimpleType::MimeType => concat!(
-            r#"<rng:data type="string"><rng:param name="pattern">"#,
-            r#"(application|audio|example|image|message|model|multipart|text|video)/[a-zA-Z0-9]+([+\-.][a-zA-Z0-9]+)*"#,
-            r#"</rng:param></rng:data>"#,
-        ),
+        SimpleType::Boolean => Some(("string", Some("True|False"))),
+        SimpleType::Integer => Some(("integer", None)),
+        SimpleType::Real => Some(("double", None)),
+        SimpleType::Rational => Some(("string", Some(r"-?\d+/[1-9]\d*"))),
+        SimpleType::Date => Some((
+            "string",
+            Some(concat!(
+                r"(\d{4}((-)?(0[1-9]|1[0-2])((-)?(0[1-9]|[1-2][0-9]|3[0-1])(T(24:00(:00(\.[0]+)?)?|",
+                r"(([0-1][0-9]|2[0-3])(:)[0-5][0-9])((:)[0-5][0-9](\.[\d]+)?)?)((\+|-)(14:00|",
+                r"(0[0-9]|1[0-3])(:)[0-5][0-9])|Z)?)?)?)?)",
+            )),
+        )),
+        SimpleType::Locale => Some(("string", Some("[a-zA-Z]+(-[a-zA-Z0-9]+)*"))),
+        SimpleType::MimeType => Some((
+            "string",
+            Some(concat!(
+                "(application|audio|example|image|message|model|multipart|text|video)",
+                r"/[a-zA-Z0-9]+([+\-.][a-zA-Z0-9]+)*",
+            )),
+        )),
         SimpleType::Text
         | SimpleType::AgentName
         | SimpleType::Guid
@@ -327,7 +452,7 @@ fn simple_type_pattern(ty: SimpleType) -> &'static str {
         | SimpleType::FrameRate
         | SimpleType::FrameCount
         | SimpleType::Part
-        | SimpleType::XPath => "<rng:text/>",
+        | SimpleType::XPath => None,
     }
 }
 
@@ -437,14 +562,12 @@ fn predefined_struct_type(ty: PredefinedStruct) -> Option<&'static StructType> {
     Some(&TYPES[index])
 }
 
+/// Escapes what xmlwriter doesn't: it only escapes quotes in attribute values
+/// and `<` in text.
 fn escape(text: &str) -> Cow<'_, str> {
-    if !text.contains(['&', '<', '>', '"']) {
+    if !text.contains(['&', '<']) {
         return text.into();
     }
 
-    text.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .into()
+    text.replace('&', "&amp;").replace('<', "&lt;").into()
 }

@@ -1037,6 +1037,7 @@ dependencies = [
  "smallvec",
  "subsetter",
  "tiny-skia-path 0.12.0",
+ "xmlwriter",
  "xmp-writer",
  "yoke",
  "zune-jpeg",
