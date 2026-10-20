@@ -688,3 +688,32 @@ fn metadata_custom_xmp_relax_ng_only_with_embedded_files() {
     // Plain PDF/A-4 doesn't allow embedded files.
     assert!(!contains_schema(settings_26()));
 }
+
+fn pdf_a3_result(metadata: Metadata) -> KrillaResult<Vec<u8>> {
+    let mut document = Document::new_with(settings_10());
+    document.set_metadata(metadata);
+    document.finish()
+}
+
+#[test]
+fn metadata_custom_xmp_pdf_a3_predefined_properties() {
+    let dc = Namespace::new("dc", "http://purl.org/dc/elements/1.1/");
+    let exif = Namespace::new("exif", "http://ns.adobe.com/exif/1.0/");
+    let dm = Namespace::new("xmpDM", "http://ns.adobe.com/xmp/1.0/DynamicMedia/");
+
+    assert!(pdf_a3_result(pdf_a_metadata(dc.property("rights", "CC-BY"))).is_ok());
+    assert!(pdf_a3_result(pdf_a_metadata(dm.property("album", "Greatest Hits"))).is_ok());
+    // Removed from the EXIF schema in XMP 2005.
+    assert!(pdf_a1_result(pdf_a_metadata(exif.property("MakerNote", "Note"))).is_ok());
+    assert_missing_description(
+        pdf_a3_result(pdf_a_metadata(exif.property("MakerNote", "Note"))),
+        exif.uri(),
+        "MakerNote",
+    );
+
+    assert_missing_description(
+        pdf_a3_result(pdf_a_metadata(dc.property("extra", "value"))),
+        dc.uri(),
+        "extra",
+    );
+}

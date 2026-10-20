@@ -1167,40 +1167,150 @@ static PDF_A1_FALSE_FRIENDS: &[(&str, &[&str])] = &[
     ),
 ];
 
-/// The schemas of the XMP 2005 specification, which PDF/A-2 and PDF/A-3
-/// predefine. These are the schemas of [`PDF_A1_PREDEFINED_PROPERTIES`] plus
-/// Dynamic Media (`xmpDM`), Camera Raw (`crs`) and EXIF auxiliary (`aux`),
-/// which were added in the 2005 editions of the XMP Specification.
+/// The properties PDF/A-2 and PDF/A-3 predefine in addition to
+/// [`PDF_A1_PREDEFINED_PROPERTIES`]: those the XMP Specification, September
+/// 2005, added to the January 2004 edition, plus `pdfaid:corr` of ISO 19005-2.
 ///
-/// Without a per-property list for XMP 2005, all properties of these schemas
-/// are treated as predefined.
-///
-/// Sorted by namespace URI.
-static PDF_A2_A3_PREDEFINED_SCHEMAS: &[&str] = &[
-    "http://ns.adobe.com/camera-raw-settings/1.0/",
-    "http://ns.adobe.com/exif/1.0/",
-    "http://ns.adobe.com/exif/1.0/aux/",
-    "http://ns.adobe.com/pdf/1.3/",
-    "http://ns.adobe.com/photoshop/1.0/",
-    "http://ns.adobe.com/tiff/1.0/",
-    "http://ns.adobe.com/xap/1.0/",
-    "http://ns.adobe.com/xap/1.0/bj/",
-    "http://ns.adobe.com/xap/1.0/mm/",
-    "http://ns.adobe.com/xap/1.0/rights/",
-    "http://ns.adobe.com/xap/1.0/t/pg/",
-    "http://ns.adobe.com/xmp/1.0/DynamicMedia/",
-    "http://purl.org/dc/elements/1.1/",
-    "http://www.aiim.org/pdfa/ns/id/",
+/// Sorted by namespace URI and property name.
+static PDF_A2_A3_ADDITIONAL_PROPERTIES: &[(&str, &[&str])] = &[
+    (
+        "http://ns.adobe.com/camera-raw-settings/1.0/",
+        &[
+            "AutoBrightness",
+            "AutoContrast",
+            "AutoExposure",
+            "AutoShadows",
+            "BlueHue",
+            "BlueSaturation",
+            "Brightness",
+            "CameraProfile",
+            "ChromaticAberrationB",
+            "ChromaticAberrationR",
+            "ColorNoiseReduction",
+            "Contrast",
+            "CropAngle",
+            "CropBottom",
+            "CropHeight",
+            "CropLeft",
+            "CropRight",
+            "CropTop",
+            "CropUnits",
+            "CropWidth",
+            "Exposure",
+            "GreenHue",
+            "GreenSaturation",
+            "HasCrop",
+            "HasSettings",
+            "LuminanceSmoothing",
+            "RawFileName",
+            "RedHue",
+            "RedSaturation",
+            "Saturation",
+            "ShadowTint",
+            "Shadows",
+            "Sharpness",
+            "Temperature",
+            "Tint",
+            "ToneCurve",
+            "ToneCurveName",
+            "Version",
+            "VignetteAmount",
+            "VignetteMidpoint",
+            "WhiteBalance",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/exif/1.0/aux/",
+        &["Lens", "SerialNumber"],
+    ),
+    ("http://ns.adobe.com/xap/1.0/", &["Label", "Rating"]),
+    ("http://ns.adobe.com/xap/1.0/mm/", &["InstanceID"]),
+    (
+        "http://ns.adobe.com/xap/1.0/t/pg/",
+        &["Colorants", "Fonts", "PlateNames"],
+    ),
+    (
+        "http://ns.adobe.com/xmp/1.0/DynamicMedia/",
+        &[
+            "absPeakAudioFilePath",
+            "album",
+            "altTapeName",
+            "altTimecode",
+            "artist",
+            "audioChannelType",
+            "audioCompressor",
+            "audioModDate",
+            "audioSampleRate",
+            "audioSampleType",
+            "beatSpliceParams",
+            "composer",
+            "contributedMedia",
+            "copyright",
+            "duration",
+            "engineer",
+            "fileDataRate",
+            "genre",
+            "instrument",
+            "introTime",
+            "key",
+            "logComment",
+            "loop",
+            "markers",
+            "metadataModDate",
+            "numberOfBeats",
+            "outCue",
+            "projectRef",
+            "pullDown",
+            "relativePeakAudioFilePath",
+            "relativeTimestamp",
+            "releaseDate",
+            "resampleParams",
+            "scaleType",
+            "scene",
+            "shotDate",
+            "shotLocation",
+            "shotName",
+            "speakerPlacement",
+            "startTimecode",
+            "stretchMode",
+            "tapeName",
+            "tempo",
+            "timeScaleParams",
+            "timeSignature",
+            "trackNumber",
+            "videoAlphaMode",
+            "videoAlphaPremultipleColor",
+            "videoAlphaUnityIsTransparent",
+            "videoColorSpace",
+            "videoCompressor",
+            "videoFieldOrder",
+            "videoFrameRate",
+            "videoFrameSize",
+            "videoModDate",
+            "videoPixelAspectRatio",
+            "videoPixelDepth",
+        ],
+    ),
+    ("http://www.aiim.org/pdfa/ns/id/", &["corr"]),
 ];
+
+/// The properties of [`PDF_A1_PREDEFINED_PROPERTIES`] that the XMP
+/// Specification, September 2005, no longer contains.
+///
+/// Sorted by namespace URI and property name.
+static PDF_A1_ONLY_PROPERTIES: &[(&str, &[&str])] =
+    &[("http://ns.adobe.com/exif/1.0/", &["MakerNote"])];
 
 /// Whether PDF/A exempts the property `name` in `uri` from an extension
 /// schema description. `xmp_2005` selects the PDF/A-2/-3 rules over the
 /// PDF/A-1 rules; see [`Validators::uses_xmp_2005_predefined_schemas`].
 fn is_predefined_pdfa_property(uri: &str, name: &str, xmp_2005: bool) -> bool {
+    let pdf_a1 = contains_property(PDF_A1_PREDEFINED_PROPERTIES, uri, name);
     if xmp_2005 {
-        PDF_A2_A3_PREDEFINED_SCHEMAS.binary_search(&uri).is_ok()
+        (pdf_a1 && !contains_property(PDF_A1_ONLY_PROPERTIES, uri, name))
+            || contains_property(PDF_A2_A3_ADDITIONAL_PROPERTIES, uri, name)
     } else {
-        contains_property(PDF_A1_PREDEFINED_PROPERTIES, uri, name)
+        pdf_a1
     }
 }
 
@@ -1566,17 +1676,21 @@ mod tests {
 
     use super::xmp::{Namespace, PropertyDescription, Schema, SimpleType};
     use super::{
-        write_extension_schemas, Metadata, PDF_A1_FALSE_FRIENDS, PDF_A1_PREDEFINED_PROPERTIES,
-        PDF_A2_A3_PREDEFINED_SCHEMAS,
+        write_extension_schemas, Metadata, PDF_A1_FALSE_FRIENDS, PDF_A1_ONLY_PROPERTIES,
+        PDF_A1_PREDEFINED_PROPERTIES, PDF_A2_A3_ADDITIONAL_PROPERTIES,
     };
 
     #[test]
     fn predefined_property_lists_are_sorted() {
-        for list in [PDF_A1_PREDEFINED_PROPERTIES, PDF_A1_FALSE_FRIENDS] {
+        for list in [
+            PDF_A1_PREDEFINED_PROPERTIES,
+            PDF_A1_FALSE_FRIENDS,
+            PDF_A2_A3_ADDITIONAL_PROPERTIES,
+            PDF_A1_ONLY_PROPERTIES,
+        ] {
             assert!(list.is_sorted_by_key(|(uri, _)| uri));
             assert!(list.iter().all(|(_, names)| names.is_sorted()));
         }
-        assert!(PDF_A2_A3_PREDEFINED_SCHEMAS.is_sorted());
     }
 
     #[test]
