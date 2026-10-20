@@ -1,8 +1,60 @@
 mod bitmap {
+    use krilla::color::rgb;
+    use krilla::geom::{PathBuilder, Point, Rect};
+    use krilla::num::NormalizedF32;
+    use krilla::page::PageSettings;
+    use krilla::paint::Fill;
+    use krilla::text::{Font, GlyphId, KrillaGlyph};
     use krilla::Document;
     use krilla_macros::visreg;
 
-    use crate::{all_glyphs_to_pdf, NOTO_COLOR_EMOJI_CBDT};
+    use crate::{all_glyphs_to_pdf, Data, FONT_PATH, NOTO_COLOR_EMOJI_CBDT};
+
+    #[visreg(document)]
+    fn font_sbix_grid_glyf(document: &mut Document) {
+        draw_sbix_grid(document, "sbix.ttf");
+    }
+
+    #[visreg(document)]
+    fn font_sbix_grid_cff(document: &mut Document) {
+        draw_sbix_grid(document, "sbix.otf");
+    }
+
+    fn draw_sbix_grid(document: &mut Document, font_file: &str) {
+        let font_data: Data = std::fs::read(FONT_PATH.join(font_file)).unwrap().into();
+        let font = Font::new(font_data, 0).unwrap();
+        let mut page = document.start_page_with(PageSettings::from_wh(288.0, 240.0).unwrap());
+        let mut surface = page.surface();
+
+        let mut grid = PathBuilder::new();
+        for column in 0..=6 {
+            let x = (column as f32 * 48.0).min(287.0);
+            grid.push_rect(Rect::from_xywh(x, 0.0, 1.0, 240.0).unwrap());
+        }
+        for row in 0..=5 {
+            let y = (row as f32 * 48.0).min(239.0);
+            grid.push_rect(Rect::from_xywh(0.0, y, 288.0, 1.0).unwrap());
+        }
+        surface.set_fill(Some(Fill {
+            paint: rgb::Color::new(219, 226, 237).into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        }));
+        surface.draw_path(&grid.finish().unwrap());
+
+        surface.set_fill(Some(Fill::default()));
+        for i in 0..28 {
+            let glyph = KrillaGlyph::new(GlyphId::new(i + 2), 0.0, 0.0, 0.0, 0.0, 0..0, None);
+            surface.draw_glyphs(
+                Point::from_xy((i % 6) as f32 * 48.0 - 34.0, (i / 6) as f32 * 48.0 + 106.0),
+                &[glyph],
+                font.clone(),
+                "",
+                64.0,
+                false,
+            );
+        }
+    }
 
     #[visreg(document, all)]
     fn font_noto_color_emoji_cbdt(document: &mut Document) {
@@ -29,9 +81,12 @@ mod colr {
     use krilla::text::{Font, GlyphId};
     use krilla::Document;
     use krilla_macros::visreg;
+    use skrifa::raw::TableProvider;
+    use skrifa::{FontRef, MetadataProvider};
 
     use crate::{
-        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_TEST_GLYPHS, NOTO_COLOR_EMOJI_COLR,
+        all_glyphs_to_pdf, blue_stroke, purple_fill, COLR_EXTRA, COLR_TEST_GLYPHS,
+        NOTO_COLOR_EMOJI_COLR,
     };
 
     #[visreg(document)]
@@ -41,6 +96,23 @@ mod colr {
         let glyphs = (0..=220)
             .map(|n| (GlyphId::new(n), "".to_string()))
             .collect::<Vec<_>>();
+
+        all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
+    }
+
+    #[visreg(document)]
+    fn font_colr_extra(document: &mut Document) {
+        let font_data = COLR_EXTRA.clone();
+        let font_ref = FontRef::new(font_data.as_ref()).unwrap();
+        let color_glyphs = font_ref.color_glyphs();
+        let glyphs = (0..font_ref.maxp().unwrap().num_glyphs())
+            .filter(|id| {
+                color_glyphs
+                    .get(skrifa::GlyphId::new(u32::from(*id)))
+                    .is_some()
+            })
+            .map(|id| (GlyphId::new(u32::from(id)), String::new()))
+            .collect();
 
         all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
     }
@@ -157,16 +229,51 @@ mod colr {
 }
 
 mod svg {
-    use krilla::geom::Point;
+    use krilla::geom::{PathBuilder, Point, Rect};
+    use krilla::page::PageSettings;
     use krilla::surface::Surface;
-    use krilla::text::{Font, TextDirection};
+    use krilla::text::{Font, GlyphId, KrillaGlyph, TextDirection};
     use krilla::Document;
     use krilla_macros::visreg;
 
     use crate::{
-        all_glyphs_to_pdf, purple_fill, red_fill, EMOJI_ONE, NOTO_COLOR_EMOJI_SVG, SVG_EXTRA,
-        TWITTER_COLOR_EMOJI,
+        all_glyphs_to_pdf, purple_fill, red_fill, red_stroke, EMOJI_ONE, NOTO_COLOR_EMOJI_SVG,
+        SVG_EXTRA, TWITTER_COLOR_EMOJI,
     };
+
+    #[visreg(document)]
+    fn font_svg_preserves_paint(document: &mut Document) {
+        let font = Font::new(SVG_EXTRA.clone(), 0).unwrap();
+        let mut page = document.start_page_with(PageSettings::from_wh(130.0, 60.0).unwrap());
+        let mut surface = page.surface();
+        surface.set_fill(Some(purple_fill(1.0)));
+        surface.set_stroke(Some(red_stroke(1.0, 2.0)));
+
+        let mut before = PathBuilder::new();
+        before.push_rect(Rect::from_xywh(10.0, 15.0, 25.0, 30.0).unwrap());
+        surface.draw_path(&before.finish().unwrap());
+
+        surface.draw_glyphs(
+            Point::from_xy(55.0, 45.0),
+            &[KrillaGlyph::new(
+                GlyphId::new(2),
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0..0,
+                None,
+            )],
+            font,
+            "",
+            40.0,
+            true,
+        );
+
+        let mut after = PathBuilder::new();
+        after.push_rect(Rect::from_xywh(95.0, 15.0, 25.0, 30.0).unwrap());
+        surface.draw_path(&after.finish().unwrap());
+    }
 
     #[visreg(document, all)]
     fn font_twitter_color_emoji(document: &mut Document) {

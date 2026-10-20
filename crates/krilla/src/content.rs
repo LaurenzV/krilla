@@ -61,9 +61,27 @@ pub(crate) struct ContentBuilder {
 /// Stores either a device-specific color space,
 /// or the name of a different colorspace (e.g. ICCBased) stored in
 /// the current resource dictionary
-enum ContentColorSpace {
+pub(crate) enum ContentColorSpace {
     Device,
     Named(String),
+}
+
+impl ContentColorSpace {
+    pub(crate) fn from_color_space(
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+        rd_builder: &mut ResourceDictionaryBuilder,
+        cs: ColorSpace,
+    ) -> ContentColorSpace {
+        match sc.register_colorspace(chunk_container, cs) {
+            MaybeDeviceColorSpace::ColorSpace(s) => {
+                ContentColorSpace::Named(rd_builder.register_resource(s))
+            }
+            MaybeDeviceColorSpace::DeviceGray => ContentColorSpace::Device,
+            MaybeDeviceColorSpace::DeviceRgb => ContentColorSpace::Device,
+            MaybeDeviceColorSpace::DeviceCMYK => ContentColorSpace::Device,
+        }
+    }
 }
 
 impl ContentBuilder {
@@ -100,7 +118,7 @@ impl ContentBuilder {
         sc.register_limits(buf.limits());
 
         Stream::new(
-            buf.to_vec(),
+            buf.into_vec(),
             self.bbox
                 .unwrap_or(Rect::from_xywh(0.0, 0.0, 1.0, 1.0).unwrap()),
             self.validation_errors.into_iter().collect(),
@@ -205,7 +223,10 @@ impl ContentBuilder {
         }
 
         // Zero-size geometry, don't draw.
-        if path.bounds().width() == 0.0 && path.bounds().height() == 0.0 {
+        if path.bounds().width() == 0.0
+            && path.bounds().height() == 0.0
+            && stroke.is_none_or(|stroke| stroke.width == 0.0 || stroke.line_cap != LineCap::Round)
+        {
             return;
         }
 
@@ -1056,8 +1077,12 @@ impl ContentBuilder {
                     // Write gradients with one stop as a solid color fill.
                     content_builder.set_fill_opacity(opacity);
                     let cs = color.color_space(sc);
-                    let color_space_resource =
-                        Self::cs_to_content_cs(content_builder, sc, chunk_container, cs);
+                    let color_space_resource = ContentColorSpace::from_color_space(
+                        sc,
+                        chunk_container,
+                        &mut content_builder.rd_builder,
+                        cs,
+                    );
                     set_solid_fn(&mut content_builder.content, color_space_resource, color);
                 } else {
                     let shading_mask = Mask::new_from_shading(
@@ -1099,7 +1124,12 @@ impl ContentBuilder {
         match &paint.0 {
             InnerPaint::Color(c) => {
                 let cs = c.color_space(sc);
-                let color_space_resource = Self::cs_to_content_cs(self, sc, chunk_container, cs);
+                let color_space_resource = ContentColorSpace::from_color_space(
+                    sc,
+                    chunk_container,
+                    &mut self.rd_builder,
+                    cs,
+                );
                 set_solid_fn(&mut self.content, color_space_resource, c);
             }
             InnerPaint::LinearGradient(lg) => {
@@ -1136,22 +1166,6 @@ impl ContentBuilder {
         }
     }
 
-    fn cs_to_content_cs(
-        content_builder: &mut ContentBuilder,
-        sc: &mut SerializeContext,
-        chunk_container: &mut ChunkContainer,
-        cs: ColorSpace,
-    ) -> ContentColorSpace {
-        match sc.register_colorspace(chunk_container, cs) {
-            MaybeDeviceColorSpace::ColorSpace(s) => {
-                ContentColorSpace::Named(content_builder.rd_builder.register_resource(s))
-            }
-            MaybeDeviceColorSpace::DeviceGray => ContentColorSpace::Device,
-            MaybeDeviceColorSpace::DeviceRgb => ContentColorSpace::Device,
-            MaybeDeviceColorSpace::DeviceCMYK => ContentColorSpace::Device,
-        }
-    }
-
     fn content_set_fill_properties(
         &mut self,
         bounds: Rect,
@@ -1164,31 +1178,6 @@ impl ContentBuilder {
             content.set_fill_pattern(None, color_space.to_pdf_name());
         }
 
-        fn set_solid_fn(content: &mut Content, color_space: ContentColorSpace, color: &Color) {
-            match color_space {
-                ContentColorSpace::Device => match color {
-                    Color::Regular(crate::color::RegularColor::Rgb(r)) => {
-                        let comps = r.to_pdf_color();
-                        content.set_fill_rgb(comps[0], comps[1], comps[2]);
-                    }
-                    Color::Regular(crate::color::RegularColor::Luma(l)) => {
-                        content.set_fill_gray(l.to_pdf_color());
-                    }
-                    Color::Regular(crate::color::RegularColor::Cmyk(c)) => {
-                        let comps = c.to_pdf_color();
-                        content.set_fill_cmyk(comps[0], comps[1], comps[2], comps[3]);
-                    }
-                    Color::Special(_) => {
-                        panic!("Device color space cannot be used with special colors")
-                    }
-                },
-                ContentColorSpace::Named(n) => {
-                    content.set_fill_color_space(n.to_pdf_name());
-                    content.set_fill_color(color.to_pdf_color());
-                }
-            }
-        }
-
         self.content_set_fill_stroke_properties(
             bounds,
             &fill.paint,
@@ -1196,7 +1185,7 @@ impl ContentBuilder {
             serializer_context,
             chunk_container,
             set_pattern_fn,
-            set_solid_fn,
+            set_solid_fill,
         );
     }
 
@@ -1349,4 +1338,29 @@ fn get_glyphs_bbox(glyphs: &[impl Glyph], x: f32, y: f32, size: f32, font: Font)
     }
 
     Rect::from_ltrb(bl, bt, br, bb).unwrap()
+}
+
+pub(crate) fn set_solid_fill(content: &mut Content, color_space: ContentColorSpace, color: &Color) {
+    match color_space {
+        ContentColorSpace::Device => match color {
+            Color::Regular(crate::color::RegularColor::Rgb(r)) => {
+                let comps = r.to_pdf_color();
+                content.set_fill_rgb(comps[0], comps[1], comps[2]);
+            }
+            Color::Regular(crate::color::RegularColor::Luma(l)) => {
+                content.set_fill_gray(l.to_pdf_color());
+            }
+            Color::Regular(crate::color::RegularColor::Cmyk(c)) => {
+                let comps = c.to_pdf_color();
+                content.set_fill_cmyk(comps[0], comps[1], comps[2], comps[3]);
+            }
+            Color::Special(_) => {
+                panic!("Special colors cannot be used with device color space")
+            }
+        },
+        ContentColorSpace::Named(n) => {
+            content.set_fill_color_space(n.to_pdf_name());
+            content.set_fill_color(color.to_pdf_color());
+        }
+    }
 }

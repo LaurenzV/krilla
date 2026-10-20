@@ -1,17 +1,9 @@
 use crate::text::Font;
 use crate::text::{GlyphId, KrillaGlyph};
-use rustybuzz::ttf_parser::Tag;
-use rustybuzz::{Direction, UnicodeBuffer};
+use harfrust::{Direction, ShapeOptions, UnicodeBuffer};
 
 /// Naively shape some text with a single font.
 pub(crate) fn naive_shape(text: &str, font: Font, direction: TextDirection) -> Vec<KrillaGlyph> {
-    let data = font.font_data();
-    let mut rb_font = rustybuzz::Face::from_slice(data.as_ref(), font.index()).unwrap();
-
-    for variation in font.variation_coordinates() {
-        rb_font.set_variation(Tag::from_bytes(variation.0.get()), variation.1.get());
-    }
-
     let mut buffer = UnicodeBuffer::new();
     buffer.push_str(text);
     buffer.guess_segment_properties();
@@ -26,7 +18,7 @@ pub(crate) fn naive_shape(text: &str, font: Font, direction: TextDirection) -> V
 
     let dir = buffer.direction();
 
-    let output = rustybuzz::shape(&rb_font, &[], buffer);
+    let output = font.shaper().shape(buffer, ShapeOptions::default());
 
     let positions = output.glyph_positions();
     let infos = output.glyph_infos();

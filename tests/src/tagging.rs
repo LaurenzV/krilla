@@ -645,23 +645,6 @@ fn tagging_strong_and_em_pdf_20(document: &mut Document) {
     tagging_strong_and_em_impl(document);
 }
 
-#[snapshot(document, settings_25)]
-fn tagging_custom_namespace_pdf_20(document: &mut Document) {
-    let mut page = document.start_page();
-    let mut surface = page.surface();
-    surface.set_fill(Some(green_fill(1.0)));
-    surface.draw_path(&rect_to_path(20.0, 20.0, 80.0, 80.0));
-    surface.finish();
-    page.finish();
-
-    let mut datetime = TagGroup::new(Tag::Datetime);
-    datetime.push(TagGroup::new(Tag::Span));
-
-    let mut tag_tree = TagTree::new();
-    tag_tree.push(datetime);
-    document.set_tag_tree(tag_tree);
-}
-
 fn tagging_strong_and_em_impl(document: &mut Document) {
     document.set_metadata(
         Metadata::new()
@@ -695,6 +678,54 @@ fn tagging_strong_and_em_impl(document: &mut Document) {
 
     tag_tree.push(p);
 
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document, settings_25)]
+fn tagging_custom_namespace_pdf_20(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+    surface.set_fill(Some(green_fill(1.0)));
+    surface.draw_path(&rect_to_path(20.0, 20.0, 80.0, 80.0));
+    surface.finish();
+    page.finish();
+
+    let mut datetime = TagGroup::new(Tag::Datetime);
+    datetime.push(TagGroup::new(Tag::Span));
+
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(datetime);
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document, settings_15)]
+fn tagging_title_pdf_17(document: &mut Document) {
+    tagging_title_impl(document);
+}
+
+#[snapshot(document, settings_25)]
+fn tagging_title_pdf_20(document: &mut Document) {
+    tagging_title_impl(document);
+}
+
+fn tagging_title_impl(document: &mut Document) {
+    document.set_metadata(Metadata::new().title("Title".into()).language("en".into()));
+    document.set_outline(Outline::new());
+
+    let mut tag_tree = TagTree::new();
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "A title");
+    surface.end_tagged();
+    let mut title = TagGroup::new(Tag::Title);
+    title.push(id);
+
+    surface.finish();
+    page.finish();
+
+    tag_tree.push(title);
     document.set_tag_tree(tag_tree);
 }
 

@@ -7,14 +7,15 @@
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
 pub mod xmp;
 
-use pdf_writer::{Finish, Pdf, Ref, TextStr};
+use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
 use std::borrow::Cow;
 use std::cell::LazyCell;
+use std::collections::BTreeMap;
 use xmp_writer::{
     CustomNamespace, LangId, Namespace as XmpNamespace, RdfCollectionType, Timezone, XmpWriter,
 };
 
-use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
+use crate::configure::{Archival, Configuration, PdfVersion, ValidationError, Validators};
 use crate::serialize::SerializeContext;
 
 use self::xmp::{Category, Namespace, Property, Value, ValueType, XmpError};
@@ -29,11 +30,13 @@ pub struct Metadata {
     pub(crate) keywords: Option<Vec<String>>,
     pub(crate) authors: Option<Vec<String>>,
     pub(crate) document_id: Option<String>,
+    pub(crate) version_id: Option<String>,
     pub(crate) language: Option<String>,
     pub(crate) creation_date: Option<DateTime>,
     pub(crate) text_direction: Option<TextDirection>,
     pub(crate) page_layout: Option<PageLayout>,
     pub(crate) custom_xmp_properties: Vec<Property>,
+    pub(crate) custom_fields: BTreeMap<String, String>,
 }
 
 impl Metadata {
@@ -118,6 +121,14 @@ impl Metadata {
         self
     }
 
+    /// A version ID.
+    ///
+    /// This attribute identifies a specific version of the document.
+    pub fn version_id(mut self, version_id: String) -> Self {
+        self.version_id = Some(version_id);
+        self
+    }
+
     /// The main text direction of the document.
     pub fn text_direction(mut self, text_direction: TextDirection) -> Self {
         self.text_direction = Some(text_direction);
@@ -137,6 +148,25 @@ impl Metadata {
         self
     }
 
+    /// Add a custom field to the document information dictionary.
+    ///
+    /// If a field with the same name was already added, its value will be
+    /// replaced. Returns `None` for empty names and names reserved for standard
+    /// document information fields.
+    ///
+    /// **WARNING**: Custom fields will currently be ignored when exporting to
+    /// PDF/A-2 and PDF/A-3 and PDF/A-4. This is a temporary limitation that will be lifted
+    /// in the future.
+    #[must_use]
+    pub fn custom_field(mut self, name: String, value: String) -> Option<Self> {
+        if name.is_empty() || is_standard_document_info_field(&name) {
+            return None;
+        }
+
+        self.custom_fields.insert(name, value);
+        Some(self)
+    }
+
     pub(crate) fn has_document_info(&self) -> bool {
         self.title.is_some()
             || self.producer.is_some()
@@ -145,6 +175,7 @@ impl Metadata {
             || self.creator.is_some()
             || self.creation_date.is_some()
             || self.description.is_some()
+            || !self.custom_fields.is_empty()
     }
 
     pub(crate) fn serialize_xmp_metadata<'n>(
@@ -204,6 +235,10 @@ impl Metadata {
 
         if let Some(producer) = &self.producer {
             xmp.producer(producer);
+        }
+
+        if let Some(version_id) = &self.version_id {
+            xmp.version_id(version_id);
         }
 
         if let Some(lang) = &self.language {
@@ -432,8 +467,41 @@ impl Metadata {
                 document_info.modified_date(pdf_date(date_time));
                 document_info.creation_date(pdf_date(date_time));
             }
+
+            // This is temporary until custom fields can be written to XMP.
+            // See https://github.com/LaurenzV/krilla/pull/419#issuecomment-5142992957.
+            if !matches!(
+                config.validators().archival(),
+                Some(
+                    Archival::A2_A
+                        | Archival::A2_B
+                        | Archival::A2_U
+                        | Archival::A3_A
+                        | Archival::A3_B
+                        | Archival::A3_U
+                )
+            ) {
+                for (name, value) in &self.custom_fields {
+                    document_info.pair(Name(name.as_bytes()), TextStr(value));
+                }
+            }
         }
     }
+}
+
+fn is_standard_document_info_field(name: &str) -> bool {
+    matches!(
+        name,
+        "Title"
+            | "Author"
+            | "Subject"
+            | "Keywords"
+            | "Creator"
+            | "Producer"
+            | "CreationDate"
+            | "ModDate"
+            | "Trapped"
+    )
 }
 
 /// A datetime. Invalid values will be clamped.
@@ -781,5 +849,31 @@ pub(crate) fn write_user_extension_schema(
                 .category(desc.category == Category::Internal)
                 .description(desc.description.as_str());
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Metadata;
+
+    #[test]
+    fn custom_field_returns_none_for_ignored_names() {
+        assert!(Metadata::new()
+            .custom_field(String::new(), "value".to_string())
+            .is_none());
+        assert!(Metadata::new()
+            .custom_field("Title".to_string(), "value".to_string())
+            .is_none());
+
+        let metadata = Metadata::new()
+            .custom_field("CustomField".to_string(), "value".to_string())
+            .unwrap();
+        assert_eq!(
+            metadata
+                .custom_fields
+                .get("CustomField")
+                .map(String::as_str),
+            Some("value")
+        );
     }
 }

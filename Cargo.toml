@@ -18,13 +18,14 @@ license = "MIT OR Apache-2.0"
 base64 = "0.22.1"
 bumpalo = "3.16.0"
 comemo = "0.5.0"
+crc32fast = "1.4.2"
 difference = "2.0.0"
 flate2 = "1.1.0"
 # Can't bump because usvg uses older version.
 float-cmp = "0.9.0"
 fontdb = "0.23.0"
 gif = "0.14.2"
-hayro-write = { version = "0.7.0" }
+hayro-write = { git = "https://github.com/LaurenzV/hayro", rev = "a728f7cb6826c1e167973b8fd71867ebb4cf39af" }
 image = { version = "0.25.1", default-features = false }
 imagesize = "0.14.0"
 image-webp = "0.2.1"
@@ -35,17 +36,17 @@ krilla-macros = { path = "crates/krilla-macros" }
 oxipng = "10.1.0"
 parley = "0.8.0"
 paste = "1.0.15"
-pdf-writer = { version = "0.15.0" }
+pdf-writer = { git = "https://github.com/typst/pdf-writer", rev = "fdf090125f1e7209fa630c4ca1f5f29910c87c93" }
 pretty_assertions = "1.4.1"
 proc-macro2 = "1.0.86"
 quote = "1.0.37"
 rayon = "1.10.0"
 resvg = "0.47.0"
 rustc-hash = "2.1.1"
-rustybuzz = "0.20.1"
+harfrust = "0.12.0"
 siphasher = "1.0.1"
-sitro = { git = "https://github.com/LaurenzV/sitro", rev = "c0b26d14", default-features = false }
-skrifa = "0.42.0"
+sitro = { git = "https://github.com/LaurenzV/sitro", rev = "ac3b91d", default-features = false }
+skrifa = "0.44.0"
 smallvec = { version = "1.15.1", features = ["union", "const_new", "write"] }
 subsetter = { version = "0.2.6", features = ["variable-fonts"] }
 syn = { version = "2.0.76", features = ["full", "extra-traits"] }
@@ -56,4 +57,4 @@ xmp-writer = { git = "https://github.com/typst/xmp-writer", rev = "61b88dd697c21
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.18.1"
 zune-jpeg = "0.5.5"
- 
+

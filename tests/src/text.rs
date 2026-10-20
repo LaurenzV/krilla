@@ -1,5 +1,5 @@
 use krilla::geom::Point;
-use krilla::page::Page;
+use krilla::page::{Page, PageSettings};
 use krilla::paint::{Fill, LinearGradient, Paint, SpreadMethod, Stroke};
 use krilla::surface::Surface;
 use krilla::text::{Font, GlyphId, KrillaGlyph, Tag, TextDirection};
@@ -200,6 +200,24 @@ fn text_direction_ttb(surface: &mut Surface) {
         false,
         TextDirection::TopToBottom,
     );
+}
+
+#[visreg(document)]
+fn text_vertical_advance(document: &mut Document) {
+    let font = Font::new(NOTO_SANS_CJK.clone(), 0).unwrap();
+    let mut page = document.start_page_with(PageSettings::from_wh(100.0, 80.0).unwrap());
+    let mut surface = page.surface();
+
+    for (column, outlined) in [false, true].into_iter().enumerate() {
+        surface.draw_text(
+            Point::from_xy(25.0 + column as f32 * 50.0, 10.0),
+            font.clone(),
+            24.0,
+            "你好",
+            outlined,
+            TextDirection::TopToBottom,
+        );
+    }
 }
 
 #[visreg]

@@ -1,0 +1,175 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [9 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Fields [4 0 R]
+  /DR 8 0 R
+>>
+endobj
+
+3 0 obj
+<<
+  /Type /Annot
+  /Subtype /Widget
+  /Rect [50 190 60 200]
+  /AA <<
+    /D <<
+      /Type /Action
+      /S /ResetForm
+    >>
+  >>
+  /F 4
+  /AS /Yes
+  /AP <<
+    /N <<
+      /Yes 11 0 R
+    >>
+    /R <<
+      /Yes 12 0 R
+    >>
+  >>
+  /Parent 4 0 R
+  /StructParent 0
+>>
+endobj
+
+4 0 obj
+<<
+  /T (btn1)
+  /Ff 65536
+  /FT /Btn
+  /Kids [3 0 R]
+>>
+endobj
+
+5 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+6 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+7 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+8 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+9 0 obj
+<<
+  /Type /Page
+  /Resources 7 0 R
+  /MediaBox [0 0 200 200]
+  /Tabs /S
+  /Parent 1 0 R
+  /Contents 10 0 R
+  /Annots [3 0 R]
+>>
+endobj
+
+10 0 obj
+<<
+  /Length 0
+>>
+stream
+
+endstream
+endobj
+
+11 0 obj
+<<
+  /Length 61
+  /Type /XObject
+  /Subtype /Form
+  /Resources 5 0 R
+  /BBox [0 0 10 10]
+>>
+stream
+q
+1 0 0 -1 0 10 cm
+1 0 0 rg
+0 0 m
+10 0 l
+10 10 l
+0 10 l
+h
+f
+Q
+endstream
+endobj
+
+12 0 obj
+<<
+  /Length 61
+  /Type /XObject
+  /Subtype /Form
+  /Resources 6 0 R
+  /BBox [0 0 10 10]
+>>
+stream
+q
+1 0 0 -1 0 10 cm
+0 1 0 rg
+0 0 m
+10 0 l
+10 10 l
+0 10 l
+h
+f
+Q
+endstream
+endobj
+
+13 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+  /AcroForm 2 0 R
+>>
+endobj
+
+xref
+0 14
+0000000000 65535 f
+0000000016 00000 n
+0000000080 00000 n
+0000000132 00000 n
+0000000419 00000 n
+0000000492 00000 n
+0000000554 00000 n
+0000000616 00000 n
+0000000678 00000 n
+0000000740 00000 n
+0000000885 00000 n
+0000000938 00000 n
+0000001126 00000 n
+0000001314 00000 n
+trailer
+<<
+  /Size 14
+  /Root 13 0 R
+  /ID [(oMStuNmeLRsjGJ97hrDMTw==) (oMStuNmeLRsjGJ97hrDMTw==)]
+>>
+startxref
+1387
+%%EOF

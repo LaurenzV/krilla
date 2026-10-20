@@ -6,19 +6,24 @@
 //! the only available action is the link action, which allows you to specify a link that
 //! should be opened, when activating the action.
 
-use pdf_writer::types::ActionType;
-use pdf_writer::{Name, Str};
+use pdf_writer::types::{ActionType, FormActionFlags};
+use pdf_writer::{Finish, Name, Str, TextStr};
 
+use crate::configure::ValidationError;
 use crate::error::KrillaResult;
 use crate::interactive::destination::Destination;
 use crate::serialize::SerializeContext;
+use crate::surface::Location;
 
 /// A type of action.
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Action {
     /// A link action.
     Link(LinkAction),
     /// A go-to action.
     Goto(Destination),
+    /// A reset form action.
+    ResetForm(ResetFormAction),
 }
 
 impl Action {
@@ -26,6 +31,7 @@ impl Action {
         &self,
         sc: &mut SerializeContext,
         mut action: pdf_writer::writers::Action,
+        location: Option<Location>,
     ) -> KrillaResult<()> {
         match self {
             Action::Link(link) => {
@@ -37,11 +43,19 @@ impl Action {
                 let dest_entry = action.action_type(ActionType::GoTo).insert(Name(b"D"));
                 dest.serialize(sc, dest_entry)
             }
+            Action::ResetForm(reset_form) => {
+                reset_form.serialize(action);
+
+                sc.register_validation_error(ValidationError::ContainsMutatingAction(location));
+
+                Ok(())
+            }
         }
     }
 }
 
 /// A link action. Will open a link when clicked.
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct LinkAction {
     uri: String,
 }
@@ -64,5 +78,44 @@ impl LinkAction {
         action
             .action_type(ActionType::Uri)
             .uri(Str(self.uri.as_bytes()));
+    }
+}
+
+/// A reset form action. Will reset the given form fields when triggered.
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub enum ResetFormAction {
+    /// Reset all fields in the document. Convenience variant for an empty [`ResetFormAction::Exclude`] variant.
+    All,
+    /// Reset only the fields with the given fully qualified names.
+    Include(Vec<String>),
+    /// Reset all fields in the document except the ones with the given fully qualified names.
+    Exclude(Vec<String>),
+}
+
+impl From<ResetFormAction> for Action {
+    fn from(value: ResetFormAction) -> Self {
+        Action::ResetForm(value)
+    }
+}
+
+impl ResetFormAction {
+    fn serialize(&self, mut action: pdf_writer::writers::Action) {
+        action.action_type(ActionType::ResetForm);
+        match self {
+            ResetFormAction::All => {}
+            ResetFormAction::Include(items) => {
+                action
+                    .fields()
+                    .items(items.iter().map(|name| TextStr(name)))
+                    .finish();
+            }
+            ResetFormAction::Exclude(items) => {
+                action
+                    .fields()
+                    .items(items.iter().map(|name| TextStr(name)))
+                    .finish();
+                action.form_flags(FormActionFlags::INCLUDE_EXCLUDE);
+            }
+        }
     }
 }

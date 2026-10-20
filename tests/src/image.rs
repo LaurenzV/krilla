@@ -50,9 +50,29 @@ fn image_rgba8_png(surface: &mut Surface) {
     image_visreg_impl(surface, "rgba8.png", load_png_image);
 }
 
+#[snapshot]
+fn image_rgba8_opaque(page: &mut Page) {
+    image_visreg_impl(&mut page.surface(), "rgba8_opaque.png", load_png_image);
+}
+
+#[visreg]
+fn image_rgba8_opaque(surface: &mut Surface) {
+    image_visreg_impl(surface, "rgba8_opaque.png", load_png_image);
+}
+
 #[visreg(all)]
 fn image_rgba16_png(surface: &mut Surface) {
     image_visreg_impl(surface, "rgba16.png", load_png_image);
+}
+
+#[snapshot]
+fn image_rgba16_opaque(page: &mut Page) {
+    image_visreg_impl(&mut page.surface(), "rgba16_opaque.png", load_png_image);
+}
+
+#[visreg]
+fn image_rgba16_opaque(surface: &mut Surface) {
+    image_visreg_impl(surface, "rgba16_opaque.png", load_png_image);
 }
 
 #[visreg]

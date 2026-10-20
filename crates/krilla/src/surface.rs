@@ -6,6 +6,8 @@
 
 use std::num::NonZeroU64;
 
+use pdf_writer::Name;
+
 use crate::chunk_container::ChunkContainer;
 use crate::color::rgb;
 use crate::configure::validate::VersionedFeature;
@@ -108,7 +110,7 @@ impl<'a> Surface<'a> {
     /// Set the fill that should be used for the next drawing operation.
     ///
     /// You can set it to `None` if you want to disable filling (though
-    /// if there is no active stroke, than krilla will choose to fill
+    /// if there is no active stroke, then krilla will choose to fill
     /// with black by default).
     pub fn set_fill(&mut self, fill: Option<Fill>) {
         self.fill = fill;
@@ -173,7 +175,8 @@ impl<'a> Surface<'a> {
     /// Start a new tagged content section.
     ///
     /// # Panics
-    /// Panics if a tagged section has already been started.
+    /// Panics if a tagged section has already been started (either via this function or via
+    /// [`Surface::start_variable_text`]).
     /// Panics if an artifact with a required bbox has none.
     pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
         if let Some(id) = &mut self.page_identifier {
@@ -236,6 +239,23 @@ impl<'a> Surface<'a> {
         }
     }
 
+    /// Start a new variable text marked section.
+    ///
+    /// # Panics
+    /// Panics if a tagged/marked section has already been started (either via this function or via
+    /// [`Surface::start_tagged`]).
+    pub fn start_variable_text(&mut self) {
+        self.bd.get_mut().start_marked_content(Name(b"Tx"));
+    }
+
+    /// End the current variable text marked section.
+    ///
+    /// # Panics
+    /// Panics if no variable text marked section has been started.
+    pub fn end_variable_text(&mut self) {
+        self.bd.get_mut().end_marked_content();
+    }
+
     fn outline_glyphs(
         &mut self,
         glyphs: &[impl Glyph],
@@ -244,12 +264,12 @@ impl<'a> Surface<'a> {
         font: Font,
         font_size: f32,
     ) {
-        let (mut cur_x, y) = (start.x, start.y);
+        let (mut cur_x, mut cur_y) = (start.x, start.y);
 
         for glyph in glyphs {
             let mut base_transform = tiny_skia_path::Transform::from_translate(
                 cur_x + glyph.x_offset(font_size),
-                y - glyph.y_offset(font_size),
+                cur_y - glyph.y_offset(font_size),
             );
             base_transform = base_transform.pre_concat(tiny_skia_path::Transform::from_scale(
                 font_size / font.units_per_em(),
@@ -264,6 +284,7 @@ impl<'a> Surface<'a> {
             );
 
             cur_x += glyph.x_advance(font_size);
+            cur_y -= glyph.y_advance(font_size);
         }
     }
 

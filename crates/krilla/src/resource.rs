@@ -180,10 +180,20 @@ pub(crate) struct ResourceDictionaryBuilder {
     pub(crate) x_objects: ResourceMapper<XObject>,
     pub(crate) shadings: ResourceMapper<Shading>,
     pub(crate) fonts: ResourceMapper<Font>,
+
+    /// Extra prefix for all entries in this resource dictionary.
+    /// This allows to prevent collisions between resources, e.g., in AcroForm, where a font in the
+    /// `/DA` property might be shadowed by a different font in the resources dictionary of the
+    /// XObject, resulting in the incorrect font being used.
+    pub(crate) prefix: &'static str,
 }
 
 impl ResourceDictionaryBuilder {
     pub(crate) fn new() -> Self {
+        Self::new_with_prefix("")
+    }
+
+    pub(crate) fn new_with_prefix(prefix: &'static str) -> Self {
         Self {
             color_spaces: ResourceMapper::new(),
             ext_g_states: ResourceMapper::new(),
@@ -191,6 +201,7 @@ impl ResourceDictionaryBuilder {
             x_objects: ResourceMapper::new(),
             shadings: ResourceMapper::new(),
             fonts: ResourceMapper::new(),
+            prefix,
         }
     }
 
@@ -198,7 +209,8 @@ impl ResourceDictionaryBuilder {
     where
         T: Resource,
     {
-        T::get_mapper(self).remap_with_name(obj.get_ref())
+        let rd_prefix = self.prefix;
+        T::get_mapper(self).remap_with_name(obj.get_ref(), rd_prefix)
     }
 
     pub(crate) fn finish(self) -> ResourceDictionary {
@@ -209,6 +221,7 @@ impl ResourceDictionaryBuilder {
             x_objects: self.x_objects.into_resource_list(),
             shadings: self.shadings.into_resource_list(),
             fonts: self.fonts.into_resource_list(),
+            prefix: self.prefix,
         }
     }
 }
@@ -221,6 +234,8 @@ pub(crate) struct ResourceDictionary {
     pub(crate) x_objects: ResourceList<XObject>,
     pub(crate) shadings: ResourceList<Shading>,
     pub(crate) fonts: ResourceList<Font>,
+
+    pub(crate) prefix: &'static str,
 }
 
 impl Default for ResourceDictionary {
@@ -232,6 +247,7 @@ impl Default for ResourceDictionary {
             x_objects: ResourceList::empty(),
             shadings: ResourceList::empty(),
             fonts: ResourceList::empty(),
+            prefix: "",
         }
     }
 }
@@ -276,24 +292,28 @@ impl ResourceDictionary {
                 ProcSet::ImageGrayscale,
             ]);
         }
-        write_resource_type::<ColorSpace>(&mut resources, &self.color_spaces);
-        write_resource_type::<ExtGState>(&mut resources, &self.ext_g_states);
-        write_resource_type::<Pattern>(&mut resources, &self.patterns);
-        write_resource_type::<XObject>(&mut resources, &self.x_objects);
-        write_resource_type::<Shading>(&mut resources, &self.shadings);
-        write_resource_type::<Font>(&mut resources, &self.fonts);
+        let rd_prefix = self.prefix;
+        write_resource_type::<ColorSpace>(&mut resources, &self.color_spaces, rd_prefix);
+        write_resource_type::<ExtGState>(&mut resources, &self.ext_g_states, rd_prefix);
+        write_resource_type::<Pattern>(&mut resources, &self.patterns, rd_prefix);
+        write_resource_type::<XObject>(&mut resources, &self.x_objects, rd_prefix);
+        write_resource_type::<Shading>(&mut resources, &self.shadings, rd_prefix);
+        write_resource_type::<Font>(&mut resources, &self.fonts, rd_prefix);
         parent.set_resources(resources_ref);
     }
 }
 
-fn write_resource_type<T>(resources: &mut writers::Resources, resource_list: &ResourceList<T>)
-where
+fn write_resource_type<T>(
+    resources: &mut writers::Resources,
+    resource_list: &ResourceList<T>,
+    rd_prefix: &'static str,
+) where
     T: Resource,
 {
     if resource_list.len() > 0 {
         let mut dict = T::get_dict(resources);
 
-        for (name, entry) in resource_list.get_entries() {
+        for (name, entry) in resource_list.get_entries(rd_prefix) {
             dict.pair(name.to_pdf_name(), entry);
         }
 
@@ -322,15 +342,18 @@ where
         self.entries.len() as u32
     }
 
-    fn name_from_number(num: ResourceNumber) -> String {
-        format!("{}{}", T::get_prefix(), num)
+    fn name_from_number(num: ResourceNumber, rd_prefix: &'static str) -> String {
+        format!("{}{}{}", rd_prefix, T::get_prefix(), num)
     }
 
-    pub(crate) fn get_entries(&self) -> impl Iterator<Item = (String, Ref)> + '_ {
+    pub(crate) fn get_entries(
+        &self,
+        rd_prefix: &'static str,
+    ) -> impl Iterator<Item = (String, Ref)> + '_ {
         self.entries
             .iter()
             .enumerate()
-            .map(|(i, r)| (Self::name_from_number(i as ResourceNumber), *r))
+            .map(move |(i, r)| (Self::name_from_number(i as ResourceNumber, rd_prefix), *r))
     }
 }
 
@@ -364,12 +387,12 @@ where
         })
     }
 
-    pub(crate) fn remap_with_name(&mut self, ref_: Ref) -> String {
-        Self::name_from_number(self.remap(ref_))
+    pub(crate) fn remap_with_name(&mut self, ref_: Ref, rd_prefix: &'static str) -> String {
+        Self::name_from_number(self.remap(ref_), rd_prefix)
     }
 
-    fn name_from_number(num: ResourceNumber) -> String {
-        format!("{}{}", T::get_prefix(), num)
+    fn name_from_number(num: ResourceNumber, rd_prefix: &'static str) -> String {
+        format!("{}{}{}", rd_prefix, T::get_prefix(), num)
     }
 
     pub(crate) fn into_resource_list(self) -> ResourceList<T> {
@@ -432,5 +455,15 @@ impl ResourcesExt for writers::Page<'_> {
 
     fn set_resources(&mut self, resources_ref: Ref) {
         self.pair(Name(b"Resources"), resources_ref);
+    }
+}
+
+impl ResourcesExt for writers::Form<'_> {
+    fn resources(&mut self) -> writers::Resources<'_> {
+        self.default_resources()
+    }
+
+    fn set_resources(&mut self, resources_ref: Ref) {
+        self.pair(Name(b"DR"), resources_ref);
     }
 }

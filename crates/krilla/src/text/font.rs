@@ -3,6 +3,10 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::Arc;
 
+#[cfg(feature = "simple-text")]
+use harfrust::{Shaper, ShaperData, ShaperInstance};
+#[cfg(feature = "raster-images")]
+use skrifa::bitmap::BitmapFormat;
 use skrifa::instance::{Location, LocationRef, Size};
 use skrifa::metrics::GlyphMetrics;
 use skrifa::raw::types::NameId;
@@ -15,6 +19,77 @@ use crate::geom::Rect;
 use crate::text::GlyphId;
 use crate::util::Prehashed;
 use crate::Data;
+
+/// One of the 14 standard type 1 fonts (PDF 1.0-1.7).
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub enum StandardFont {
+    /// Courier.
+    Courier,
+    /// Courier-Bold.
+    CourierBold,
+    /// Courier-BoldOblique.
+    CourierBoldOblique,
+    /// Courier-Oblique.
+    CourierOblique,
+    /// Helvetica.
+    Helvetica,
+    /// Helvetica-Bold.
+    HelveticaBold,
+    /// Helvetica-BoldOblique.
+    HelveticaBoldOblique,
+    /// Helvetica-Oblique.
+    HelveticaOblique,
+    /// Symbol.
+    Symbol,
+    /// Times-Bold.
+    TimesBold,
+    /// Times-BoldItalic.
+    TimesBoldItalic,
+    /// Times-Italic.
+    TimesItalic,
+    /// Times-Roman.
+    TimesRoman,
+    /// ZapfDingbats.
+    ZapfDingbats,
+}
+
+impl StandardFont {
+    pub(crate) const ALL: [Self; 14] = [
+        Self::Courier,
+        Self::CourierBold,
+        Self::CourierBoldOblique,
+        Self::CourierOblique,
+        Self::Helvetica,
+        Self::HelveticaBold,
+        Self::HelveticaBoldOblique,
+        Self::HelveticaOblique,
+        Self::Symbol,
+        Self::TimesBold,
+        Self::TimesBoldItalic,
+        Self::TimesItalic,
+        Self::TimesRoman,
+        Self::ZapfDingbats,
+    ];
+
+    pub(crate) fn base_font(&self) -> &'static str {
+        match self {
+            Self::Courier => "Courier",
+            Self::CourierBold => "Courier-Bold",
+            Self::CourierBoldOblique => "Courier-BoldOblique",
+            Self::CourierOblique => "Courier-Oblique",
+            Self::Helvetica => "Helvetica",
+            Self::HelveticaBold => "Helvetica-Bold",
+            Self::HelveticaBoldOblique => "Helvetica-BoldOblique",
+            Self::HelveticaOblique => "Helvetica-Oblique",
+            Self::Symbol => "Symbol",
+            Self::TimesBold => "Times-Bold",
+            Self::TimesBoldItalic => "Times-BoldItalic",
+            Self::TimesItalic => "Times-Italic",
+            Self::TimesRoman => "Times-Roman",
+            Self::ZapfDingbats => "ZapfDingbats",
+        }
+    }
+}
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
 /// It holds a reference to the underlying data as well as some basic information
@@ -40,15 +115,38 @@ impl Font {
     /// Like [`Font::new`], creates a new font from some data, but allows you to specify
     /// variation coordinates in case the font is variable.
     pub fn new_variable(data: Data, index: u32, variation_coords: &[(Tag, f32)]) -> Option<Self> {
-        let font_info = FontInfo::new(data.as_ref(), index, variation_coords)?;
+        let font_ref = FontRef::from_index(data.as_ref(), index).ok()?;
+        let font_info = FontInfo::new(&font_ref, variation_coords)?;
 
-        Font::new_with_info(data.clone(), Arc::new(font_info))
+        Font::new_with_info(data.clone(), &font_ref, Arc::new(font_info))
     }
 
-    pub(crate) fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
+    #[cfg_attr(not(feature = "simple-text"), allow(unused_variables))]
+    pub(crate) fn new_with_info(
+        data: Data,
+        font_ref: &FontRef<'_>,
+        font_info: Arc<FontInfo>,
+    ) -> Option<Self> {
+        #[cfg(feature = "simple-text")]
+        let (shaper_data, shaper_instance) = {
+            let shaper_data = ShaperData::new(font_ref);
+            let shaper_instance = ShaperInstance::from_variations(
+                font_ref,
+                font_info
+                    .var_coords
+                    .iter()
+                    .map(|variation| (harfrust::Tag::new(variation.0.get()), variation.1.get())),
+            );
+            (shaper_data, shaper_instance)
+        };
+
         let yoke_data = YokeData {
             data: data.0.clone(),
             location: font_info.location.clone(),
+            #[cfg(feature = "simple-text")]
+            shaper_data,
+            #[cfg(feature = "simple-text")]
+            shaper_instance,
         };
 
         let font_ref_yoke = Yoke::<FontRefYoke<'static>, Box<YokeData>>::attach_to_cart(
@@ -60,6 +158,12 @@ impl Font {
                     font_ref: font_ref.clone(),
                     glyph_metrics: font_ref.glyph_metrics(Size::unscaled(), &data.location),
                     outline_glyphs: font_ref.outline_glyphs(),
+                    #[cfg(feature = "simple-text")]
+                    shaper: data
+                        .shaper_data
+                        .shaper(&font_ref)
+                        .instance(Some(&data.shaper_instance))
+                        .build(),
                 }
             },
         );
@@ -73,6 +177,11 @@ impl Font {
 
     pub(crate) fn postscript_name(&self) -> Option<&str> {
         self.0.font_info.postscript_name.as_deref()
+    }
+
+    #[cfg(feature = "raster-images")]
+    pub(crate) fn is_apple_color_emoji(&self) -> bool {
+        self.0.font_info.is_apple_color_emoji
     }
 
     /// Return the index of the font.
@@ -137,6 +246,11 @@ impl Font {
         &self.0.font_ref_yoke.get().font_ref
     }
 
+    #[cfg(feature = "simple-text")]
+    pub(crate) fn shaper(&self) -> &Shaper<'_> {
+        &self.0.font_ref_yoke.get().shaper
+    }
+
     pub(crate) fn glyph_metrics(&self) -> &GlyphMetrics<'_> {
         &self.0.font_ref_yoke.get().glyph_metrics
     }
@@ -189,6 +303,10 @@ impl Debug for Font {
 struct YokeData {
     data: Arc<dyn AsRef<[u8]> + Send + Sync>,
     location: Location,
+    #[cfg(feature = "simple-text")]
+    shaper_data: ShaperData,
+    #[cfg(feature = "simple-text")]
+    shaper_instance: ShaperInstance,
 }
 
 impl Deref for YokeData {
@@ -220,6 +338,8 @@ pub(crate) struct FontInfo {
     global_bbox: Rect,
     num_glyphs: u32,
     postscript_name: Option<String>,
+    #[cfg(feature = "raster-images")]
+    is_apple_color_emoji: bool,
     ascent: FiniteF32,
     descent: FiniteF32,
     cap_height: Option<FiniteF32>,
@@ -250,14 +370,14 @@ impl Hash for Repr {
 }
 
 impl FontInfo {
-    pub(crate) fn new(data: &[u8], index: u32, var_coords: &[(Tag, f32)]) -> Option<Self> {
-        let font_ref = FontRef::from_index(data, index).ok()?;
+    pub(crate) fn new(font_ref: &FontRef<'_>, var_coords: &[(Tag, f32)]) -> Option<Self> {
+        let index = font_ref.ttc_index().unwrap_or_default();
         let location = font_ref.axes().location(
             var_coords
                 .iter()
                 .map(|i| (skrifa::Tag::new(i.0.get()), i.1)),
         );
-        let data_len = data.len();
+        let data_len = font_ref.data().len();
         let checksum = font_ref.head().ok()?.checksum_adjustment();
         let num_glyphs = font_ref.glyph_names().num_glyphs();
 
@@ -305,6 +425,11 @@ impl FontInfo {
                 None
             }
         };
+        #[cfg(feature = "raster-images")]
+        let is_apple_color_emoji = font_ref.bitmap_strikes().format() == Some(BitmapFormat::Sbix)
+            && font_ref
+                .localized_strings(skrifa::string::StringId::POSTSCRIPT_NAME)
+                .any(|name| name.chars().eq("AppleColorEmoji".chars()));
 
         let has_glyf = font_ref.glyf().is_ok();
         let has_cff = font_ref.cff().is_ok();
@@ -322,6 +447,8 @@ impl FontInfo {
             num_glyphs,
             units_per_em,
             postscript_name,
+            #[cfg(feature = "raster-images")]
+            is_apple_color_emoji,
             ascent,
             cap_height,
             has_glyf,
@@ -348,4 +475,6 @@ struct FontRefYoke<'a> {
     pub font_ref: FontRef<'a>,
     pub glyph_metrics: GlyphMetrics<'a>,
     pub outline_glyphs: OutlineGlyphCollection<'a>,
+    #[cfg(feature = "simple-text")]
+    pub shaper: Shaper<'a>,
 }

@@ -176,21 +176,21 @@ pub mod luma {
 
     impl Color {
         /// Create a new luma color.
-        pub fn new(lightness: u8) -> Color {
+        pub const fn new(lightness: u8) -> Color {
             Color(lightness)
         }
 
         /// Create a black luma color.
-        pub fn black() -> Self {
+        pub const fn black() -> Self {
             Self::new(0)
         }
 
         /// Create a white RGB color.
-        pub fn white() -> Self {
+        pub const fn white() -> Self {
             Self::new(255)
         }
 
-        pub(crate) fn to_pdf_color(self) -> f32 {
+        pub(crate) const fn to_pdf_color(self) -> f32 {
             self.0 as f32 / 255.0
         }
     }
@@ -246,11 +246,11 @@ pub mod cmyk {
 
     impl Color {
         /// Create a new CMYK color.
-        pub fn new(cyan: u8, magenta: u8, yellow: u8, black: u8) -> Color {
+        pub const fn new(cyan: u8, magenta: u8, yellow: u8, black: u8) -> Color {
             Color(cyan, magenta, yellow, black)
         }
 
-        pub(crate) fn to_pdf_color(self) -> [f32; 4] {
+        pub(crate) const fn to_pdf_color(self) -> [f32; 4] {
             [
                 self.0 as f32 / 255.0,
                 self.1 as f32 / 255.0,
@@ -305,41 +305,41 @@ pub mod rgb {
 
     impl Color {
         /// Create a new RGB color.
-        pub fn new(red: u8, green: u8, blue: u8) -> Self {
+        pub const fn new(red: u8, green: u8, blue: u8) -> Self {
             Color(red, green, blue)
         }
 
         /// Create a new linear RGB color.
-        pub fn new_linear(red: u8, green: u8, blue: u8) -> Self {
+        pub const fn new_linear(red: u8, green: u8, blue: u8) -> Self {
             Color(red, green, blue)
         }
 
         /// Create a black RGB color.
-        pub fn black() -> Self {
+        pub const fn black() -> Self {
             Self::new(0, 0, 0)
         }
 
         /// Create a white RGB color.
-        pub fn white() -> Self {
+        pub const fn white() -> Self {
             Self::new(255, 255, 255)
         }
 
         /// The `red` component of the color.
-        pub fn red(&self) -> u8 {
+        pub const fn red(&self) -> u8 {
             self.0
         }
 
         /// The `green` component of the color.
-        pub fn green(&self) -> u8 {
+        pub const fn green(&self) -> u8 {
             self.1
         }
 
         /// The `blue` component of the color.
-        pub fn blue(&self) -> u8 {
+        pub const fn blue(&self) -> u8 {
             self.2
         }
 
-        pub(crate) fn to_pdf_color(self) -> [f32; 3] {
+        pub(crate) const fn to_pdf_color(self) -> [f32; 3] {
             [
                 self.0 as f32 / 255.0,
                 self.1 as f32 / 255.0,
@@ -390,7 +390,7 @@ pub mod separation {
             Self { tint, space }
         }
 
-        pub(crate) fn to_pdf_color(&self) -> f32 {
+        pub(crate) const fn to_pdf_color(&self) -> f32 {
             self.tint as f32 / 255.0
         }
 

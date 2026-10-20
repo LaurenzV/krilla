@@ -8,15 +8,16 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 use pdf_writer::types::{StructRole, StructRole2};
 use pdf_writer::writers::{OutputIntent, StructTreeRoot};
-use pdf_writer::{Chunk, Content, Finish, Limits, Name, Pdf, Ref, Settings, Str, TextStr};
+use pdf_writer::{Chunk, Content, Finish, Limits, Name, Obj, Pdf, Ref, Settings, Str, TextStr};
 
 use crate::chunk_container::ChunkContainer;
 use crate::color::{CieBasedColorSpace, DeviceColorSpace, SpecialColorSpace};
 use crate::configure::validate::ValidationStore;
 use crate::configure::{Configuration, PdfVersion, ValidationError, Validators};
 use crate::error::{KrillaError, KrillaResult, LimitError};
+use crate::form::{AcroForm, FieldTree};
 use crate::geom::Size;
-use crate::graphics::color::{rgb, ColorSpace};
+use crate::graphics::color::{rgb, ColorSpace, DEVICE_CMYK, DEVICE_GRAY, DEVICE_RGB};
 use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
@@ -31,9 +32,8 @@ use crate::pdf::{PdfDocument, PdfSerializerContext};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
 use crate::surface::{Location, Surface};
-use crate::text::GlyphId;
-use crate::text::{Font, FontContainer, FontIdentifier};
-use crate::util::SipHashable;
+use crate::text::{Font, FontContainer, FontIdentifier, GlyphId, StandardFont};
+use crate::util::{NameExt, SipHashable};
 
 const STR_LEN: usize = 32767;
 const NAME_LEN: usize = 127;
@@ -232,6 +232,17 @@ pub(crate) enum MaybeDeviceColorSpace {
     ColorSpace(resource::ColorSpace),
 }
 
+impl MaybeDeviceColorSpace {
+    pub(crate) fn write(&self, target: Obj<'_>) {
+        match self {
+            Self::DeviceRgb => target.primitive(Name(DEVICE_RGB.as_bytes())),
+            Self::DeviceGray => target.primitive(Name(DEVICE_GRAY.as_bytes())),
+            Self::DeviceCMYK => target.primitive(Name(DEVICE_CMYK.as_bytes())),
+            Self::ColorSpace(cs) => target.primitive(cs.get_ref()),
+        }
+    }
+}
+
 /// The serializer context is more or less the core piece of krilla. It is passed around
 /// throughout pretty much the whole conversion process, and contains all mutable state
 /// that is needed when writing a PDF file. This includes for example:
@@ -358,6 +369,10 @@ impl SerializeContext {
         }
     }
 
+    pub(crate) fn set_field_tree(&mut self, root: FieldTree) {
+        self.global_objects.forms.field_tree = Some(root);
+    }
+
     pub(crate) fn set_tag_tree(&mut self, root: TagTree) {
         // Only set the tag tree if the user actually enabled tagging.
         if self.serialize_settings.enable_tagging {
@@ -455,9 +470,12 @@ impl SerializeContext {
         self.serialize_destination_profiles(&mut chunk_container);
         self.serialize_page_label_tree(&mut chunk_container);
         self.serialize_outline(&mut chunk_container);
-        self.serialize_fonts(&mut chunk_container)?;
         self.serialize_pages(&mut chunk_container)?;
         self.serialize_page_tree(&mut chunk_container);
+        self.serialize_forms(&mut chunk_container);
+        // Forms register fonts for variable text /DA strings,
+        // so it's important we serialize fonts afterwards!
+        self.serialize_fonts(&mut chunk_container)?;
         #[cfg(feature = "pdf")]
         self.serialize_embedded_pdfs(&mut chunk_container)?;
         self.serialize_xyz_destinations(&mut chunk_container)?;
@@ -475,6 +493,10 @@ impl SerializeContext {
         if !self.validation_errors.is_empty() {
             // Deduplicate errors, while still preserving order.
             let mut errors = vec![];
+            #[allow(
+                clippy::mutable_key_type,
+                reason = "HarfRust's shaper cache uses atomics, but Font's hash and equality only depend on its immutable, prehashed FontInfo"
+            )]
             let mut seen = HashSet::new();
 
             for error in self.validation_errors {
@@ -773,6 +795,20 @@ impl SerializeContext {
             }
         }
 
+        for font in StandardFont::ALL {
+            let identifier = FontIdentifier::Standard(font);
+            if let Some(&ref_) = self.cached_mappings.get(&identifier.sip_hash()) {
+                if self.serialize_settings.pdf_version() >= PdfVersion::Pdf20 {
+                    panic!("cannot use standard fonts in PDF 2.0");
+                }
+                chunk_container
+                    .non_stream
+                    .fonts
+                    .type1_font(ref_)
+                    .base_font(font.base_font().to_pdf_name());
+            }
+        }
+
         Ok(())
     }
 
@@ -792,6 +828,15 @@ impl SerializeContext {
             .count(self.page_infos.len() as i32)
             .kids(self.page_infos.iter().map(|i| i.ref_()));
         chunk_container.non_stream.page_tree = Some((self.page_tree_ref, page_tree_chunk));
+    }
+
+    fn serialize_forms(&mut self, chunk_container: &mut ChunkContainer) {
+        if self.global_objects.forms.field_tree.is_some() {
+            let mut acroform = self.global_objects.forms.take();
+            acroform.prepare_for_serialization(self, chunk_container);
+            let acroform_ref = self.new_ref();
+            acroform.serialize(self, chunk_container, acroform_ref);
+        }
     }
 
     fn serialize_xyz_destinations(
@@ -1066,6 +1111,8 @@ pub(crate) struct GlobalObjects {
     outline: MaybeTaken<Option<Outline>>,
     /// Stores the tag tree.
     tag_tree: MaybeTaken<Option<TagTree>>,
+    /// Stores the form fields.
+    pub(crate) forms: MaybeTaken<AcroForm>,
     /// Stores the association of the names of embedded files to their refs,
     /// for the catalog dictionary.
     pub(crate) embedded_files: MaybeTaken<BTreeMap<String, Ref>>,

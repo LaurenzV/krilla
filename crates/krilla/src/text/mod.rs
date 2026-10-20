@@ -49,6 +49,7 @@ pub(crate) struct Type3Identifier(pub Font, pub Type3ID);
 pub(crate) enum FontIdentifier {
     Cid(CIDIdentifier),
     Type3(Type3Identifier),
+    Standard(StandardFont),
 }
 
 /// A container that holds all PDF fonts belonging to an OTF font.

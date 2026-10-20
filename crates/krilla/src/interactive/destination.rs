@@ -17,7 +17,7 @@ use crate::geom::Point;
 use crate::serialize::{PageInfo, SerializeContext};
 
 /// The type of destination.
-#[derive(Hash)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum Destination {
     /// An XYZ destination.
     Xyz(XyzDestination),
