@@ -28,7 +28,6 @@ pub struct Mask {
     /// we want to manually set the bbox of the underlying XObject to match the shape that the
     /// gradient is being applied to.
     custom_bbox: Option<Rect>,
-    /// The color space of the transparency group the luminosity is computed in.
     group_color_space: GroupColorSpace,
 }
 
@@ -118,11 +117,10 @@ impl Cacheable for Mask {
     ) {
         let x_object = sc.register_cacheable(
             chunk_container,
-            XObject::new_with_group_color_space(
+            XObject::new(
                 self.stream,
                 false,
-                true,
-                self.group_color_space,
+                Some(self.group_color_space),
                 self.custom_bbox,
             ),
         );

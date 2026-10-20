@@ -13,7 +13,6 @@ use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
 use crate::util::Prehashed;
 
-/// The color space of a transparency group.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum GroupColorSpace {
     Rgb,
@@ -24,8 +23,7 @@ pub(crate) enum GroupColorSpace {
 struct Repr {
     stream: Stream,
     isolated: bool,
-    transparency_group_color_space: bool,
-    group_color_space: GroupColorSpace,
+    transparency_group_color_space: Option<GroupColorSpace>,
     custom_bbox: Option<Rect>,
 }
 
@@ -36,24 +34,7 @@ impl XObject {
     pub(crate) fn new(
         stream: Stream,
         isolated: bool,
-        transparency_group_color_space: bool,
-        custom_bbox: Option<Rect>,
-    ) -> Self {
-        Self::new_with_group_color_space(
-            stream,
-            isolated,
-            transparency_group_color_space,
-            GroupColorSpace::Rgb,
-            custom_bbox,
-        )
-    }
-
-    /// Like [`XObject::new`], but with a custom color space for the transparency group.
-    pub(crate) fn new_with_group_color_space(
-        stream: Stream,
-        isolated: bool,
-        mut transparency_group_color_space: bool,
-        group_color_space: GroupColorSpace,
+        mut transparency_group_color_space: Option<GroupColorSpace>,
         custom_bbox: Option<Rect>,
     ) -> Self {
         // In case a mask was invoked in the content stream, we _always_ create
@@ -66,13 +47,14 @@ impl XObject {
         // rendering issues. Using a transparency group in this case seems to
         // fix the issue.
         // TODO: Apply group transparency to page as well.
-        transparency_group_color_space |= stream.uses_mask;
+        if stream.uses_mask {
+            transparency_group_color_space.get_or_insert(GroupColorSpace::Rgb);
+        }
 
         Self(Arc::new(Prehashed::new(Repr {
             stream,
             isolated,
             transparency_group_color_space,
-            group_color_space,
             custom_bbox,
         })))
     }
@@ -99,7 +81,8 @@ impl Cacheable for XObject {
             sc.register_validation_error(validation_error.clone());
         }
 
-        let use_transparency_group = self.0.isolated || self.0.transparency_group_color_space;
+        let use_transparency_group =
+            self.0.isolated || self.0.transparency_group_color_space.is_some();
 
         if use_transparency_group {
             sc.register_validation_error(ValidationError::Transparency(sc.location));
@@ -122,7 +105,11 @@ impl Cacheable for XObject {
         // and always add a group color space in case we have a transparency group.
         let transparency_group_cs = if use_transparency_group {
             let no_device_cs = serialize_settings.no_device_cs;
-            let cs = match self.0.group_color_space {
+            let group_cs = self
+                .0
+                .transparency_group_color_space
+                .unwrap_or(GroupColorSpace::Rgb);
+            let cs = match group_cs {
                 GroupColorSpace::Rgb => rgb::color_space(no_device_cs),
                 GroupColorSpace::Luma => luma::color_space(no_device_cs),
             };

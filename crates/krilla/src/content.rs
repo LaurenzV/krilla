@@ -27,7 +27,7 @@ use crate::graphics::shading_function::{
 };
 use crate::graphics::shading_pattern::ShadingPattern;
 use crate::graphics::tiling_pattern::TilingPattern;
-use crate::graphics::xobject::XObject;
+use crate::graphics::xobject::{GroupColorSpace, XObject};
 use crate::interchange::tagging::{ContentTag, XObjectTagIdentifier};
 use crate::num::NormalizedF32;
 use crate::resource;
@@ -939,7 +939,7 @@ impl ContentBuilder {
     ) {
         let state = ExtGState::new().mask(mask, sc, chunk_container);
         self.uses_mask = true;
-        let x_object = XObject::new(stream, false, true, None);
+        let x_object = XObject::new(stream, false, Some(GroupColorSpace::Rgb), None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
@@ -953,7 +953,7 @@ impl ContentBuilder {
         let state = ExtGState::new()
             .stroking_alpha(opacity)
             .non_stroking_alpha(opacity);
-        let x_object = XObject::new(stream, true, false, None);
+        let x_object = XObject::new(stream, true, None, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
@@ -964,7 +964,7 @@ impl ContentBuilder {
         stream: Stream,
     ) {
         let state = ExtGState::new();
-        let x_object = XObject::new(stream, true, false, None);
+        let x_object = XObject::new(stream, true, None, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
