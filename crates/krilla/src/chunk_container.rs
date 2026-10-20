@@ -192,7 +192,7 @@ impl ChunkContainer {
             .as_ref()
             .map(|m| m.extension_schemas(validators))
             .unwrap_or_default();
-        validators.write_xmp(&mut xmp, &extension_schemas);
+        validators.write_xmp(&mut xmp, extension_schemas);
 
         xmp.num_pages(sc.page_infos().len() as u32);
         xmp.format("application/pdf");

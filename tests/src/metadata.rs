@@ -554,3 +554,63 @@ fn metadata_custom_xmp_managed_property() {
     document.set_metadata(Metadata::new().custom_xmp_property(dc.property("rights", "CC-BY")));
     assert!(document.finish().is_ok());
 }
+
+fn pdf_a1_result(metadata: Metadata) -> KrillaResult<Vec<u8>> {
+    let mut document = Document::new_with(settings_19());
+    document.set_metadata(metadata);
+    document.finish()
+}
+
+#[test]
+fn metadata_custom_xmp_pdf_a1_predefined_properties() {
+    let dc = Namespace::new("dc", "http://purl.org/dc/elements/1.1/");
+    let pdf = Namespace::new("pdf", "http://ns.adobe.com/pdf/1.3/");
+
+    assert!(pdf_a1_result(pdf_a_metadata(dc.property("rights", "CC-BY"))).is_ok());
+    assert!(pdf_a1_result(pdf_a_metadata(pdf.property("Trapped", "False"))).is_ok());
+
+    assert_missing_description(
+        pdf_a1_result(pdf_a_metadata(dc.property("extra", "value"))),
+        dc.uri(),
+        "extra",
+    );
+}
+
+#[test]
+fn metadata_custom_xmp_pdf_a1_false_friend() {
+    let xmp = Namespace::new("xmp", "http://ns.adobe.com/xap/1.0/");
+    let result = pdf_a1_result(pdf_a_metadata(xmp.property("Label", "Draft")));
+    let Err(KrillaError::Validation(errors)) = result else {
+        panic!("expected validation error, got {result:?}");
+    };
+    assert!(errors.iter().any(|(e, _)| matches!(
+        e,
+        ValidationError::ForbiddenXmpProperty { property_name, .. } if property_name == "Label"
+    )));
+
+    // XMP 2005 added `xmp:Label`, so it is predefined in PDF/A-3.
+    let mut document = Document::new_with(settings_10());
+    document.set_metadata(pdf_a_metadata(xmp.property("Label", "Draft")));
+    assert!(document.finish().is_ok());
+}
+
+/// A property added to a predefined schema needs an extension schema that
+/// only describes the new property.
+#[snapshot(document, settings_19)]
+fn validate_pdf_a1_custom_xmp_predefined_schema_extension(document: &mut Document) {
+    let dc = Namespace::new("dc", "http://purl.org/dc/elements/1.1/");
+    let schema = Schema::new(dc.clone())
+        .property(PropertyDescription::new(
+            "rights",
+            ValueType::LanguageAlternative,
+            "Informal rights statement",
+        ))
+        .property(text_description("extra", "An additional property"));
+    let metadata = pdf_a_metadata(dc.property("extra", "value"))
+        .custom_xmp_schema(schema)
+        .custom_xmp_property(dc.property(
+            "rights",
+            Value::LanguageAlternative(vec![(None, "CC-BY".to_string())]),
+        ));
+    document.set_metadata(metadata);
+}

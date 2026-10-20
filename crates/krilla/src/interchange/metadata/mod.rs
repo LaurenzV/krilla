@@ -324,6 +324,7 @@ impl Metadata {
         let validators = sc.serialize_settings().validators();
         let check_descriptions = validators.requires_xmp_metadata_extension_schema();
         let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
+        let builtin_schemas = validators.extension_schemas();
 
         let mut written = HashSet::new();
         for property in &self.custom_xmp_properties {
@@ -339,12 +340,26 @@ impl Metadata {
             let description = schemas.get(uri).and_then(|s| s.get(&property.name));
             if check_descriptions
                 && description.is_none()
-                && !is_predefined_pdfa_schema(uri, xmp_2005)
+                && !is_predefined_pdfa_property(uri, &property.name, xmp_2005)
+                && !builtin_schemas
+                    .iter()
+                    .any(|s| s.namespace.uri() == uri && s.get(&property.name).is_some())
             {
-                sc.register_validation_error(ValidationError::MissingXmpPropertyDescription {
-                    namespace_uri: uri.to_string(),
-                    property_name: property.name.clone(),
-                });
+                let namespace_uri = uri.to_string();
+                let property_name = property.name.clone();
+                sc.register_validation_error(
+                    if !xmp_2005 && contains_property(PDF_A1_FALSE_FRIENDS, uri, &property.name) {
+                        ValidationError::ForbiddenXmpProperty {
+                            namespace_uri,
+                            property_name,
+                        }
+                    } else {
+                        ValidationError::MissingXmpPropertyDescription {
+                            namespace_uri,
+                            property_name,
+                        }
+                    },
+                );
             }
 
             let mut writer = ValueWriter {
@@ -369,12 +384,25 @@ impl Metadata {
         Ok(())
     }
 
-    /// The attached schemas that need a PDF/A extension schema.
-    pub(crate) fn extension_schemas(&self, validators: Validators) -> Vec<&Schema> {
+    /// The attached schemas that need a PDF/A extension schema, without the
+    /// descriptions of predefined properties.
+    pub(crate) fn extension_schemas(&self, validators: Validators) -> Vec<Cow<'_, Schema>> {
         let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
         self.custom_xmp_schemas
             .iter()
-            .filter(|schema| !is_predefined_pdfa_schema(schema.namespace.uri(), xmp_2005))
+            .filter_map(|schema| {
+                let uri = schema.namespace.uri();
+                let is_predefined = |desc: &PropertyDescription| {
+                    is_predefined_pdfa_property(uri, &desc.name, xmp_2005)
+                };
+                if !schema.properties.iter().any(is_predefined) {
+                    return Some(Cow::Borrowed(schema));
+                }
+
+                let mut schema = schema.clone();
+                schema.properties.retain(|desc| !is_predefined(desc));
+                (!schema.properties.is_empty()).then_some(Cow::Owned(schema))
+            })
             .collect()
     }
 
@@ -703,47 +731,223 @@ fn managed_namespace(uri: &str, name: &str) -> Option<&'static XmpNamespace<'sta
         .map(|(ns, _)| ns)
 }
 
-/// Predefined XMP property schemas a custom property may use in PDF/A-1, -2
-/// and -3 without a PDF/A extension schema description.
-///
-/// These are the standard schemas of the XMP 2004 specification that ISO
-/// 19005-1 (PDF/A-1) treats as predefined. The PDF Association restates the
-/// list in TechNote 0008, "Predefined XMP Properties in PDF/A-1":
+/// The properties of the XMP 2004 schemas, which PDF/A-1 predefines, as
+/// listed in TechNote 0008, "Predefined XMP Properties in PDF/A-1":
 /// <https://pdfa.org/wp-content/uploads/2011/08/tn0008_predefined_xmp_properties_in_pdfa-1_2008-03-20.pdf>
-static PDF_A1_A2_A3_PREDEFINED_SCHEMAS: &[&str] = &[
-    "http://www.aiim.org/pdfa/ns/id/",     // pdfaid
-    "http://purl.org/dc/elements/1.1/",    // dc
-    "http://ns.adobe.com/xap/1.0/",        // xmp
-    "http://ns.adobe.com/xap/1.0/rights/", // xmpRights
-    "http://ns.adobe.com/xap/1.0/mm/",     // xmpMM
-    "http://ns.adobe.com/xap/1.0/bj/",     // xmpBJ
-    "http://ns.adobe.com/xap/1.0/t/pg/",   // xmpTPg
-    "http://ns.adobe.com/pdf/1.3/",        // pdf
-    "http://ns.adobe.com/photoshop/1.0/",  // photoshop
-    "http://ns.adobe.com/tiff/1.0/",       // tiff
-    "http://ns.adobe.com/exif/1.0/",       // exif
-];
-
-/// Property schemas that PDF/A-2 and PDF/A-3 predefine in addition to
-/// [`PDF_A1_A2_A3_PREDEFINED_SCHEMAS`], added by the XMP 2005 specification
-/// over the XMP 2004 set.
 ///
-/// The three schemas are defined by the Adobe XMP Specification, June 2005:
-/// Dynamic Media (`xmpDM`), Camera Raw (`crs`) and EXIF auxiliary (`aux`).
-/// They are the schemas present in that edition but absent
-/// from XMP 2004.
-static PDF_A2_A3_ADDITIONAL_PREDEFINED_SCHEMAS: &[&str] = &[
-    "http://ns.adobe.com/xmp/1.0/DynamicMedia/",    // xmpDM
-    "http://ns.adobe.com/camera-raw-settings/1.0/", // crs
-    "http://ns.adobe.com/exif/1.0/aux/",            // aux
+/// The TechNote doesn't restate the properties of the EXIF schema, so all of
+/// them are treated as predefined, see [`EXIF_SCHEMA`].
+///
+/// Sorted by namespace URI and property name.
+static PDF_A1_PREDEFINED_PROPERTIES: &[(&str, &[&str])] = &[
+    (
+        "http://ns.adobe.com/pdf/1.3/",
+        &["Keywords", "PDFVersion", "Producer"],
+    ),
+    (
+        "http://ns.adobe.com/photoshop/1.0/",
+        &[
+            "AuthorsPosition",
+            "CaptionWriter",
+            "Category",
+            "City",
+            "Country",
+            "Credit",
+            "DateCreated",
+            "Headline",
+            "Instructions",
+            "Source",
+            "State",
+            "SupplementalCategories",
+            "TransmissionReference",
+            "Urgency",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/tiff/1.0/",
+        &[
+            "Artist",
+            "BitsPerSample",
+            "Compression",
+            "Copyright",
+            "DateTime",
+            "ImageDescription",
+            "ImageLength",
+            "ImageWidth",
+            "Make",
+            "Model",
+            "Orientation",
+            "PhotometricInterpretation",
+            "PlanarConfiguration",
+            "PrimaryChromaticities",
+            "ReferenceBlackWhite",
+            "ResolutionUnit",
+            "SamplesPerPixel",
+            "Software",
+            "TransferFunction",
+            "WhitePoint",
+            "XResolution",
+            "YCbCrCoefficients",
+            "YCbCrPositioning",
+            "YCbCrSubSampling",
+            "YResolution",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/xap/1.0/",
+        &[
+            "Advisory",
+            "BaseURL",
+            "CreateDate",
+            "CreatorTool",
+            "Identifier",
+            "MetadataDate",
+            "ModifyDate",
+            "Nickname",
+            "Thumbnails",
+        ],
+    ),
+    ("http://ns.adobe.com/xap/1.0/bj/", &["JobRef"]),
+    (
+        "http://ns.adobe.com/xap/1.0/mm/",
+        &[
+            "DerivedFrom",
+            "DocumentID",
+            "History",
+            "LastURL",
+            "ManageTo",
+            "ManageUI",
+            "ManagedFrom",
+            "Manager",
+            "ManagerVariant",
+            "RenditionClass",
+            "RenditionOf",
+            "RenditionParams",
+            "SaveID",
+            "VersionID",
+            "Versions",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/xap/1.0/rights/",
+        &[
+            "Certificate",
+            "Marked",
+            "Owner",
+            "UsageTerms",
+            "WebStatement",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/xap/1.0/t/pg/",
+        &["MaxPageSize", "NPages"],
+    ),
+    (
+        "http://purl.org/dc/elements/1.1/",
+        &[
+            "contributor",
+            "coverage",
+            "creator",
+            "date",
+            "description",
+            "format",
+            "identifier",
+            "language",
+            "publisher",
+            "relation",
+            "rights",
+            "source",
+            "subject",
+            "title",
+            "type",
+        ],
+    ),
+    (
+        "http://www.aiim.org/pdfa/ns/id/",
+        &["amd", "conformance", "part"],
+    ),
 ];
 
-/// Whether `uri` is a predefined XMP schema that PDF/A exempts from an extension
-/// schema description. `xmp_2005` selects the larger PDF/A-2/-3 set over the
-/// PDF/A-1 set; see [`Validators::uses_xmp_2005_predefined_schemas`].
-fn is_predefined_pdfa_schema(uri: &str, xmp_2005: bool) -> bool {
-    PDF_A1_A2_A3_PREDEFINED_SCHEMAS.contains(&uri)
-        || (xmp_2005 && PDF_A2_A3_ADDITIONAL_PREDEFINED_SCHEMAS.contains(&uri))
+/// Properties that are often mistaken for predefined properties, but aren't
+/// allowed in PDF/A-1. Called "false friends" in TechNote 0008.
+///
+/// `xmpMM:InstanceID` is a false friend as well, but by agreement of the
+/// PDF/A community, it isn't flagged.
+///
+/// Sorted by namespace URI and property name.
+static PDF_A1_FALSE_FRIENDS: &[(&str, &[&str])] = &[
+    (
+        "http://ns.adobe.com/pdf/1.3/",
+        &[
+            "Author",
+            "BaseURL",
+            "CreationDate",
+            "Creator",
+            "ModDate",
+            "Subject",
+            "Title",
+            "Trapped",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/photoshop/1.0/",
+        &["Author", "Copyright", "History", "Title"],
+    ),
+    (
+        "http://ns.adobe.com/xap/1.0/",
+        &["Author", "Description", "Label", "Rating", "Title"],
+    ),
+    ("http://ns.adobe.com/xap/1.0/mm/", &["Manifest"]),
+    ("http://ns.adobe.com/xap/1.0/rights/", &["Copyright"]),
+    (
+        "http://ns.adobe.com/xap/1.0/t/pg/",
+        &["Colorants", "Fonts", "PlateNames"],
+    ),
+];
+
+const EXIF_SCHEMA: &str = "http://ns.adobe.com/exif/1.0/";
+
+/// The schemas of the XMP 2005 specification, which PDF/A-2 and PDF/A-3
+/// predefine. These are the schemas of [`PDF_A1_PREDEFINED_PROPERTIES`] plus
+/// Dynamic Media (`xmpDM`), Camera Raw (`crs`) and EXIF auxiliary (`aux`),
+/// which TechNote 0008 lists as introduced by XMP 2005.
+///
+/// Without a per-property list for XMP 2005, all properties of these schemas
+/// are treated as predefined.
+///
+/// Sorted by namespace URI.
+static PDF_A2_A3_PREDEFINED_SCHEMAS: &[&str] = &[
+    "http://ns.adobe.com/camera-raw-settings/1.0/",
+    "http://ns.adobe.com/exif/1.0/",
+    "http://ns.adobe.com/exif/1.0/aux/",
+    "http://ns.adobe.com/pdf/1.3/",
+    "http://ns.adobe.com/photoshop/1.0/",
+    "http://ns.adobe.com/tiff/1.0/",
+    "http://ns.adobe.com/xap/1.0/",
+    "http://ns.adobe.com/xap/1.0/bj/",
+    "http://ns.adobe.com/xap/1.0/mm/",
+    "http://ns.adobe.com/xap/1.0/rights/",
+    "http://ns.adobe.com/xap/1.0/t/pg/",
+    "http://ns.adobe.com/xmp/1.0/DynamicMedia/",
+    "http://purl.org/dc/elements/1.1/",
+    "http://www.aiim.org/pdfa/ns/id/",
+];
+
+/// Whether PDF/A exempts the property `name` in `uri` from an extension
+/// schema description. `xmp_2005` selects the PDF/A-2/-3 rules over the
+/// PDF/A-1 rules; see [`Validators::uses_xmp_2005_predefined_schemas`].
+fn is_predefined_pdfa_property(uri: &str, name: &str, xmp_2005: bool) -> bool {
+    if xmp_2005 {
+        PDF_A2_A3_PREDEFINED_SCHEMAS.binary_search(&uri).is_ok()
+    } else {
+        uri == EXIF_SCHEMA || contains_property(PDF_A1_PREDEFINED_PROPERTIES, uri, name)
+    }
+}
+
+fn contains_property(properties: &[(&str, &[&str])], uri: &str, name: &str) -> bool {
+    properties
+        .binary_search_by_key(&uri, |(uri, _)| uri)
+        .is_ok_and(|i| properties[i].1.binary_search(&name).is_ok())
 }
 
 #[derive(Default)]
@@ -1017,10 +1221,10 @@ fn pdfa_value_type(value_type: &ValueType) -> Cow<'_, str> {
 pub(crate) fn write_extension_schemas(
     writer: &mut xmp_writer::pdfa::PdfAExtSchemasWriter,
     builtin: Vec<Schema>,
-    user: &[&Schema],
+    user: Vec<Cow<Schema>>,
 ) {
     let mut schemas: Vec<Cow<Schema>> = builtin.into_iter().map(Cow::Owned).collect();
-    for &schema in user {
+    for schema in user {
         let uri = schema.namespace.uri();
         match schemas.iter_mut().find(|s| s.namespace.uri() == uri) {
             Some(existing) => {
@@ -1032,7 +1236,7 @@ pub(crate) fn write_extension_schemas(
                     .collect();
                 existing.to_mut().properties.extend(new);
             }
-            None => schemas.push(Cow::Borrowed(schema)),
+            None => schemas.push(schema),
         }
     }
 
@@ -1113,10 +1317,24 @@ fn write_fields(
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use xmp_writer::XmpWriter;
 
     use super::xmp::{Namespace, PropertyDescription, Schema, SimpleType};
-    use super::{write_extension_schemas, Metadata};
+    use super::{
+        write_extension_schemas, Metadata, PDF_A1_FALSE_FRIENDS, PDF_A1_PREDEFINED_PROPERTIES,
+        PDF_A2_A3_PREDEFINED_SCHEMAS,
+    };
+
+    #[test]
+    fn predefined_property_lists_are_sorted() {
+        for list in [PDF_A1_PREDEFINED_PROPERTIES, PDF_A1_FALSE_FRIENDS] {
+            assert!(list.is_sorted_by_key(|(uri, _)| uri));
+            assert!(list.iter().all(|(_, names)| names.is_sorted()));
+        }
+        assert!(PDF_A2_A3_PREDEFINED_SCHEMAS.is_sorted());
+    }
 
     #[test]
     fn extension_schemas_of_same_namespace_are_merged() {
@@ -1139,7 +1357,11 @@ mod tests {
             ));
 
         let mut xmp = XmpWriter::new();
-        write_extension_schemas(&mut xmp.extension_schemas(), vec![builtin], &[&user]);
+        write_extension_schemas(
+            &mut xmp.extension_schemas(),
+            vec![builtin],
+            vec![Cow::Borrowed(&user)],
+        );
         let xmp = xmp.finish(None);
 
         assert_eq!(xmp.matches("<pdfaSchema:namespaceURI>").count(), 1);

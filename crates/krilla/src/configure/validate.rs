@@ -23,6 +23,7 @@
 //!
 //! [`Configuration`]: crate::configure::Configuration
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -157,6 +158,14 @@ pub enum ValidationError {
     /// A custom XMP property was used in PDF/A export without a matching
     /// PDF/A extension schema description.
     MissingXmpPropertyDescription {
+        /// The namespace URI of the offending property.
+        namespace_uri: String,
+        /// The name of the offending property.
+        property_name: String,
+    },
+    /// A custom XMP property was used in PDF/A export that is often mistaken
+    /// for a predefined property, but isn't one.
+    ForbiddenXmpProperty {
         /// The namespace URI of the offending property.
         namespace_uri: String,
         /// The name of the offending property.
@@ -314,16 +323,29 @@ impl Validators {
         self.a.map(Archival::output_intent)
     }
 
-    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter, user_schemas: &[&Schema]) {
+    /// The PDF/A extension schemas describing the properties krilla writes
+    /// itself.
+    pub(crate) fn extension_schemas(self) -> Vec<Schema> {
+        let mut schemas = Vec::new();
         if self.requires_xmp_metadata_extension_schema() {
-            let mut builtin = Vec::new();
             if let Some(a) = self.a {
-                builtin.extend(a.extension_schemas());
+                schemas.extend(a.extension_schemas());
             }
             if let Some(ua) = self.ua {
-                builtin.extend(ua.extension_schemas());
+                schemas.extend(ua.extension_schemas());
             }
-            write_extension_schemas(&mut xmp.extension_schemas(), builtin, user_schemas);
+        }
+
+        schemas
+    }
+
+    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter, user_schemas: Vec<Cow<Schema>>) {
+        if self.requires_xmp_metadata_extension_schema() {
+            write_extension_schemas(
+                &mut xmp.extension_schemas(),
+                self.extension_schemas(),
+                user_schemas,
+            );
         }
 
         if let Some(a) = self.a {
@@ -739,9 +761,11 @@ impl Archival {
                 Self::A4 | Self::A4F | Self::A4E,
                 ValidationError::EmbeddedFile(EmbedError::MissingDescription, _),
             ) => self == Self::A4,
-            (_, ValidationError::MissingXmpPropertyDescription { .. }) => {
-                self.requires_xmp_metadata_extension_schema()
-            }
+            (
+                _,
+                ValidationError::MissingXmpPropertyDescription { .. }
+                | ValidationError::ForbiddenXmpProperty { .. },
+            ) => self.requires_xmp_metadata_extension_schema(),
         }
     }
 
@@ -1226,7 +1250,8 @@ impl Accessibility {
                 | ValidationError::ContainsMutatingAction(_)
                 | ValidationError::ContainsAdditionalActions(_)
                 | ValidationError::MissingDocumentDate
-                | ValidationError::MissingXmpPropertyDescription { .. },
+                | ValidationError::MissingXmpPropertyDescription { .. }
+                | ValidationError::ForbiddenXmpProperty { .. },
             ) => false,
         }
     }
