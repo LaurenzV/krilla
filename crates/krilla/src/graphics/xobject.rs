@@ -6,18 +6,26 @@ use pdf_writer::{Finish, Name, Ref};
 use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::geom::Rect;
-use crate::graphics::color::{rgb, DEVICE_RGB};
+use crate::graphics::color::{luma, rgb};
 use crate::resource;
-use crate::resource::{Resource, Resourceable};
-use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
+use crate::resource::Resourceable;
+use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::{NameExt, Prehashed};
+use crate::util::Prehashed;
+
+/// The color space of a transparency group.
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+pub(crate) enum GroupColorSpace {
+    Rgb,
+    Luma,
+}
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
     stream: Stream,
     isolated: bool,
     transparency_group_color_space: bool,
+    group_color_space: GroupColorSpace,
     custom_bbox: Option<Rect>,
 }
 
@@ -28,7 +36,24 @@ impl XObject {
     pub(crate) fn new(
         stream: Stream,
         isolated: bool,
+        transparency_group_color_space: bool,
+        custom_bbox: Option<Rect>,
+    ) -> Self {
+        Self::new_with_group_color_space(
+            stream,
+            isolated,
+            transparency_group_color_space,
+            GroupColorSpace::Rgb,
+            custom_bbox,
+        )
+    }
+
+    /// Like [`XObject::new`], but with a custom color space for the transparency group.
+    pub(crate) fn new_with_group_color_space(
+        stream: Stream,
+        isolated: bool,
         mut transparency_group_color_space: bool,
+        group_color_space: GroupColorSpace,
         custom_bbox: Option<Rect>,
     ) -> Self {
         // In case a mask was invoked in the content stream, we _always_ create
@@ -47,6 +72,7 @@ impl XObject {
             stream,
             isolated,
             transparency_group_color_space,
+            group_color_space,
             custom_bbox,
         })))
     }
@@ -95,10 +121,13 @@ impl Cacheable for XObject {
         // So while we don't technically always need to write it, let's just play it save
         // and always add a group color space in case we have a transparency group.
         let transparency_group_cs = if use_transparency_group {
-            Some(sc.register_colorspace(
-                chunk_container,
-                rgb::color_space(serialize_settings.no_device_cs).into(),
-            ))
+            let no_device_cs = serialize_settings.no_device_cs;
+            let cs = match self.0.group_color_space {
+                GroupColorSpace::Rgb => rgb::color_space(no_device_cs),
+                GroupColorSpace::Luma => luma::color_space(no_device_cs),
+            };
+
+            Some(sc.register_colorspace(chunk_container, cs.into()))
         } else {
             None
         };
@@ -136,14 +165,7 @@ impl Cacheable for XObject {
             }
 
             if let Some(transparency_group_cs) = transparency_group_cs {
-                let pdf_cs = transparency.insert(Name(b"CS"));
-
-                match transparency_group_cs {
-                    MaybeDeviceColorSpace::DeviceRgb => pdf_cs.primitive(DEVICE_RGB.to_pdf_name()),
-                    // Can only be SRGB
-                    MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
-                    _ => unreachable!(),
-                }
+                transparency_group_cs.write(transparency.insert(Name(b"CS")));
             }
 
             transparency.finish();

@@ -5,7 +5,7 @@ use pdf_writer::{Finish, Name, Ref};
 use crate::chunk_container::ChunkContainer;
 use crate::geom::{Rect, Transform};
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
-use crate::graphics::xobject::XObject;
+use crate::graphics::xobject::{GroupColorSpace, XObject};
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
@@ -28,6 +28,8 @@ pub struct Mask {
     /// we want to manually set the bbox of the underlying XObject to match the shape that the
     /// gradient is being applied to.
     custom_bbox: Option<Rect>,
+    /// The color space of the transparency group the luminosity is computed in.
+    group_color_space: GroupColorSpace,
 }
 
 impl Mask {
@@ -38,6 +40,7 @@ impl Mask {
             stream,
             mask_type,
             custom_bbox: None,
+            group_color_space: GroupColorSpace::Rgb,
         }
     }
 
@@ -79,6 +82,10 @@ impl Mask {
             stream: shading_stream,
             mask_type: MaskType::Luminosity,
             custom_bbox: Some(bbox),
+            // The opacities are encoded as luma colors, so the group must use the same
+            // color space. Otherwise, viewers that compute the luminosity colorimetrically
+            // from an ICC-based RGB group apply the sRGB transfer curve to the opacities.
+            group_color_space: GroupColorSpace::Luma,
         })
     }
 }
@@ -111,7 +118,13 @@ impl Cacheable for Mask {
     ) {
         let x_object = sc.register_cacheable(
             chunk_container,
-            XObject::new(self.stream, false, true, self.custom_bbox),
+            XObject::new_with_group_color_space(
+                self.stream,
+                false,
+                true,
+                self.group_color_space,
+                self.custom_bbox,
+            ),
         );
 
         let chunk = &mut chunk_container.non_stream.masks;
