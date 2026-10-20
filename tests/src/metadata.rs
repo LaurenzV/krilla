@@ -565,14 +565,21 @@ fn pdf_a1_result(metadata: Metadata) -> KrillaResult<Vec<u8>> {
 fn metadata_custom_xmp_pdf_a1_predefined_properties() {
     let dc = Namespace::new("dc", "http://purl.org/dc/elements/1.1/");
     let pdf = Namespace::new("pdf", "http://ns.adobe.com/pdf/1.3/");
+    let exif = Namespace::new("exif", "http://ns.adobe.com/exif/1.0/");
 
     assert!(pdf_a1_result(pdf_a_metadata(dc.property("rights", "CC-BY"))).is_ok());
+    assert!(pdf_a1_result(pdf_a_metadata(exif.property("ColorSpace", 1))).is_ok());
     assert!(pdf_a1_result(pdf_a_metadata(pdf.property("Trapped", "False"))).is_ok());
 
     assert_missing_description(
         pdf_a1_result(pdf_a_metadata(dc.property("extra", "value"))),
         dc.uri(),
         "extra",
+    );
+    assert_missing_description(
+        pdf_a1_result(pdf_a_metadata(exif.property("Extra", "value"))),
+        exif.uri(),
+        "Extra",
     );
 }
 

@@ -910,15 +910,96 @@ fn merge_schemas<'a>(
     schemas
 }
 
-/// The properties of the XMP 2004 schemas, which PDF/A-1 predefines, as
-/// listed in TechNote 0008, "Predefined XMP Properties in PDF/A-1":
-/// <https://pdfa.org/wp-content/uploads/2011/08/tn0008_predefined_xmp_properties_in_pdfa-1_2008-03-20.pdf>
-///
-/// The TechNote doesn't restate the properties of the EXIF schema, so all of
-/// them are treated as predefined, see [`EXIF_SCHEMA`].
+/// The properties PDF/A-1 predefines: those of the schemas in the XMP
+/// Specification, January 2004, plus the PDF/A identification schema of
+/// ISO 19005-1.
 ///
 /// Sorted by namespace URI and property name.
 static PDF_A1_PREDEFINED_PROPERTIES: &[(&str, &[&str])] = &[
+    (
+        "http://ns.adobe.com/exif/1.0/",
+        &[
+            "ApertureValue",
+            "BrightnessValue",
+            "CFAPattern",
+            "ColorSpace",
+            "ComponentsConfiguration",
+            "CompressedBitsPerPixel",
+            "Contrast",
+            "CustomRendered",
+            "DateTimeDigitized",
+            "DateTimeOriginal",
+            "DeviceSettingDescription",
+            "DigitalZoomRatio",
+            "ExifVersion",
+            "ExposureBiasValue",
+            "ExposureIndex",
+            "ExposureMode",
+            "ExposureProgram",
+            "ExposureTime",
+            "FNumber",
+            "FileSource",
+            "Flash",
+            "FlashEnergy",
+            "FlashpixVersion",
+            "FocalLength",
+            "FocalLengthIn35mmFilm",
+            "FocalPlaneResolutionUnit",
+            "FocalPlaneXResolution",
+            "FocalPlaneYResolution",
+            "GPSAltitude",
+            "GPSAltitudeRef",
+            "GPSAreaInformation",
+            "GPSDOP",
+            "GPSDestBearing",
+            "GPSDestBearingRef",
+            "GPSDestDistance",
+            "GPSDestDistanceRef",
+            "GPSDestLatitude",
+            "GPSDestLongitude",
+            "GPSDifferential",
+            "GPSImgDirection",
+            "GPSImgDirectionRef",
+            "GPSLatitude",
+            "GPSLongitude",
+            "GPSMapDatum",
+            "GPSMeasureMode",
+            "GPSProcessingMethod",
+            "GPSSatellites",
+            "GPSSpeed",
+            "GPSSpeedRef",
+            "GPSStatus",
+            "GPSTimeStamp",
+            "GPSTrack",
+            "GPSTrackRef",
+            "GPSVersionID",
+            "GainControl",
+            "ISOSpeedRatings",
+            "ImageUniqueID",
+            "LightSource",
+            "MakerNote",
+            "MaxApertureValue",
+            "MeteringMode",
+            "OECF",
+            "PixelXDimension",
+            "PixelYDimension",
+            "RelatedSoundFile",
+            "Saturation",
+            "SceneCaptureType",
+            "SceneType",
+            "SensingMethod",
+            "Sharpness",
+            "ShutterSpeedValue",
+            "SpatialFrequencyResponse",
+            "SpectralSensitivity",
+            "SubjectArea",
+            "SubjectDistance",
+            "SubjectDistanceRange",
+            "SubjectLocation",
+            "UserComment",
+            "WhiteBalance",
+        ],
+    ),
     (
         "http://ns.adobe.com/pdf/1.3/",
         &["Keywords", "PDFVersion", "Producer"],
@@ -1048,7 +1129,9 @@ static PDF_A1_PREDEFINED_PROPERTIES: &[(&str, &[&str])] = &[
 ];
 
 /// Properties that are often mistaken for predefined properties, but aren't
-/// allowed in PDF/A-1. Called "false friends" in TechNote 0008.
+/// allowed in PDF/A-1. Called "false friends" in TechNote 0008, "Predefined
+/// XMP Properties in PDF/A-1":
+/// <https://pdfa.org/wp-content/uploads/2011/08/tn0008_predefined_xmp_properties_in_pdfa-1_2008-03-20.pdf>
 ///
 /// `xmpMM:InstanceID` is a false friend as well, but by agreement of the
 /// PDF/A community, it isn't flagged.
@@ -1084,12 +1167,10 @@ static PDF_A1_FALSE_FRIENDS: &[(&str, &[&str])] = &[
     ),
 ];
 
-const EXIF_SCHEMA: &str = "http://ns.adobe.com/exif/1.0/";
-
 /// The schemas of the XMP 2005 specification, which PDF/A-2 and PDF/A-3
 /// predefine. These are the schemas of [`PDF_A1_PREDEFINED_PROPERTIES`] plus
 /// Dynamic Media (`xmpDM`), Camera Raw (`crs`) and EXIF auxiliary (`aux`),
-/// which TechNote 0008 lists as introduced by XMP 2005.
+/// which were added in the 2005 editions of the XMP Specification.
 ///
 /// Without a per-property list for XMP 2005, all properties of these schemas
 /// are treated as predefined.
@@ -1119,7 +1200,7 @@ fn is_predefined_pdfa_property(uri: &str, name: &str, xmp_2005: bool) -> bool {
     if xmp_2005 {
         PDF_A2_A3_PREDEFINED_SCHEMAS.binary_search(&uri).is_ok()
     } else {
-        uri == EXIF_SCHEMA || contains_property(PDF_A1_PREDEFINED_PROPERTIES, uri, name)
+        contains_property(PDF_A1_PREDEFINED_PROPERTIES, uri, name)
     }
 }
 
