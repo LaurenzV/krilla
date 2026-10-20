@@ -160,9 +160,10 @@ See `README.md` for the meaning of each color.
 - krilla always requires metadata in this export mode. 🟢
 - krilla does not use the `bytes` and `encoding` attributes. 🟢
 - krilla uses the outlined namespaces and prefixes. 🟢
-- krilla does not currently have an associated file containing the embedded file specification. However,
-  it seems like there is an issue with the spec because I can't find that table entry in the PDF 2.0 spec? 
-  And no validator I tried seems to complain about this.🔴
+- If custom XMP properties are used, krilla embeds a RELAX NG schema (ISO 16684-2) describing the
+  metadata as an associated file with the relationship `Schema`, referenced from the metadata stream and
+  the catalog. Since plain PDF/A-4 doesn't allow embedded files, this is only done for PDF/A-4f and
+  PDF/A-4e. 🟢
 
 ### 6.7.3 Version identification
 - krilla always writes the required version identification parts. 🟢

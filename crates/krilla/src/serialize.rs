@@ -23,7 +23,7 @@ use crate::graphics::icc::{ICCBasedColorSpace, ICCProfile};
 use crate::graphics::image::Image;
 use crate::graphics::separation::SeparationColorSpace;
 use crate::interactive::destination::{NamedDestination, XyzDestination};
-use crate::interchange::embed::EmbeddedFile;
+use crate::interchange::embed::{AssociationKind, EmbeddedFile, MimeType};
 use crate::interchange::outline::Outline;
 use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagTree};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
@@ -483,6 +483,7 @@ impl SerializeContext {
         // because page serialization will update the annotation refs of the page infos,
         // and when serializing the parent tree map we need to know the refs of the annotations
         self.serialize_tag_tree(&mut chunk_container)?;
+        self.serialize_xmp_schema(&mut chunk_container);
 
         // Create the final PDF.
         let pdf = chunk_container.finish(&mut self)?;
@@ -849,6 +850,38 @@ impl SerializeContext {
         }
 
         Ok(())
+    }
+
+    fn serialize_xmp_schema(&mut self, chunk_container: &mut ChunkContainer) {
+        const PATH: &str = "xmp-metadata.rng";
+
+        let Some(metadata) = &chunk_container.metadata else {
+            return;
+        };
+
+        if !self
+            .serialize_settings
+            .validators()
+            .recommends_xmp_relax_ng_schema()
+            || metadata.custom_xmp_properties.is_empty()
+            || self.global_objects.embedded_files.contains_key(PATH)
+        {
+            return;
+        }
+
+        let file = EmbeddedFile {
+            path: PATH.to_string(),
+            mime_type: MimeType::new("application/xml"),
+            description: Some("RELAX NG schema of the XMP metadata".to_string()),
+            association_kind: AssociationKind::Schema,
+            data: metadata.relax_ng_schema().into_bytes().into(),
+            modification_date: metadata.creation_date,
+            compress: None,
+            location: None,
+        };
+
+        self.embed_file(chunk_container, file);
+        chunk_container.xmp_schema = self.global_objects.embedded_files.get(PATH).copied();
     }
 
     fn serialize_tag_tree(&mut self, chunk_container: &mut ChunkContainer) -> KrillaResult<()> {

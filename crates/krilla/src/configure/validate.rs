@@ -323,6 +323,12 @@ impl Validators {
         self.a.map(Archival::output_intent)
     }
 
+    /// Whether the XMP metadata should be described by a RELAX NG schema in
+    /// an associated file.
+    pub(crate) fn recommends_xmp_relax_ng_schema(self) -> bool {
+        self.a.is_some_and(Archival::recommends_xmp_relax_ng_schema)
+    }
+
     /// The PDF/A extension schemas describing the properties krilla writes
     /// itself.
     pub(crate) fn extension_schemas(self) -> Vec<Schema> {
@@ -948,6 +954,23 @@ impl Archival {
             | Self::A4
             | Self::A4E => false,
             Self::A4F => true,
+        }
+    }
+
+    /// Whether the XMP metadata should be described by a RELAX NG schema in
+    /// an associated file.
+    fn recommends_xmp_relax_ng_schema(self) -> bool {
+        match self {
+            Self::A4F | Self::A4E => true,
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4 => false,
         }
     }
 

@@ -18,8 +18,9 @@
 //!
 //! PDF/A-1 to PDF/A-3 require every property outside the predefined XMP
 //! schemas to be described in a PDF/A extension schema, which krilla writes
-//! from the attached schemas. For other export targets, schemas are
-//! optional.
+//! from the attached schemas. For PDF/A-4f and PDF/A-4e, krilla embeds a
+//! RELAX NG schema describing the metadata instead. For other export
+//! targets, schemas are optional.
 //!
 //! ## Predefined schemas
 //!

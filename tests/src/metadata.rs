@@ -11,7 +11,7 @@ use krilla::metadata::{DateTime, Metadata, PageLayout, TextDirection};
 use krilla::Document;
 use krilla_macros::snapshot;
 
-use crate::{settings_10, settings_19};
+use crate::{settings_10, settings_19, settings_26, settings_27};
 
 pub(crate) fn datetime() -> DateTime {
     DateTime::new(2024)
@@ -613,4 +613,71 @@ fn validate_pdf_a1_custom_xmp_predefined_schema_extension(document: &mut Documen
             Value::LanguageAlternative(vec![(None, "CC-BY".to_string())]),
         ));
     document.set_metadata(metadata);
+}
+
+#[snapshot(document, settings_27)]
+fn validate_pdf_a4f_custom_xmp_relax_ng(document: &mut Document) {
+    let ex = Namespace::new("ex", "http://example.com/xmp/address#");
+    let address = StructType::new(ex.clone(), "Address", "A postal address")
+        .field(text_description("street", "The street and house number").required())
+        .field(text_description("city", "The city"));
+    let schema = Schema::new(ex.clone())
+        .name("Address book")
+        .description("Addresses & contacts")
+        .property(PropertyDescription::new(
+            "addresses",
+            ValueType::ordered_array(address),
+            "Known addresses",
+        ))
+        .property(
+            PropertyDescription::new(
+                "kind",
+                ValueType::closed_choice(SimpleType::Text, ["private", "business"]),
+                "The kind of address book",
+            )
+            .required(),
+        )
+        .property(PropertyDescription::new(
+            "ratio",
+            SimpleType::Rational,
+            "Aspect ratio",
+        ));
+
+    let dc = Namespace::new("dc", "http://purl.org/dc/elements/1.1/");
+    let tdm = Namespace::new("tdm", "http://www.w3.org/ns/tdmrep/");
+    let metadata = Metadata::new()
+        .creation_date(datetime())
+        .language("en".to_string())
+        .title("Address book".to_string())
+        .custom_xmp_schema(schema)
+        .custom_xmp_property(ex.property("kind", "private"))
+        .custom_xmp_property(ex.property(
+            "addresses",
+            Value::OrderedArray(vec![Value::Struct(vec![
+                ex.property("street", "Main Street 1"),
+                ex.property("city", "Berlin"),
+            ])]),
+        ))
+        .custom_xmp_property(ex.property("ratio", Value::Rational(16, 9)))
+        .custom_xmp_property(dc.property(
+            "rights",
+            Value::LanguageAlternative(vec![(None, "CC-BY".to_string())]),
+        ))
+        .custom_xmp_property(tdm.property("reservation", 1));
+    document.set_metadata(metadata);
+}
+
+#[test]
+fn metadata_custom_xmp_relax_ng_only_with_embedded_files() {
+    let tdm = Namespace::new("tdm", "http://www.w3.org/ns/tdmrep/");
+    let contains_schema = |settings| {
+        let mut document = Document::new_with(settings);
+        document.set_metadata(pdf_a_metadata(tdm.property("reservation", 1)));
+        let pdf = document.finish().unwrap();
+        pdf.windows(16).any(|w| w == b"xmp-metadata.rng")
+    };
+
+    assert!(contains_schema(settings_27()));
+    // Plain PDF/A-4 doesn't allow embedded files.
+    assert!(!contains_schema(settings_26()));
 }

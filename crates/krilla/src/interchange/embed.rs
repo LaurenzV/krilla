@@ -120,7 +120,10 @@ impl Cacheable for EmbeddedFile {
         ef.finish();
 
         if sc.serialize_settings().supports_associated_files() {
-            file_spec.association_kind(self.association_kind.to_pdf());
+            file_spec.association_kind(
+                self.association_kind
+                    .to_pdf(sc.serialize_settings().pdf_version()),
+            );
         }
 
         if let Some(description) = self.description {
@@ -148,13 +151,20 @@ pub enum AssociationKind {
     Alternative,
     /// Additional resources for this document.
     Supplement,
+    /// A machine-readable schema. PDF 2.0+, written as
+    /// [`AssociationKind::Unspecified`] in earlier versions.
+    Schema,
     /// There is no clear relationship or it is not known.
     Unspecified,
 }
 
 impl AssociationKind {
-    fn to_pdf(self) -> pdf_writer::types::AssociationKind {
+    fn to_pdf(self, version: PdfVersion) -> pdf_writer::types::AssociationKind {
         match self {
+            AssociationKind::Schema if version < PdfVersion::Pdf20 => {
+                pdf_writer::types::AssociationKind::Unspecified
+            }
+            AssociationKind::Schema => pdf_writer::types::AssociationKind::Schema,
             AssociationKind::Source => pdf_writer::types::AssociationKind::Source,
             AssociationKind::Data => pdf_writer::types::AssociationKind::Data,
             AssociationKind::Alternative => pdf_writer::types::AssociationKind::Alternative,

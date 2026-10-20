@@ -5,12 +5,14 @@
 //! in the document via [`Document::set_metadata`].
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
+mod relax_ng;
 pub mod xmp;
 
 use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
 use std::borrow::Cow;
 use std::cell::LazyCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::LazyLock;
 use xmp_writer::{
     CustomNamespace, LangId, Namespace as XmpNamespace, RdfCollectionType, Timezone, XmpWriter,
 };
@@ -19,8 +21,8 @@ use crate::configure::{Archival, Configuration, PdfVersion, ValidationError, Val
 use crate::serialize::SerializeContext;
 
 use self::xmp::{
-    Category, Namespace, Property, PropertyDescription, Schema, SimpleType, StructType, Value,
-    ValueType, XmpError,
+    Category, Namespace, PredefinedStruct, Property, PropertyDescription, Schema, SimpleType,
+    StructType, Value, ValueType, XmpError,
 };
 
 /// Metadata for a PDF document.
@@ -329,10 +331,10 @@ impl Metadata {
         let mut written = HashSet::new();
         for property in &self.custom_xmp_properties {
             let uri = property.namespace.uri();
-            if let Some(ns) = managed_namespace(uri, &property.name) {
+            if let Some(schema) = managed_schema(uri, &property.name) {
                 return Err(XmpError::ManagedProperty(format!(
                     "{}:{}",
-                    ns.prefix(),
+                    schema.namespace.prefix(),
                     property.name
                 )));
             }
@@ -382,6 +384,29 @@ impl Metadata {
         }
 
         Ok(())
+    }
+
+    /// A RELAX NG schema describing the XMP metadata of the document.
+    pub(crate) fn relax_ng_schema(&self) -> String {
+        let schemas = merge_schemas(
+            managed_schemas().iter().map(Cow::Borrowed),
+            self.custom_xmp_schemas.iter().map(Cow::Borrowed),
+        );
+        let mut undescribed: Vec<(&Namespace, &str)> = vec![];
+        for property in &self.custom_xmp_properties {
+            let uri = property.namespace.uri();
+            if !schemas
+                .iter()
+                .any(|s| s.namespace.uri() == uri && s.get(&property.name).is_some())
+                && !undescribed
+                    .iter()
+                    .any(|(ns, name)| ns.uri() == uri && *name == property.name)
+            {
+                undescribed.push((&property.namespace, &property.name));
+            }
+        }
+
+        relax_ng::relax_ng_schema(&schemas, &undescribed)
     }
 
     /// The attached schemas that need a PDF/A extension schema, without the
@@ -689,46 +714,200 @@ fn is_reserved_xmp_prefix(prefix: &str) -> bool {
         .any(|ns| ns.prefix() == prefix)
 }
 
-/// The properties krilla writes itself, either from the [`Metadata`] or
-/// based on the configuration.
-static MANAGED_PROPERTIES: &[(XmpNamespace<'static>, &[&str])] = &[
-    (
-        XmpNamespace::DublinCore,
-        &["title", "description", "creator", "language", "format"],
-    ),
-    (
-        XmpNamespace::Xmp,
-        &["CreatorTool", "CreateDate", "ModifyDate"],
-    ),
-    (
-        XmpNamespace::XmpMedia,
-        &[
-            "InstanceID",
-            "DocumentID",
-            "VersionID",
-            "RenditionClass",
-            "History",
-        ],
-    ),
-    (XmpNamespace::XmpPaged, &["NPages"]),
-    (
-        XmpNamespace::AdobePdf,
-        &["Keywords", "Producer", "PDFVersion"],
-    ),
-    (
-        XmpNamespace::PdfAId,
-        &["part", "conformance", "rev", "amd", "corr"],
-    ),
-    (XmpNamespace::PdfUAId, &["part", "rev", "amd", "corr"]),
-    (XmpNamespace::PdfAExtension, &["schemas"]),
-];
+/// Schemas describing the properties krilla writes itself, either from the
+/// [`Metadata`] or based on the configuration.
+fn managed_schemas() -> &'static [Schema] {
+    static SCHEMAS: LazyLock<Vec<Schema>> = LazyLock::new(|| {
+        use SimpleType::*;
+        let schema = |ns: XmpNamespace, properties: &[(&str, ValueType, &str)]| {
+            properties.iter().fold(
+                Schema::new(Namespace::new(ns.prefix(), ns.url())).name(ns.name()),
+                |schema, (name, value_type, description)| {
+                    schema.property(PropertyDescription::new(
+                        *name,
+                        value_type.clone(),
+                        *description,
+                    ))
+                },
+            )
+        };
 
-/// The namespace of the managed property `name` in `uri`, if any.
-fn managed_namespace(uri: &str, name: &str) -> Option<&'static XmpNamespace<'static>> {
-    MANAGED_PROPERTIES
+        vec![
+            schema(
+                XmpNamespace::DublinCore,
+                &[
+                    (
+                        "title",
+                        ValueType::LanguageAlternative,
+                        "The title of the document",
+                    ),
+                    (
+                        "description",
+                        ValueType::LanguageAlternative,
+                        "A textual description of the content of the document",
+                    ),
+                    (
+                        "creator",
+                        ValueType::ordered_array(ProperName),
+                        "The authors of the document",
+                    ),
+                    (
+                        "language",
+                        ValueType::unordered_array(Locale),
+                        "The languages used in the document",
+                    ),
+                    ("format", MimeType.into(), "The file format of the document"),
+                ],
+            ),
+            schema(
+                XmpNamespace::Xmp,
+                &[
+                    (
+                        "CreatorTool",
+                        AgentName.into(),
+                        "The name of the first known tool used to create the document",
+                    ),
+                    (
+                        "CreateDate",
+                        Date.into(),
+                        "The date the document was created",
+                    ),
+                    (
+                        "ModifyDate",
+                        Date.into(),
+                        "The date the document was last modified",
+                    ),
+                ],
+            ),
+            schema(
+                XmpNamespace::XmpMedia,
+                &[
+                    (
+                        "InstanceID",
+                        Uri.into(),
+                        "An identifier for this incarnation of the document",
+                    ),
+                    (
+                        "DocumentID",
+                        Uri.into(),
+                        "The common identifier for all versions of the document",
+                    ),
+                    (
+                        "VersionID",
+                        Text.into(),
+                        "The version identifier of the document",
+                    ),
+                    (
+                        "RenditionClass",
+                        RenditionClass.into(),
+                        "The rendition class of the document",
+                    ),
+                    (
+                        "History",
+                        ValueType::ordered_array(PredefinedStruct::ResourceEvent),
+                        "The high-level actions that resulted in this document",
+                    ),
+                ],
+            ),
+            schema(
+                XmpNamespace::XmpPaged,
+                &[(
+                    "NPages",
+                    Integer.into(),
+                    "The number of pages in the document",
+                )],
+            ),
+            schema(
+                XmpNamespace::AdobePdf,
+                &[
+                    (
+                        "Keywords",
+                        Text.into(),
+                        "Keywords associated with the document",
+                    ),
+                    ("PDFVersion", Text.into(), "The PDF version of the document"),
+                    (
+                        "Producer",
+                        AgentName.into(),
+                        "The name of the tool that created the PDF",
+                    ),
+                ],
+            ),
+            schema(
+                XmpNamespace::PdfAId,
+                &[
+                    (
+                        "part",
+                        Integer.into(),
+                        "The part of ISO 19005 the document conforms to",
+                    ),
+                    (
+                        "rev",
+                        Integer.into(),
+                        "The year of the revision of the part",
+                    ),
+                    (
+                        "conformance",
+                        Text.into(),
+                        "The conformance level of the part",
+                    ),
+                    ("amd", Text.into(), "The amendment identifier"),
+                    ("corr", Text.into(), "The corrigendum identifier"),
+                ],
+            ),
+            schema(
+                XmpNamespace::PdfUAId,
+                &[
+                    (
+                        "part",
+                        Integer.into(),
+                        "The part of ISO 14289 the document conforms to",
+                    ),
+                    (
+                        "rev",
+                        Integer.into(),
+                        "The year of the revision of the part",
+                    ),
+                    ("amd", Text.into(), "The amendment identifier"),
+                    ("corr", Text.into(), "The corrigendum identifier"),
+                ],
+            ),
+        ]
+    });
+
+    &SCHEMAS
+}
+
+/// The schema of the managed property `name` in `uri`, if any.
+fn managed_schema(uri: &str, name: &str) -> Option<&'static Schema> {
+    managed_schemas()
         .iter()
-        .find(|(ns, names)| ns.url() == uri && names.contains(&name))
-        .map(|(ns, _)| ns)
+        .find(|schema| schema.namespace.uri() == uri && schema.get(name).is_some())
+}
+
+/// Merges the `user` schemas into the `builtin` schemas of the same namespace.
+fn merge_schemas<'a>(
+    builtin: impl IntoIterator<Item = Cow<'a, Schema>>,
+    user: impl IntoIterator<Item = Cow<'a, Schema>>,
+) -> Vec<Cow<'a, Schema>> {
+    let mut schemas: Vec<_> = builtin.into_iter().collect();
+    for schema in user {
+        let uri = schema.namespace.uri();
+        match schemas.iter_mut().find(|s| s.namespace.uri() == uri) {
+            Some(existing) => {
+                let new: Vec<_> = schema
+                    .properties
+                    .iter()
+                    .filter(|desc| existing.get(&desc.name).is_none())
+                    .cloned()
+                    .collect();
+                existing.to_mut().properties.extend(new);
+            }
+            None => schemas.push(schema),
+        }
+    }
+
+    schemas
 }
 
 /// The properties of the XMP 2004 schemas, which PDF/A-1 predefines, as
@@ -1223,25 +1402,8 @@ pub(crate) fn write_extension_schemas(
     builtin: Vec<Schema>,
     user: Vec<Cow<Schema>>,
 ) {
-    let mut schemas: Vec<Cow<Schema>> = builtin.into_iter().map(Cow::Owned).collect();
-    for schema in user {
-        let uri = schema.namespace.uri();
-        match schemas.iter_mut().find(|s| s.namespace.uri() == uri) {
-            Some(existing) => {
-                let new: Vec<_> = schema
-                    .properties
-                    .iter()
-                    .filter(|desc| existing.get(&desc.name).is_none())
-                    .cloned()
-                    .collect();
-                existing.to_mut().properties.extend(new);
-            }
-            None => schemas.push(schema),
-        }
-    }
-
-    for schema in &schemas {
-        write_extension_schema(writer, schema);
+    for schema in merge_schemas(builtin.into_iter().map(Cow::Owned), user) {
+        write_extension_schema(writer, &schema);
     }
 }
 
