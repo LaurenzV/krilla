@@ -450,3 +450,94 @@ fn metadata_custom_xmp_invalid_number() {
         XmpError::InvalidNumber("ratio".to_string()),
     );
 }
+
+fn tdm_schema() -> (Namespace, Schema) {
+    let tdm = Namespace::new("tdm", "http://www.w3.org/ns/tdmrep/");
+    let schema = Schema::new(tdm.clone())
+        .property(
+            PropertyDescription::new(
+                "reservation",
+                ValueType::closed_choice(SimpleType::Integer, ["0", "1"]),
+                "Whether TDM rights are reserved",
+            )
+            .required(),
+        )
+        .property(PropertyDescription::new(
+            "policy",
+            SimpleType::Uri,
+            "A machine-readable TDM policy",
+        ));
+    (tdm, schema)
+}
+
+#[test]
+fn metadata_custom_xmp_valid_against_schema() {
+    let (tdm, schema) = tdm_schema();
+    let mut document = Document::new();
+    document.set_metadata(
+        Metadata::new()
+            .custom_xmp_schema(schema)
+            .custom_xmp_property(tdm.property("reservation", 1))
+            .custom_xmp_property(tdm.property("policy", "https://example.com/policy.json")),
+    );
+
+    assert!(document.finish().is_ok());
+}
+
+#[test]
+fn metadata_custom_xmp_invalid_value() {
+    let (tdm, schema) = tdm_schema();
+    assert_xmp_error(
+        Metadata::new()
+            .custom_xmp_schema(schema.clone())
+            .custom_xmp_property(tdm.property("reservation", 2)),
+        XmpError::InvalidValue("reservation".to_string()),
+    );
+    assert_xmp_error(
+        Metadata::new()
+            .custom_xmp_schema(schema)
+            .custom_xmp_property(tdm.property("reservation", 1))
+            .custom_xmp_property(tdm.property("policy", true)),
+        XmpError::InvalidValue("policy".to_string()),
+    );
+}
+
+#[test]
+fn metadata_custom_xmp_missing_required_property() {
+    let (tdm, schema) = tdm_schema();
+    assert_xmp_error(
+        Metadata::new()
+            .custom_xmp_schema(schema)
+            .custom_xmp_property(tdm.property("policy", "https://example.com/policy.json")),
+        XmpError::MissingProperty("reservation".to_string()),
+    );
+}
+
+#[test]
+fn metadata_custom_xmp_invalid_struct() {
+    let ex = Namespace::new("ex", "http://example.com/xmp/address#");
+    let address = StructType::new(ex.clone(), "Address", "A postal address")
+        .field(text_description("street", "The street").required())
+        .field(text_description("city", "The city"));
+    let metadata = |fields| {
+        Metadata::new()
+            .custom_xmp_schema(Schema::new(ex.clone()).property(PropertyDescription::new(
+                "address",
+                address.clone(),
+                "An address",
+            )))
+            .custom_xmp_property(ex.property("address", Value::Struct(fields)))
+    };
+
+    assert_xmp_error(
+        metadata(vec![
+            ex.property("street", "Main Street 1"),
+            ex.property("country", "DE"),
+        ]),
+        XmpError::InvalidValue("address".to_string()),
+    );
+    assert_xmp_error(
+        metadata(vec![ex.property("city", "Berlin")]),
+        XmpError::MissingProperty("street".to_string()),
+    );
+}

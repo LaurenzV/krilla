@@ -10,7 +10,7 @@ pub mod xmp;
 use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
 use std::borrow::Cow;
 use std::cell::LazyCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use xmp_writer::{
     CustomNamespace, LangId, Namespace as XmpNamespace, RdfCollectionType, Timezone, XmpWriter,
 };
@@ -19,8 +19,8 @@ use crate::configure::{Archival, Configuration, PdfVersion, ValidationError, Val
 use crate::serialize::SerializeContext;
 
 use self::xmp::{
-    Category, Namespace, Property, PropertyDescription, Schema, StructType, Value, ValueType,
-    XmpError,
+    Category, Namespace, Property, PropertyDescription, Schema, SimpleType, StructType, Value,
+    ValueType, XmpError,
 };
 
 /// Metadata for a PDF document.
@@ -325,6 +325,7 @@ impl Metadata {
         let check_descriptions = validators.requires_xmp_metadata_extension_schema();
         let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
 
+        let mut written = HashSet::new();
         for property in &self.custom_xmp_properties {
             let uri = property.namespace.uri();
             let description = schemas.get(uri).and_then(|s| s.get(&property.name));
@@ -343,7 +344,18 @@ impl Metadata {
                 property: &property.name,
             };
             let namespace = writer.namespace(&property.namespace)?;
-            writer.write_property(xmp.element(&property.name, namespace), &property.value)?;
+            writer.write_property(
+                xmp.element(&property.name, namespace),
+                &property.value,
+                description.map(|desc| &desc.value_type),
+            )?;
+            written.insert((uri, property.name.as_str()));
+        }
+
+        for schema in &self.custom_xmp_schemas {
+            check_required(&schema.properties, |name| {
+                written.contains(&(schema.namespace.uri(), name))
+            })?;
         }
 
         Ok(())
@@ -740,7 +752,19 @@ impl<'a> ValueWriter<'a, '_> {
         &mut self,
         element: xmp_writer::Element<'_, 'a>,
         value: &'a Value,
+        value_type: Option<&'a ValueType>,
     ) -> Result<(), XmpError> {
+        if value_type.is_some_and(|ty| !matches_value_type(value, ty)) {
+            return Err(XmpError::InvalidValue(self.property.to_string()));
+        }
+
+        let item_type = value_type.and_then(|ty| match ty {
+            ValueType::OrderedArray(item)
+            | ValueType::UnorderedArray(item)
+            | ValueType::AlternativeArray(item) => Some(&**item),
+            _ => None,
+        });
+
         match value {
             Value::Text(s) => element.value(s.as_str()),
             Value::Bool(b) => element.value(*b),
@@ -752,13 +776,13 @@ impl<'a> ValueWriter<'a, '_> {
             }
             Value::Date(d) => element.value(xmp_date(*d)),
             Value::OrderedArray(items) => {
-                self.write_array(element.array(RdfCollectionType::Seq), items)?
+                self.write_array(element.array(RdfCollectionType::Seq), items, item_type)?
             }
             Value::UnorderedArray(items) => {
-                self.write_array(element.array(RdfCollectionType::Bag), items)?
+                self.write_array(element.array(RdfCollectionType::Bag), items, item_type)?
             }
             Value::AlternativeArray(items) => {
-                self.write_array(element.array(RdfCollectionType::Alt), items)?
+                self.write_array(element.array(RdfCollectionType::Alt), items, item_type)?
             }
             Value::LanguageAlternative(items) => {
                 element.language_alternative(
@@ -768,12 +792,44 @@ impl<'a> ValueWriter<'a, '_> {
                 );
             }
             Value::Struct(fields) => {
-                let mut s = element.obj();
-                for field in fields {
-                    let element = s.element(field.name.as_str(), self.namespace(&field.namespace)?);
-                    self.write_property(element, &field.value)?;
-                }
+                let struct_type = match value_type {
+                    Some(ValueType::Struct(ty)) => Some(&**ty),
+                    _ => None,
+                };
+                self.write_struct(element.obj(), fields, struct_type)?;
             }
+        }
+
+        Ok(())
+    }
+
+    fn write_struct(
+        &mut self,
+        mut s: xmp_writer::Struct<'_, 'a>,
+        fields: &'a [Property],
+        struct_type: Option<&'a StructType>,
+    ) -> Result<(), XmpError> {
+        for field in fields {
+            let field_type = match struct_type {
+                Some(ty) => {
+                    let desc = ty
+                        .fields
+                        .iter()
+                        .find(|desc| desc.name == field.name && field.namespace == ty.namespace)
+                        .ok_or_else(|| XmpError::InvalidValue(self.property.to_string()))?;
+                    Some(&desc.value_type)
+                }
+                None => None,
+            };
+
+            let element = s.element(field.name.as_str(), self.namespace(&field.namespace)?);
+            self.write_property(element, &field.value, field_type)?;
+        }
+
+        if let Some(ty) = struct_type {
+            check_required(&ty.fields, |name| {
+                fields.iter().any(|field| field.name == name)
+            })?;
         }
 
         Ok(())
@@ -783,12 +839,76 @@ impl<'a> ValueWriter<'a, '_> {
         &mut self,
         mut array: xmp_writer::Array<'_, 'a>,
         items: &'a [Value],
+        item_type: Option<&'a ValueType>,
     ) -> Result<(), XmpError> {
         for item in items {
-            self.write_property(array.element(), item)?;
+            self.write_property(array.element(), item, item_type)?;
         }
 
         Ok(())
+    }
+}
+
+fn check_required<'a>(
+    descriptions: &'a [PropertyDescription],
+    mut is_present: impl FnMut(&'a str) -> bool,
+) -> Result<(), XmpError> {
+    match descriptions
+        .iter()
+        .find(|desc| desc.required && !is_present(&desc.name))
+    {
+        Some(desc) => Err(XmpError::MissingProperty(desc.name.clone())),
+        None => Ok(()),
+    }
+}
+
+/// Whether the outermost shape of `value` matches `value_type`.
+fn matches_value_type(value: &Value, value_type: &ValueType) -> bool {
+    match (value_type, value) {
+        (ValueType::Simple(ty) | ValueType::OpenChoice(ty, _), _) => {
+            matches_simple_type(value, *ty)
+        }
+        (ValueType::ClosedChoice(ty, choices), _) => {
+            matches_simple_type(value, *ty)
+                && simple_value_text(value).is_some_and(|text| choices.contains(&text))
+        }
+        (ValueType::OrderedArray(_), Value::OrderedArray(_))
+        | (ValueType::UnorderedArray(_), Value::UnorderedArray(_))
+        | (ValueType::AlternativeArray(_), Value::AlternativeArray(_))
+        | (ValueType::LanguageAlternative, Value::LanguageAlternative(_))
+        | (ValueType::PredefinedStruct(_) | ValueType::Struct(_), Value::Struct(_)) => true,
+        _ => false,
+    }
+}
+
+fn matches_simple_type(value: &Value, ty: SimpleType) -> bool {
+    match (ty, value) {
+        (SimpleType::Boolean, Value::Bool(_))
+        | (SimpleType::Integer, Value::Integer(_))
+        | (SimpleType::Real, Value::Real(_) | Value::Integer(_))
+        | (SimpleType::Rational, Value::Rational(..))
+        | (SimpleType::Date, Value::Date(_)) => true,
+        (
+            SimpleType::Boolean
+            | SimpleType::Integer
+            | SimpleType::Real
+            | SimpleType::Rational
+            | SimpleType::Date,
+            _,
+        ) => false,
+        (_, value) => matches!(value, Value::Text(_)),
+    }
+}
+
+/// The serialized form of a simple value, as compared against the values of a
+/// closed choice.
+fn simple_value_text(value: &Value) -> Option<String> {
+    match value {
+        Value::Text(s) => Some(s.clone()),
+        Value::Bool(b) => Some(if *b { "True" } else { "False" }.to_string()),
+        Value::Integer(i) => Some(i.to_string()),
+        Value::Real(r) => Some(r.to_string()),
+        _ => None,
     }
 }
 

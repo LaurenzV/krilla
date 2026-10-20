@@ -520,6 +520,12 @@ pub enum XmpError {
     /// A [`Value::Real`] was NaN or infinite, or a [`Value::Rational`] had
     /// a zero denominator. Contains the name of the containing property.
     InvalidNumber(String),
+    /// A value didn't match the type its schema declared for it. Contains
+    /// the name of the containing property.
+    InvalidValue(String),
+    /// A property or structure field that its schema marked as required was
+    /// missing. Contains the name of the property or field.
+    MissingProperty(String),
 }
 
 impl std::fmt::Display for XmpError {
@@ -548,6 +554,12 @@ impl std::fmt::Display for XmpError {
             }
             XmpError::InvalidNumber(name) => {
                 write!(f, "the property {name} contained an invalid number")
+            }
+            XmpError::InvalidValue(name) => {
+                write!(f, "the property {name} doesn't match its schema")
+            }
+            XmpError::MissingProperty(name) => {
+                write!(f, "the required property {name} is missing")
             }
         }
     }
