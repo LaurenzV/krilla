@@ -541,3 +541,16 @@ fn metadata_custom_xmp_invalid_struct() {
         XmpError::MissingProperty("street".to_string()),
     );
 }
+
+#[test]
+fn metadata_custom_xmp_managed_property() {
+    let dc = Namespace::new("dc", "http://purl.org/dc/elements/1.1/");
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(dc.property("title", "Title")),
+        XmpError::ManagedProperty("dc:title".to_string()),
+    );
+
+    let mut document = Document::new();
+    document.set_metadata(Metadata::new().custom_xmp_property(dc.property("rights", "CC-BY")));
+    assert!(document.finish().is_ok());
+}

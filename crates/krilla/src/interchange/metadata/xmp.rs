@@ -526,6 +526,10 @@ pub enum XmpError {
     /// A property or structure field that its schema marked as required was
     /// missing. Contains the name of the property or field.
     MissingProperty(String),
+    /// A property that krilla writes itself was set. Such properties must be
+    /// set via [`Metadata`](super::Metadata), if at all. Contains the
+    /// qualified name of the property.
+    ManagedProperty(String),
 }
 
 impl std::fmt::Display for XmpError {
@@ -560,6 +564,9 @@ impl std::fmt::Display for XmpError {
             }
             XmpError::MissingProperty(name) => {
                 write!(f, "the required property {name} is missing")
+            }
+            XmpError::ManagedProperty(name) => {
+                write!(f, "the property {name} is managed by krilla")
             }
         }
     }

@@ -328,6 +328,14 @@ impl Metadata {
         let mut written = HashSet::new();
         for property in &self.custom_xmp_properties {
             let uri = property.namespace.uri();
+            if let Some(ns) = managed_namespace(uri, &property.name) {
+                return Err(XmpError::ManagedProperty(format!(
+                    "{}:{}",
+                    ns.prefix(),
+                    property.name
+                )));
+            }
+
             let description = schemas.get(uri).and_then(|s| s.get(&property.name));
             if check_descriptions
                 && description.is_none()
@@ -653,6 +661,48 @@ fn is_reserved_xmp_prefix(prefix: &str) -> bool {
         .any(|ns| ns.prefix() == prefix)
 }
 
+/// The properties krilla writes itself, either from the [`Metadata`] or
+/// based on the configuration.
+static MANAGED_PROPERTIES: &[(XmpNamespace<'static>, &[&str])] = &[
+    (
+        XmpNamespace::DublinCore,
+        &["title", "description", "creator", "language", "format"],
+    ),
+    (
+        XmpNamespace::Xmp,
+        &["CreatorTool", "CreateDate", "ModifyDate"],
+    ),
+    (
+        XmpNamespace::XmpMedia,
+        &[
+            "InstanceID",
+            "DocumentID",
+            "VersionID",
+            "RenditionClass",
+            "History",
+        ],
+    ),
+    (XmpNamespace::XmpPaged, &["NPages"]),
+    (
+        XmpNamespace::AdobePdf,
+        &["Keywords", "Producer", "PDFVersion"],
+    ),
+    (
+        XmpNamespace::PdfAId,
+        &["part", "conformance", "rev", "amd", "corr"],
+    ),
+    (XmpNamespace::PdfUAId, &["part", "rev", "amd", "corr"]),
+    (XmpNamespace::PdfAExtension, &["schemas"]),
+];
+
+/// The namespace of the managed property `name` in `uri`, if any.
+fn managed_namespace(uri: &str, name: &str) -> Option<&'static XmpNamespace<'static>> {
+    MANAGED_PROPERTIES
+        .iter()
+        .find(|(ns, names)| ns.url() == uri && names.contains(&name))
+        .map(|(ns, _)| ns)
+}
+
 /// Predefined XMP property schemas a custom property may use in PDF/A-1, -2
 /// and -3 without a PDF/A extension schema description.
 ///
@@ -962,62 +1012,87 @@ fn pdfa_value_type(value_type: &ValueType) -> Cow<'_, str> {
     }
 }
 
+/// Writes the PDF/A extension schemas for krilla's own `builtin` schemas and
+/// the `user` schemas, merging schemas of the same namespace.
 pub(crate) fn write_extension_schemas(
     writer: &mut xmp_writer::pdfa::PdfAExtSchemasWriter,
-    schemas: &[&Schema],
+    builtin: Vec<Schema>,
+    user: &[&Schema],
 ) {
-    let mut written_types = Vec::new();
-    for schema in schemas {
-        let xmp_namespace = build_xmp_namespace(&schema.namespace);
-        // A namespace xmp-writer knows natively is serialized under its canonical
-        // prefix, not the user-supplied one.
-        let prefix = xmp_namespace.prefix();
+    let mut schemas: Vec<Cow<Schema>> = builtin.into_iter().map(Cow::Owned).collect();
+    for &schema in user {
+        let uri = schema.namespace.uri();
+        match schemas.iter_mut().find(|s| s.namespace.uri() == uri) {
+            Some(existing) => {
+                let new: Vec<_> = schema
+                    .properties
+                    .iter()
+                    .filter(|desc| existing.get(&desc.name).is_none())
+                    .cloned()
+                    .collect();
+                existing.to_mut().properties.extend(new);
+            }
+            None => schemas.push(Cow::Borrowed(schema)),
+        }
+    }
 
-        let mut schema_writer = writer.add_schema();
-        let schema_name = schema
-            .name
-            .clone()
-            .unwrap_or_else(|| format!("{prefix} schema"));
-        schema_writer
-            .element("schema", XmpNamespace::PdfASchema)
-            .value(schema_name.as_str());
-        schema_writer
-            .element("namespaceURI", XmpNamespace::PdfASchema)
-            .value(schema.namespace.uri());
-        schema_writer
-            .element("prefix", XmpNamespace::PdfASchema)
-            .value(prefix);
+    for schema in &schemas {
+        write_extension_schema(writer, schema);
+    }
+}
 
-        if !schema.properties.is_empty() {
-            let mut properties = schema_writer.properties();
-            for desc in &schema.properties {
-                properties
-                    .add_property()
-                    .name(desc.name.as_str())
-                    .value_type(&pdfa_value_type(&desc.value_type))
-                    .category(desc.category == Category::Internal)
-                    .description(desc.description.as_str());
+fn write_extension_schema(writer: &mut xmp_writer::pdfa::PdfAExtSchemasWriter, schema: &Schema) {
+    let xmp_namespace = build_xmp_namespace(&schema.namespace);
+    // A namespace xmp-writer knows natively is serialized under its canonical
+    // prefix, not the user-supplied one.
+    let prefix = xmp_namespace.prefix();
+
+    let mut schema_writer = writer.add_schema();
+    let schema_name = schema
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("{prefix} schema"));
+    schema_writer
+        .element("schema", XmpNamespace::PdfASchema)
+        .value(schema_name.as_str());
+    schema_writer
+        .element("namespaceURI", XmpNamespace::PdfASchema)
+        .value(schema.namespace.uri());
+    schema_writer
+        .element("prefix", XmpNamespace::PdfASchema)
+        .value(prefix);
+
+    if !schema.properties.is_empty() {
+        let mut properties = schema_writer.properties();
+        for desc in &schema.properties {
+            properties
+                .add_property()
+                .category(desc.category == Category::Internal)
+                .description(desc.description.as_str())
+                .name(desc.name.as_str())
+                .value_type(&pdfa_value_type(&desc.value_type));
+        }
+    }
+
+    let mut types = Vec::new();
+    for desc in &schema.properties {
+        for ty in struct_types(&desc.value_type) {
+            if !types.contains(&ty) {
+                types.push(ty);
             }
         }
+    }
 
-        let types: Vec<_> = schema
-            .properties
-            .iter()
-            .flat_map(|desc| struct_types(&desc.value_type))
-            .filter(|ty| !written_types.contains(ty))
-            .collect();
-        if !types.is_empty() {
-            let mut value_types = schema_writer.value_types();
-            for ty in types {
-                let mut type_writer = value_types.add_value_type();
-                type_writer
-                    .name(ty.name.as_str())
-                    .namespace_uri(ty.namespace.uri())
-                    .prefix(build_xmp_namespace(&ty.namespace).prefix())
-                    .description(ty.description.as_str());
-                write_fields(&mut type_writer, &ty.fields);
-                written_types.push(ty);
-            }
+    if !types.is_empty() {
+        let mut value_types = schema_writer.value_types();
+        for ty in types {
+            let mut type_writer = value_types.add_value_type();
+            type_writer
+                .name(ty.name.as_str())
+                .namespace_uri(ty.namespace.uri())
+                .prefix(build_xmp_namespace(&ty.namespace).prefix())
+                .description(ty.description.as_str());
+            write_fields(&mut type_writer, &ty.fields);
         }
     }
 }
@@ -1038,7 +1113,39 @@ fn write_fields(
 
 #[cfg(test)]
 mod tests {
-    use super::Metadata;
+    use xmp_writer::XmpWriter;
+
+    use super::xmp::{Namespace, PropertyDescription, Schema, SimpleType};
+    use super::{write_extension_schemas, Metadata};
+
+    #[test]
+    fn extension_schemas_of_same_namespace_are_merged() {
+        let ns = Namespace::new("pdfuaid", "http://www.aiim.org/pdfua/ns/id/");
+        let builtin = Schema::new(ns.clone()).property(PropertyDescription::new(
+            "part",
+            SimpleType::Integer,
+            "Part",
+        ));
+        let user = Schema::new(ns)
+            .property(PropertyDescription::new(
+                "part",
+                SimpleType::Integer,
+                "Part",
+            ))
+            .property(PropertyDescription::new(
+                "custom",
+                SimpleType::Text,
+                "Custom",
+            ));
+
+        let mut xmp = XmpWriter::new();
+        write_extension_schemas(&mut xmp.extension_schemas(), vec![builtin], &[&user]);
+        let xmp = xmp.finish(None);
+
+        assert_eq!(xmp.matches("<pdfaSchema:namespaceURI>").count(), 1);
+        assert_eq!(xmp.matches("<pdfaProperty:name>part<").count(), 1);
+        assert_eq!(xmp.matches("<pdfaProperty:name>custom<").count(), 1);
+    }
 
     #[test]
     fn custom_field_returns_none_for_ignored_names() {

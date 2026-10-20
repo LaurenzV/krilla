@@ -27,8 +27,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use pdf_writer::types::OutputIntentSubtype;
-use xmp_writer::pdfa::PdfAExtSchemasWriter;
-use xmp_writer::XmpWriter;
+use xmp_writer::{Namespace as XmpNamespace, XmpWriter};
 
 use crate::color::separation::SeparationColorant;
 use crate::color::separation::SeparationSpace;
@@ -36,7 +35,7 @@ use crate::color::RegularColor;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
 use crate::metadata::write_extension_schemas;
-use crate::metadata::xmp::Schema;
+use crate::metadata::xmp::{Namespace, PropertyDescription, Schema, SimpleType};
 use crate::surface::Location;
 use crate::text::Font;
 use crate::text::GlyphId;
@@ -317,14 +316,14 @@ impl Validators {
 
     pub(crate) fn write_xmp(self, xmp: &mut XmpWriter, user_schemas: &[&Schema]) {
         if self.requires_xmp_metadata_extension_schema() {
-            let mut extension_schemas = xmp.extension_schemas();
+            let mut builtin = Vec::new();
             if let Some(a) = self.a {
-                a.write_xmp_extension_schema_description(&mut extension_schemas);
+                builtin.extend(a.extension_schemas());
             }
             if let Some(ua) = self.ua {
-                ua.write_xmp_extension_schema_description(&mut extension_schemas);
+                builtin.extend(ua.extension_schemas());
             }
-            write_extension_schemas(&mut extension_schemas, user_schemas);
+            write_extension_schemas(&mut xmp.extension_schemas(), builtin, user_schemas);
         }
 
         if let Some(a) = self.a {
@@ -1014,19 +1013,51 @@ impl Archival {
         }
     }
 
-    fn write_xmp_extension_schema_description(
-        self,
-        extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>,
-    ) {
+    fn extension_schemas(self) -> Vec<Schema> {
         if !self.requires_xmp_metadata_extension_schema() {
-            return;
+            return vec![];
         }
 
-        extension_schemas
-            .xmp_media_management()
-            .properties()
-            .describe_instance_id();
-        extension_schemas.pdf().properties().describe_all();
+        vec![
+            builtin_schema(XmpNamespace::XmpMedia).property(
+                PropertyDescription::new(
+                    "InstanceID",
+                    SimpleType::Text,
+                    "UUID based identifier for specific incarnation of a document",
+                )
+                .internal(),
+            ),
+            builtin_schema(XmpNamespace::AdobePdf)
+                .property(PropertyDescription::new(
+                    "Keywords",
+                    SimpleType::Text,
+                    "Keywords associated with the document",
+                ))
+                .property(
+                    PropertyDescription::new(
+                        "PDFVersion",
+                        SimpleType::Text,
+                        "Version of the PDF specification to which the document conforms",
+                    )
+                    .internal(),
+                )
+                .property(
+                    PropertyDescription::new(
+                        "Producer",
+                        SimpleType::Text,
+                        "Name of the application that created the PDF document",
+                    )
+                    .internal(),
+                )
+                .property(
+                    PropertyDescription::new(
+                        "Trapped",
+                        SimpleType::Text,
+                        "Whether the document has been trapped",
+                    )
+                    .internal(),
+                ),
+        ]
     }
 
     /// Returns a human-readable string representation of the conformance level.
@@ -1230,12 +1261,16 @@ impl Accessibility {
         }
     }
 
-    fn write_xmp_extension_schema_description(
-        self,
-        extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>,
-    ) {
+    fn extension_schemas(self) -> Vec<Schema> {
         // Needs to be updated if [`Self::write_xmp`] gains more properties.
-        extension_schemas.pdfua_id().properties().describe_part();
+        vec![builtin_schema(XmpNamespace::PdfUAId).property(
+            PropertyDescription::new(
+                "part",
+                SimpleType::Integer,
+                "Part Number of ISO 14289 (PDF/UA)",
+            )
+            .internal(),
+        )]
     }
 
     /// Returns a human-readable string representation of the accessibility level.
@@ -1260,6 +1295,11 @@ impl Accessibility {
             Self::UA1 => PdfVersion::Pdf17,
         }
     }
+}
+
+fn builtin_schema(namespace: XmpNamespace) -> Schema {
+    Schema::new(Namespace::new(namespace.prefix(), namespace.url()))
+        .name(format!("{} schema", namespace.name()))
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
