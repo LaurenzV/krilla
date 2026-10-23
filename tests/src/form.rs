@@ -162,6 +162,7 @@ fn forms_text_field(d: &mut Document) {
     text_field.set_value("Hi.".to_string());
     text_field.set_mutliline(true);
     text_field.set_max_length(Some(10));
+    text_field.set_spellcheck(false);
     text_field.set_text_alignment(krilla::form::variable_text::TextAlignment::Right);
     text_field.set_appearance(variable_appearance(paint));
 
@@ -218,6 +219,7 @@ fn forms_combobox(d: &mut Document) {
     combobox_field.set_value("foo".to_string());
     combobox_field.set_appearance(variable_appearance(paint));
     combobox_field.set_edit(true);
+    combobox_field.set_spellcheck(false);
     combobox_field.set_options(vec![
         ChoiceOption::new("foo".to_string(), Some("Foo".to_string())),
         ChoiceOption::new("bar".to_string(), None),
