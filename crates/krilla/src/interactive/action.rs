@@ -216,13 +216,27 @@ impl ActionFieldFilter {
 #[derive(Debug, Copy, Clone, Default, Hash, Eq, PartialEq)]
 pub enum SubmissionFormat {
     /// application/x-www-form-urlencoded as a body if method is POST or as a query string in the URL if GET.
+    ///
+    /// Compatibility: Of the tested PDF Readers, only Adobe Acrobat and Foxit Reader support this
+    /// format. No readers properly support the GET HTTP method.
     UrlEncoded(HttpMethod),
     /// application/fdf
+    ///
+    /// Compatibility: All readers that support submission can submit in this format. Only Acrobat
+    /// Reader, Pdfium, and Foxit reader support submission. Foxit Reader incorrectly sets a
+    /// `Content-Type: application/x-www-form-urlencoded` header.
     #[default]
     Fdf,
     /// application/xfdf
+    ///
+    /// Compatibility: Of the tested PDF Readers, only Adobe Acrobat and Foxit Reader support this
+    /// format.
     Xfdf,
     /// application/pdf
+    ///
+    /// Compatibility: Of the tested PDF Readers, only Adobe Acrobat and Foxit Reader support this
+    /// format. Foxit Reader incorrectly sets a `Content-Type: application/x-www-form-urlencoded`
+    /// header.
     Pdf,
 }
 
