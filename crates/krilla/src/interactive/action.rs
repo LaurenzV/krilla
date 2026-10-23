@@ -163,6 +163,9 @@ impl SubmitFormAction {
             .finish();
         let mut flags = self.fields.serialize(&mut action);
         flags |= self.format.serialize();
+        if self.format == SubmissionFormat::Fdf {
+            flags |= FormActionFlags::EXCLUDE_F_KEY;
+        }
         if !flags.is_empty() {
             action.form_flags(flags);
         }
