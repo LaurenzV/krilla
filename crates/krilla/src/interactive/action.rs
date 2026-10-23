@@ -102,6 +102,7 @@ impl ResetFormAction {
         Self { fields }
     }
 }
+
 impl ResetFormAction {
     fn serialize(&self, mut action: pdf_writer::writers::Action) {
         action.action_type(ActionType::ResetForm);
@@ -152,12 +153,6 @@ impl SubmitFormAction {
     }
 }
 
-impl From<SubmitFormAction> for Action {
-    fn from(value: SubmitFormAction) -> Self {
-        Action::SubmitForm(value)
-    }
-}
-
 impl SubmitFormAction {
     fn serialize(&self, mut action: pdf_writer::writers::Action) {
         action.action_type(ActionType::SubmitForm);
@@ -171,6 +166,12 @@ impl SubmitFormAction {
         if !flags.is_empty() {
             action.form_flags(flags);
         }
+    }
+}
+
+impl From<SubmitFormAction> for Action {
+    fn from(value: SubmitFormAction) -> Self {
+        Action::SubmitForm(value)
     }
 }
 
