@@ -223,8 +223,8 @@ pub enum SubmissionFormat {
     /// application/fdf
     ///
     /// Compatibility: All readers that support submission can submit in this format. Only Acrobat
-    /// Reader, Pdfium, and Foxit reader support submission. Foxit Reader incorrectly sets a
-    /// `Content-Type: application/x-www-form-urlencoded` header.
+    /// Reader, Pdfium, and Foxit reader support submission. Pdfium does not set a `Content-Type` header.
+    /// Foxit Reader incorrectly sets a `Content-Type: application/x-www-form-urlencoded` header.
     #[default]
     Fdf,
     /// application/xfdf
