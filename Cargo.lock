@@ -1037,6 +1037,7 @@ dependencies = [
  "smallvec",
  "subsetter",
  "tiny-skia-path 0.12.0",
+ "xmlwriter",
  "xmp-writer",
  "yoke",
  "zune-jpeg",
@@ -2550,8 +2551,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 [[package]]
 name = "xmp-writer"
 version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9440ea3e5aeabb0ac63af70daf835274065238cdd0cec83418f417eae38bacee"
+source = "git+https://github.com/typst/xmp-writer?rev=61b88dd697c21ab66eb4eb4c25e2c6d16ea3c872#61b88dd697c21ab66eb4eb4c25e2c6d16ea3c872"
 
 [[package]]
 name = "yansi"

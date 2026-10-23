@@ -23,18 +23,20 @@
 //!
 //! [`Configuration`]: crate::configure::Configuration
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
 use pdf_writer::types::OutputIntentSubtype;
-use xmp_writer::pdfa::PdfAExtSchemasWriter;
-use xmp_writer::XmpWriter;
+use xmp_writer::{Namespace as XmpNamespace, XmpWriter};
 
 use crate::color::separation::SeparationColorant;
 use crate::color::separation::SeparationSpace;
 use crate::color::RegularColor;
 use crate::configure::PdfVersion;
 use crate::interchange::embed::EmbedError;
+use crate::metadata::write_extension_schemas;
+use crate::metadata::xmp::{Namespace, PropertyDescription, Schema, SimpleType};
 use crate::surface::Location;
 use crate::text::Font;
 use crate::text::GlyphId;
@@ -153,6 +155,22 @@ pub enum ValidationError {
     EmbeddedPDF(Option<Location>),
     /// A feature only available in a later PDF version was required.
     RequiresNewerPdfVersion(VersionedFeature, Option<Location>),
+    /// A custom XMP property was used in PDF/A export without a matching
+    /// PDF/A extension schema description.
+    MissingXmpPropertyDescription {
+        /// The namespace URI of the offending property.
+        namespace_uri: String,
+        /// The name of the offending property.
+        property_name: String,
+    },
+    /// A custom XMP property was used in PDF/A export that is often mistaken
+    /// for a predefined property, but isn't one.
+    ForbiddenXmpProperty {
+        /// The namespace URI of the offending property.
+        namespace_uri: String,
+        /// The name of the offending property.
+        property_name: String,
+    },
 }
 
 /// Features that may require a later PDF version than the current one.
@@ -248,11 +266,19 @@ impl Validators {
         self.into_iter().any(Validator::requires_xmp_metadata)
     }
 
-    /// Whether any extension schemata should be descibed using the "pdfaSchema"
+    /// Whether any extension schemata should be described using the "pdfaSchema"
     /// namespace.
     pub(crate) fn requires_xmp_metadata_extension_schema(self) -> bool {
         self.a
             .is_some_and(Archival::requires_xmp_metadata_extension_schema)
+    }
+
+    /// Whether the predefined XMP schemas are from the
+    /// larger XMP 2005 set (PDF/A-2 and PDF/A-3) rather than the smaller XMP
+    /// 2004 set (PDF/A-1).
+    pub(crate) fn uses_xmp_2005_predefined_schemas(self) -> bool {
+        self.a
+            .is_some_and(Archival::uses_xmp_2005_predefined_schemas)
     }
 
     /// Whether the `instanceID` field is allowed in XMP.
@@ -297,15 +323,35 @@ impl Validators {
         self.a.map(Archival::output_intent)
     }
 
-    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter) {
+    /// Whether the XMP metadata should be described by a RELAX NG schema in
+    /// an associated file.
+    pub(crate) fn recommends_xmp_relax_ng_schema(self) -> bool {
+        self.a.is_some_and(Archival::recommends_xmp_relax_ng_schema)
+    }
+
+    /// The PDF/A extension schemas describing the properties krilla writes
+    /// itself.
+    pub(crate) fn extension_schemas(self) -> Vec<Schema> {
+        let mut schemas = Vec::new();
         if self.requires_xmp_metadata_extension_schema() {
-            let mut extension_schemas = xmp.extension_schemas();
             if let Some(a) = self.a {
-                a.write_xmp_extension_schema_description(&mut extension_schemas);
+                schemas.extend(a.extension_schemas());
             }
             if let Some(ua) = self.ua {
-                ua.write_xmp_extension_schema_description(&mut extension_schemas);
+                schemas.extend(ua.extension_schemas());
             }
+        }
+
+        schemas
+    }
+
+    pub(crate) fn write_xmp(self, xmp: &mut XmpWriter, user_schemas: Vec<Cow<Schema>>) {
+        if self.requires_xmp_metadata_extension_schema() {
+            write_extension_schemas(
+                &mut xmp.extension_schemas(),
+                self.extension_schemas(),
+                user_schemas,
+            );
         }
 
         if let Some(a) = self.a {
@@ -721,6 +767,11 @@ impl Archival {
                 Self::A4 | Self::A4F | Self::A4E,
                 ValidationError::EmbeddedFile(EmbedError::MissingDescription, _),
             ) => self == Self::A4,
+            (
+                _,
+                ValidationError::MissingXmpPropertyDescription { .. }
+                | ValidationError::ForbiddenXmpProperty { .. },
+            ) => self.requires_xmp_metadata_extension_schema(),
         }
     }
 
@@ -818,6 +869,17 @@ impl Archival {
         }
     }
 
+    /// Whether the predefined XMP schemas
+    /// follow the XMP 2005 specification (PDF/A-2 and PDF/A-3) rather than the
+    /// smaller XMP 2004 set (PDF/A-1).
+    fn uses_xmp_2005_predefined_schemas(self) -> bool {
+        match self {
+            Self::A1_A | Self::A1_B => false,
+            Self::A2_A | Self::A2_B | Self::A2_U | Self::A3_A | Self::A3_B | Self::A3_U => true,
+            Self::A4 | Self::A4F | Self::A4E => false,
+        }
+    }
+
     fn prohibits_instance_id_in_xmp_metadata(self) -> bool {
         match self {
             Self::A1_A | Self::A1_B => true,
@@ -892,6 +954,23 @@ impl Archival {
             | Self::A4
             | Self::A4E => false,
             Self::A4F => true,
+        }
+    }
+
+    /// Whether the XMP metadata should be described by a RELAX NG schema in
+    /// an associated file.
+    fn recommends_xmp_relax_ng_schema(self) -> bool {
+        match self {
+            Self::A4F | Self::A4E => true,
+            Self::A1_A
+            | Self::A1_B
+            | Self::A2_A
+            | Self::A2_B
+            | Self::A2_U
+            | Self::A3_A
+            | Self::A3_B
+            | Self::A3_U
+            | Self::A4 => false,
         }
     }
 
@@ -981,19 +1060,51 @@ impl Archival {
         }
     }
 
-    fn write_xmp_extension_schema_description(
-        self,
-        extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>,
-    ) {
+    fn extension_schemas(self) -> Vec<Schema> {
         if !self.requires_xmp_metadata_extension_schema() {
-            return;
+            return vec![];
         }
 
-        extension_schemas
-            .xmp_media_management()
-            .properties()
-            .describe_instance_id();
-        extension_schemas.pdf().properties().describe_all();
+        vec![
+            builtin_schema(XmpNamespace::XmpMedia).property(
+                PropertyDescription::new(
+                    "InstanceID",
+                    SimpleType::Text,
+                    "UUID based identifier for specific incarnation of a document",
+                )
+                .internal(),
+            ),
+            builtin_schema(XmpNamespace::AdobePdf)
+                .property(PropertyDescription::new(
+                    "Keywords",
+                    SimpleType::Text,
+                    "Keywords associated with the document",
+                ))
+                .property(
+                    PropertyDescription::new(
+                        "PDFVersion",
+                        SimpleType::Text,
+                        "Version of the PDF specification to which the document conforms",
+                    )
+                    .internal(),
+                )
+                .property(
+                    PropertyDescription::new(
+                        "Producer",
+                        SimpleType::Text,
+                        "Name of the application that created the PDF document",
+                    )
+                    .internal(),
+                )
+                .property(
+                    PropertyDescription::new(
+                        "Trapped",
+                        SimpleType::Text,
+                        "Whether the document has been trapped",
+                    )
+                    .internal(),
+                ),
+        ]
     }
 
     /// Returns a human-readable string representation of the conformance level.
@@ -1161,7 +1272,9 @@ impl Accessibility {
                 | ValidationError::AnnotationHasConditionalAppearance(_)
                 | ValidationError::ContainsMutatingAction(_)
                 | ValidationError::ContainsAdditionalActions(_)
-                | ValidationError::MissingDocumentDate,
+                | ValidationError::MissingDocumentDate
+                | ValidationError::MissingXmpPropertyDescription { .. }
+                | ValidationError::ForbiddenXmpProperty { .. },
             ) => false,
         }
     }
@@ -1196,12 +1309,16 @@ impl Accessibility {
         }
     }
 
-    fn write_xmp_extension_schema_description(
-        self,
-        extension_schemas: &mut PdfAExtSchemasWriter<'_, '_>,
-    ) {
+    fn extension_schemas(self) -> Vec<Schema> {
         // Needs to be updated if [`Self::write_xmp`] gains more properties.
-        extension_schemas.pdfua_id().properties().describe_part();
+        vec![builtin_schema(XmpNamespace::PdfUAId).property(
+            PropertyDescription::new(
+                "part",
+                SimpleType::Integer,
+                "Part Number of ISO 14289 (PDF/UA)",
+            )
+            .internal(),
+        )]
     }
 
     /// Returns a human-readable string representation of the accessibility level.
@@ -1226,6 +1343,11 @@ impl Accessibility {
             Self::UA1 => PdfVersion::Pdf17,
         }
     }
+}
+
+fn builtin_schema(namespace: XmpNamespace) -> Schema {
+    Schema::new(Namespace::new(namespace.prefix(), namespace.url()))
+        .name(format!("{} schema", namespace.name()))
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
