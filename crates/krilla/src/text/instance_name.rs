@@ -10,20 +10,20 @@ use skrifa::raw::types::{Fixed, NameId};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider};
 
+use crate::text::cid::MAX_POSTSCRIPT_NAME_LEN;
 use crate::text::Tag;
 use crate::util::stable_hash128;
 
-/// The maximum length of a PostScript name.
-const MAX_LEN: usize = 127;
 /// The length of a hyphen, a 128-bit hash in hexadecimal and three periods,
-/// which follow the family prefix in a last resort name.
+/// which end a last resort name.
 const LAST_RESORT_LEN: usize = 1 + 32 + 3;
 
 /// Generate the PostScript name of the instance of a variable font at the given
 /// variation coordinates.
 ///
 /// Returns `None` if the coordinates select the default instance, which is named by
-/// name ID 6, or if the font has no family name to derive a name from.
+/// name ID 6, or if the font names neither the instance nor its family in a way a
+/// name can be derived from.
 pub(crate) fn instance_postscript_name(
     font_ref: &FontRef<'_>,
     var_coords: &[(Tag, f32)],
@@ -57,60 +57,78 @@ pub(crate) fn instance_postscript_name(
         return None;
     }
 
-    let mut prefix = [
+    let named_instance = fvar.instances().ok().and_then(|instances| {
+        instances.iter().find_map(|instance| {
+            let instance = instance.ok()?;
+            let coordinates = instance.coordinates.iter().map(|c| c.get());
+            coordinates.eq(coords.iter().copied()).then_some(instance)
+        })
+    });
+
+    // A PostScript name that the font gives a named instance doesn't need a prefix.
+    if let Some(name) = named_instance
+        .as_ref()
+        .and_then(|instance| instance.post_script_name_id)
+        .and_then(|id| name_string(font_ref, id))
+        .filter(|name| !name.is_empty())
+    {
+        return Some(shorten(&name, &name));
+    }
+
+    let prefix = [
         NameId::VARIATIONS_POSTSCRIPT_NAME_PREFIX,
         NameId::TYPOGRAPHIC_FAMILY_NAME,
         NameId::FAMILY_NAME,
     ]
     .into_iter()
     .find_map(|id| name_string(font_ref, id))
-    .map(alphanumeric)?;
-    // Leave room for the identifier of a last resort name.
-    prefix.truncate(MAX_LEN - LAST_RESORT_LEN);
-    if prefix.is_empty() {
-        return None;
-    }
+    .map(alphanumeric)
+    .filter(|prefix| !prefix.is_empty())?;
 
-    let named_instance = fvar.instances().ok()?.iter().find_map(|instance| {
-        let instance = instance.ok()?;
-        let coordinates = instance.coordinates.iter().map(|c| c.get());
-        coordinates.eq(coords.iter().copied()).then_some(instance)
-    });
+    let subfamily = named_instance
+        .and_then(|instance| name_string(font_ref, instance.subfamily_name_id))
+        .map(alphanumeric)
+        .filter(|subfamily| !subfamily.is_empty());
 
-    let named_instance_name = named_instance.and_then(|instance| {
-        instance
-            .post_script_name_id
-            .and_then(|id| name_string(font_ref, id))
-            .filter(|name| !name.is_empty())
-            .or_else(|| {
-                let subfamily = alphanumeric(name_string(font_ref, instance.subfamily_name_id)?);
-                (!subfamily.is_empty()).then(|| format!("{prefix}-{subfamily}"))
-            })
-    });
-
-    let name = named_instance_name.unwrap_or_else(|| {
-        let mut name = prefix.clone();
-        for (axis, coord) in axes.iter().zip(&coords) {
-            if axis.default_value() != *coord {
-                name.push('_');
-                write_fixed(&mut name, *coord);
-                name.extend(
-                    axis.axis_tag()
-                        .to_be_bytes()
-                        .into_iter()
-                        .filter(u8::is_ascii_alphanumeric)
-                        .map(char::from),
-                );
+    let name = subfamily.map_or_else(
+        || {
+            let mut name = prefix.clone();
+            for (axis, coord) in axes.iter().zip(&coords) {
+                if axis.default_value() != *coord {
+                    name.push('_');
+                    write_fixed(&mut name, *coord);
+                    name.extend(
+                        axis.axis_tag()
+                            .to_be_bytes()
+                            .into_iter()
+                            .filter(u8::is_ascii_alphanumeric)
+                            .map(char::from),
+                    );
+                }
             }
-        }
-        name
-    });
+            name
+        },
+        |subfamily| format!("{prefix}-{subfamily}"),
+    );
 
-    if name.len() > MAX_LEN {
-        return Some(format!("{prefix}-{:032X}...", stable_hash128(&name)));
+    Some(shorten(&name, &prefix))
+}
+
+/// Return `name` if it is short enough to be written into a PDF.
+///
+/// Otherwise, return a last resort name: as much of `stem` as fits, a hyphen, a hash
+/// of the full name and three periods. Distinct names thus stay distinct.
+fn shorten(name: &str, stem: &str) -> String {
+    if name.len() <= MAX_POSTSCRIPT_NAME_LEN {
+        return name.to_string();
     }
 
-    Some(name)
+    let mut end = stem.len().min(MAX_POSTSCRIPT_NAME_LEN - LAST_RESORT_LEN);
+    while !stem.is_char_boundary(end) {
+        end -= 1;
+    }
+
+    format!("{}-{:032X}...", &stem[..end], stable_hash128(name))
 }
 
 fn name_string(font_ref: &FontRef<'_>, id: NameId) -> Option<String> {
@@ -193,9 +211,9 @@ mod tests {
     use skrifa::FontRef;
 
     use super::{instance_postscript_name, write_fixed};
+    use crate::text::cid::MAX_POSTSCRIPT_NAME_LEN;
     use crate::text::Tag;
     use crate::util::test_utils::{CANTARELL_VAR, NOTO_SANS_VAR};
-    use crate::Data;
 
     fn fixed(value: Fixed) -> String {
         let mut name = String::new();
@@ -203,13 +221,88 @@ mod tests {
         name
     }
 
-    fn name(data: &Data, coords: &[(&[u8; 4], f32)]) -> Option<String> {
-        let font_ref = FontRef::new(data.as_ref()).unwrap();
+    fn name(data: &[u8], coords: &[(&[u8; 4], f32)]) -> Option<String> {
+        let font_ref = FontRef::new(data).unwrap();
         let coords = coords
             .iter()
             .map(|(tag, value)| (Tag::new(tag), *value))
             .collect::<Vec<_>>();
         instance_postscript_name(&font_ref, &coords)
+    }
+
+    /// Build a font with only the `fvar` and `name` tables, which is all that naming an
+    /// instance reads.
+    ///
+    /// - `names`: language ID, name ID and string of each name record.
+    /// - `axes`: tag, minimum, default and maximum value of each axis.
+    /// - `instances`: subfamily name ID, PostScript name ID and coordinates of each
+    ///   named instance.
+    fn test_font(
+        names: &[(u16, u16, &str)],
+        axes: &[(&[u8; 4], f64, f64, f64)],
+        instances: &[(u16, Option<u16>, &[f64])],
+    ) -> Vec<u8> {
+        fn fixed(value: f64) -> [u8; 4] {
+            Fixed::from_f64(value).to_bits().to_be_bytes()
+        }
+
+        let mut names = names.to_vec();
+        names.sort_by_key(|&(language, id, _)| (language, id));
+        let mut name = vec![];
+        let mut strings = vec![];
+        name.extend(0u16.to_be_bytes());
+        name.extend((names.len() as u16).to_be_bytes());
+        name.extend((6 + 12 * names.len() as u16).to_be_bytes());
+        for (language, id, string) in names {
+            let bytes = string
+                .encode_utf16()
+                .flat_map(u16::to_be_bytes)
+                .collect::<Vec<_>>();
+            for field in [3, 1, language, id, bytes.len() as u16, strings.len() as u16] {
+                name.extend(field.to_be_bytes());
+            }
+            strings.extend(bytes);
+        }
+        name.extend(strings);
+
+        let has_postscript_names = instances.iter().any(|(_, id, _)| id.is_some());
+        let instance_size = axes.len() * 4 + if has_postscript_names { 6 } else { 4 };
+        let mut fvar = vec![];
+        for field in [1, 0, 16, 2, axes.len(), 20, instances.len(), instance_size] {
+            fvar.extend((field as u16).to_be_bytes());
+        }
+        for &(tag, min, default, max) in axes {
+            fvar.extend(tag);
+            fvar.extend([fixed(min), fixed(default), fixed(max)].concat());
+            fvar.extend([0, 0, 1, 0]);
+        }
+        for &(subfamily, postscript_name, coordinates) in instances {
+            fvar.extend(subfamily.to_be_bytes());
+            fvar.extend([0, 0]);
+            fvar.extend(coordinates.iter().flat_map(|value| fixed(*value)));
+            if has_postscript_names {
+                fvar.extend(postscript_name.unwrap_or(0xFFFF).to_be_bytes());
+            }
+        }
+
+        let mut font = vec![];
+        font.extend(0x00010000u32.to_be_bytes());
+        font.extend([0, 2, 0, 32, 0, 1, 0, 0]);
+        let fvar_offset = 12 + 2 * 16;
+        let name_offset = fvar_offset + fvar.len().next_multiple_of(4);
+        for (tag, offset, len) in [
+            (b"fvar", fvar_offset, fvar.len()),
+            (b"name", name_offset, name.len()),
+        ] {
+            font.extend(tag);
+            font.extend(0u32.to_be_bytes());
+            font.extend((offset as u32).to_be_bytes());
+            font.extend((len as u32).to_be_bytes());
+        }
+        font.extend(&fvar);
+        font.resize(name_offset, 0);
+        font.extend(&name);
+        font
     }
 
     #[test]
@@ -240,29 +333,33 @@ mod tests {
 
     #[test]
     fn default_instance() {
-        assert_eq!(name(&NOTO_SANS_VAR, &[]), None);
-        assert_eq!(name(&NOTO_SANS_VAR, &[(b"wght", 400.0)]), None);
-        assert_eq!(name(&NOTO_SANS_VAR, &[(b"wdth", 120.0)]), None);
-        assert_eq!(name(&NOTO_SANS_VAR, &[(b"slnt", -10.0)]), None);
+        assert_eq!(name(NOTO_SANS_VAR.as_ref(), &[]), None);
+        assert_eq!(name(NOTO_SANS_VAR.as_ref(), &[(b"wght", 400.0)]), None);
+        assert_eq!(name(NOTO_SANS_VAR.as_ref(), &[(b"wdth", 120.0)]), None);
+        assert_eq!(name(NOTO_SANS_VAR.as_ref(), &[(b"slnt", -10.0)]), None);
     }
 
     #[test]
     fn named_instance() {
         assert_eq!(
-            name(&NOTO_SANS_VAR, &[(b"wght", 100.0)]).as_deref(),
+            name(NOTO_SANS_VAR.as_ref(), &[(b"wght", 100.0)]).as_deref(),
             Some("NotoSans-Thin")
         );
         assert_eq!(
-            name(&NOTO_SANS_VAR, &[(b"wght", 900.0), (b"wdth", 62.5)]).as_deref(),
+            name(NOTO_SANS_VAR.as_ref(), &[(b"wght", 900.0), (b"wdth", 62.5)]).as_deref(),
             Some("NotoSans-ExtraCondensedBlack")
         );
         // Values are clamped, and the last value for an axis is used.
         assert_eq!(
-            name(&NOTO_SANS_VAR, &[(b"wght", 300.0), (b"wght", 1000.0)]).as_deref(),
+            name(
+                NOTO_SANS_VAR.as_ref(),
+                &[(b"wght", 300.0), (b"wght", 1000.0)]
+            )
+            .as_deref(),
             Some("NotoSans-Black")
         );
         assert_eq!(
-            name(&CANTARELL_VAR, &[(b"wght", 800.0)]).as_deref(),
+            name(CANTARELL_VAR.as_ref(), &[(b"wght", 800.0)]).as_deref(),
             Some("Cantarell-ExtraBold")
         );
     }
@@ -270,16 +367,78 @@ mod tests {
     #[test]
     fn arbitrary_instance() {
         assert_eq!(
-            name(&NOTO_SANS_VAR, &[(b"wght", 650.0)]).as_deref(),
+            name(NOTO_SANS_VAR.as_ref(), &[(b"wght", 650.0)]).as_deref(),
             Some("NotoSans_650wght")
         );
         assert_eq!(
-            name(&NOTO_SANS_VAR, &[(b"wght", 350.5), (b"wdth", 80.0)]).as_deref(),
+            name(NOTO_SANS_VAR.as_ref(), &[(b"wght", 350.5), (b"wdth", 80.0)]).as_deref(),
             Some("NotoSans_350.5wght_80wdth")
         );
         assert_eq!(
-            name(&NOTO_SANS_VAR, &[(b"wdth", 70.0)]).as_deref(),
+            name(NOTO_SANS_VAR.as_ref(), &[(b"wdth", 70.0)]).as_deref(),
             Some("NotoSans_70wdth")
         );
+    }
+
+    #[test]
+    fn long_names() {
+        const WGHT: (&[u8; 4], f64, f64, f64) = (b"wght", 100.0, 400.0, 900.0);
+        const WDTH: (&[u8; 4], f64, f64, f64) = (b"wdth", 50.0, 100.0, 100.0);
+        let long = |family: &str| test_font(&[(0x409, 1, family)], &[WGHT, WDTH], &[]);
+
+        // Names up to the limit are kept in full, even if the prefix alone is long.
+        let one = long(&format!("{}One", "A".repeat(95)));
+        let two = long(&format!("{}Two", "A".repeat(95)));
+        let one = name(&one, &[(b"wght", 650.0)]).unwrap();
+        let two = name(&two, &[(b"wght", 650.0)]).unwrap();
+        assert_eq!(one, format!("{}One_650wght", "A".repeat(95)));
+        assert_eq!(two, format!("{}Two_650wght", "A".repeat(95)));
+
+        // Longer names are replaced by last resort names that stay distinct.
+        let font = long(&"Long".repeat(25));
+        let narrow = name(&font, &[(b"wght", 650.0), (b"wdth", 75.0)]).unwrap();
+        let wide = name(&font, &[(b"wght", 650.0), (b"wdth", 80.0)]).unwrap();
+        assert_ne!(narrow, wide);
+        for name in [&narrow, &wide] {
+            assert_eq!(name.len(), MAX_POSTSCRIPT_NAME_LEN);
+            assert!(name.starts_with("LongLong"));
+            assert!(name.ends_with("..."));
+        }
+    }
+
+    #[test]
+    fn postscript_name_without_family_prefix() {
+        let font = test_font(
+            &[
+                (0x411, 1, "游ゴシック"),
+                (0x409, 256, "Thin"),
+                (0x409, 257, "YuGothic-Thin"),
+            ],
+            &[(b"wght", 100.0, 400.0, 900.0)],
+            &[(256, Some(257), &[100.0])],
+        );
+        assert_eq!(
+            name(&font, &[(b"wght", 100.0)]).as_deref(),
+            Some("YuGothic-Thin")
+        );
+        // Without an ASCII family name, other instances can't be named.
+        assert_eq!(name(&font, &[(b"wght", 650.0)]), None);
+    }
+
+    #[test]
+    fn long_postscript_name() {
+        let postscript_name = "Instance".repeat(20);
+        let font = test_font(
+            &[
+                (0x409, 1, "Family"),
+                (0x409, 256, "Thin"),
+                (0x409, 257, &postscript_name),
+            ],
+            &[(b"wght", 100.0, 400.0, 900.0)],
+            &[(256, Some(257), &[100.0])],
+        );
+        let name = name(&font, &[(b"wght", 100.0)]).unwrap();
+        assert_eq!(name.len(), MAX_POSTSCRIPT_NAME_LEN);
+        assert!(name.starts_with("InstanceInstance"));
     }
 }
