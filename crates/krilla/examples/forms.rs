@@ -3,7 +3,7 @@
 use std::path;
 use std::path::PathBuf;
 
-use krilla::action::ResetFormAction;
+use krilla::action::{ActionFieldFilter, ResetFormAction};
 use krilla::color::rgb;
 use krilla::form::kind::ChoiceOption;
 use krilla::form::variable_text::{FormFont, TextAlignment, VariableAppearance};
@@ -395,7 +395,10 @@ fn main() {
     // Set an on click action (reset all fields except for button itself).
     // Some PDF readers erase the button's appearance if it is reset, making it invisible.
     reset_button_widget.set_action_mouse_press(
-        ResetFormAction::Exclude(vec!["actions.reset-button".into()]).into(),
+        ResetFormAction::new(ActionFieldFilter::Exclude(vec![
+            "actions.reset-button".into()
+        ]))
+        .into(),
     );
 
     // Finish the surface.
