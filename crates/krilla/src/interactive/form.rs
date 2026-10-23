@@ -729,32 +729,37 @@ impl FormField<kind::ListBox> {
         self
     }
 
-    /// Set the value (selected options) of the listbox field.
+    /// Set the value (index of selected [options](`Self::set_options`))
+    /// of the listbox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_value(&mut self, value: Vec<String>) {
+    pub fn set_value(&mut self, mut value: Vec<usize>) {
+        value.sort_unstable(); // indexes must be sorted in the `/I` entry
         self.kind.value = value;
     }
 
-    /// Set the value (selected options) of the listbox field.
+    /// Set the value (index of selected [options](`Self::set_options`))
+    /// of the listbox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_value(mut self, value: Vec<String>) -> Self {
+    pub fn with_value(mut self, value: Vec<usize>) -> Self {
         self.set_value(value);
         self
     }
 
-    /// Set the default value (selected options) of the listbox field.
+    /// Set the default value (index of selected [options](`Self::set_options`))
+    /// of the listbox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_default_value(&mut self, value: Vec<String>) {
+    pub fn set_default_value(&mut self, value: Vec<usize>) {
         self.kind.default_value = value;
     }
 
-    /// Set the default value (selected options) of the listbox field.
+    /// Set the default value (index of selected [options](`Self::set_options`))
+    /// of the listbox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_default_value(mut self, value: Vec<String>) -> Self {
+    pub fn with_default_value(mut self, value: Vec<usize>) -> Self {
         self.set_default_value(value);
         self
     }
@@ -849,32 +854,36 @@ impl FormField<kind::ComboBox> {
         self
     }
 
-    /// Set the value (selected option) of the combobox field.
+    /// Set the value (index of selected [option](`Self::set_options`))
+    /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_value(&mut self, value: String) {
+    pub fn set_value(&mut self, value: usize) {
         self.kind.value = Some(value);
     }
 
-    /// Set the value (selected option) of the combobox field.
+    /// Set the value (index of selected [option](`Self::set_options`))
+    /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_value(mut self, value: String) -> Self {
+    pub fn with_value(mut self, value: usize) -> Self {
         self.set_value(value);
         self
     }
 
-    /// Set the default value (selected option) of the combobox field.
+    /// Set the default value (index of selected [option](`Self::set_options`))
+    /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_default_value(&mut self, value: String) {
+    pub fn set_default_value(&mut self, value: usize) {
         self.kind.default_value = Some(value);
     }
 
-    /// Set the default value (selected option) of the combobox field.
+    /// Set the default value (index of selected [option](`Self::set_options`))
+    /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_default_value(mut self, value: String) -> Self {
+    pub fn with_default_value(mut self, value: usize) -> Self {
         self.set_default_value(value);
         self
     }
@@ -1106,23 +1115,35 @@ pub mod kind {
     #[derive(Debug, Clone, Default)]
     pub struct ListBox {
         pub(super) variable_text: VariableText,
-        pub(super) value: Vec<String>,
-        pub(super) default_value: Vec<String>,
+        pub(super) value: Vec<usize>,
+        pub(super) default_value: Vec<usize>,
         pub(super) options: Vec<ChoiceOption>,
+    }
+
+    impl ListBox {
+        fn get_option_value<'a>(&'a self, index: usize) -> TextStr<'a> {
+            self.options
+                .get(index)
+                .map(|option| TextStr(&option.value))
+                .expect("listbox value index is greater than options length")
+        }
     }
 
     impl SerializableField for ListBox {
         fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
             field.field_type(pdf_writer::types::FieldType::Choice);
+            field.choice_indices(self.value.iter().map(|i| *i as i32));
+
+            let mut value = self.value.iter().map(|i| self.get_option_value(*i));
             match self.value.len() {
-                0 => field.choice_value(None),
-                1 => field.choice_value(Some(TextStr(&self.value[0]))),
-                _ => field.choice_values(self.value.iter().map(|s| TextStr(s))),
+                0 | 1 => field.choice_value(value.next()),
+                _ => field.choice_values(value),
             };
+
+            let mut default_value = self.default_value.iter().map(|i| self.get_option_value(*i));
             match self.default_value.len() {
-                0 => field.choice_default_value(None),
-                1 => field.choice_default_value(Some(TextStr(&self.default_value[0]))),
-                _ => field.choice_default_values(self.default_value.iter().map(|s| TextStr(s))),
+                0 | 1 => field.choice_default_value(default_value.next()),
+                _ => field.choice_default_values(default_value),
             };
 
             let mut options = field.choice_options();
@@ -1140,16 +1161,33 @@ pub mod kind {
     #[derive(Debug, Clone, Default)]
     pub struct ComboBox {
         pub(super) variable_text: VariableText,
-        pub(super) value: Option<String>,
-        pub(super) default_value: Option<String>,
+        pub(super) value: Option<usize>,
+        pub(super) default_value: Option<usize>,
         pub(super) options: Vec<ChoiceOption>,
+    }
+
+    impl ComboBox {
+        fn get_option_value<'a>(&'a self, index: usize) -> TextStr<'a> {
+            self.options
+                .get(index)
+                .map(|option| TextStr(&option.value))
+                .expect("combobox value index is greater than options length")
+        }
     }
 
     impl SerializableField for ComboBox {
         fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
             field.field_type(pdf_writer::types::FieldType::Choice);
-            field.choice_value(self.value.as_deref().map(TextStr));
-            field.choice_default_value(self.default_value.as_deref().map(TextStr));
+
+            if let Some(i) = self.value {
+                field.choice_indices([i as i32]);
+            }
+
+            let value = self.value.map(|i| self.get_option_value(i));
+            field.choice_value(value);
+
+            let default_value = self.default_value.map(|i| self.get_option_value(i));
+            field.choice_default_value(default_value);
 
             let mut options = field.choice_options();
             for opt in &self.options {

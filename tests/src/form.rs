@@ -218,7 +218,7 @@ fn forms_combobox(d: &mut Document) {
     let mut combobox_field = FormField::combobox("combobox_field".to_string());
     combobox_field.set_alt_name("A combobox field".to_string());
     combobox_field.set_mapping_name("combo1".to_string());
-    combobox_field.set_value("foo".to_string());
+    combobox_field.set_value(0);
     combobox_field.set_appearance(variable_appearance(paint));
     combobox_field.set_edit(true);
     combobox_field.set_spellcheck(false);
@@ -267,9 +267,18 @@ fn forms_listbox(d: &mut Document) {
         );
         stream_surface.draw_text(
             Point::from_xy(5.0, 20.0),
-            font,
+            font.clone(),
             10.0,
             "bar",
+            false,
+            TextDirection::Auto,
+        );
+        stream_surface.set_fill(Some(Fill::default()));
+        stream_surface.draw_text(
+            Point::from_xy(5.0, 30.0),
+            font,
+            10.0,
+            "quux",
             false,
             TextDirection::Auto,
         );
@@ -285,12 +294,13 @@ fn forms_listbox(d: &mut Document) {
     let mut listbox_field = FormField::listbox("listbox_field".to_string());
     listbox_field.set_alt_name("A listbox field".to_string());
     listbox_field.set_mapping_name("list1".to_string());
-    listbox_field.set_value(vec!["foo".to_string()]);
+    listbox_field.set_value(vec![1, 0]); // unsorted to check if output is sorted
     listbox_field.set_appearance(variable_appearance(paint));
     listbox_field.set_multiple_options(true);
     listbox_field.set_options(vec![
         ChoiceOption::new("foo".to_string(), Some("Foo".to_string())),
         ChoiceOption::new("bar".to_string(), None),
+        ChoiceOption::new("quux".to_string(), None),
     ]);
 
     let listbox_widget =
