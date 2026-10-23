@@ -16,6 +16,7 @@ use tiny_skia_path::FiniteF32;
 use yoke::{Yoke, Yokeable};
 
 use crate::geom::Rect;
+use crate::text::instance_name::instance_postscript_name;
 use crate::text::GlyphId;
 use crate::util::Prehashed;
 use crate::Data;
@@ -410,7 +411,7 @@ impl FontInfo {
                 units_per_em as f32,
             )?);
 
-        let postscript_name = {
+        let postscript_name = instance_postscript_name(font_ref, var_coords).or_else(|| {
             if let Ok(name) = font_ref.name() {
                 name.name_record().iter().find_map(|n| {
                     if n.name_id.get() == NameId::POSTSCRIPT_NAME {
@@ -424,7 +425,7 @@ impl FontInfo {
             } else {
                 None
             }
-        };
+        });
         #[cfg(feature = "raster-images")]
         let is_apple_color_emoji = font_ref.bitmap_strikes().format() == Some(BitmapFormat::Sbix)
             && font_ref
