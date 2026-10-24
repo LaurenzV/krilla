@@ -29,7 +29,7 @@ use crate::util::Deferred;
 /// The settings of a page.
 pub struct PageSettings {
     /// The media box of the page, which defines the visible area of the surface.
-    media_box: Option<Rect>,
+    media_box: Rect,
     /// The page label of the page.
     page_label: PageLabel,
     /// The size of the surface.
@@ -48,7 +48,7 @@ impl PageSettings {
     /// Create new page settings and define the size of the page surface.
     pub fn new(size: Size) -> Self {
         Self {
-            media_box: Some(Rect::from_xywh(0.0, 0.0, size.width(), size.height()).unwrap()),
+            media_box: Rect::from_xywh(0.0, 0.0, size.width(), size.height()).unwrap(),
             surface_size: size,
             ..Default::default()
         }
@@ -67,10 +67,7 @@ impl PageSettings {
     /// so it can be distinct from the size of the surface, but in the majority
     /// of the cases you want them to match in size and align the media box
     /// at the origin of the coordinate system.
-    ///
-    /// If set to `None`, the dimensions will be chosen in such a way that all
-    /// contents fit on the page.
-    pub fn with_media_box(mut self, media_box: Option<Rect>) -> PageSettings {
+    pub fn with_media_box(mut self, media_box: Rect) -> PageSettings {
         self.media_box = media_box;
         self
     }
@@ -82,7 +79,7 @@ impl PageSettings {
     }
 
     /// The current media box.
-    pub(crate) fn media_box(&self) -> Option<Rect> {
+    pub(crate) fn media_box(&self) -> Rect {
         self.media_box
     }
 
@@ -169,7 +166,7 @@ impl Default for PageSettings {
         let height = 842.0;
 
         Self {
-            media_box: Some(Rect::from_xywh(0.0, 0.0, width, height).unwrap()),
+            media_box: Rect::from_xywh(0.0, 0.0, width, height).unwrap(),
             surface_size: Size::from_wh(width, height).unwrap(),
             page_label: PageLabel::default(),
             crop_box: None,
@@ -282,11 +279,7 @@ impl<'a> Page<'a> {
     /// Get the surface of the page to draw on. Calling this multiple times
     /// on the same page will reset any previous drawings.
     pub fn surface(&mut self) -> Surface<'_> {
-        let root_builder = ContentBuilder::new(
-            self.root_transform(),
-            self.page_settings.media_box.is_none(),
-            self.sc,
-        );
+        let root_builder = ContentBuilder::new(self.root_transform(), false, self.sc);
 
         let finish_fn = Box::new(|stream, num_mcids| {
             self.page_stream = stream;
@@ -374,7 +367,6 @@ pub(crate) struct InternalPage {
     pub page_settings: PageSettings,
     pub page_index: usize,
     pub struct_parent: Option<i32>,
-    pub bbox: Rect,
     pub annotations: Vec<Annotation>,
 }
 
@@ -413,7 +405,6 @@ impl InternalPage {
             stream_ref,
             stream_chunk,
             struct_parent,
-            bbox: stream.bbox,
             annotations,
             page_settings,
             page_index,
@@ -458,8 +449,7 @@ impl InternalPage {
             .unwrap()
         };
 
-        // media box is mandatory, so we need to fall back to the default bbox
-        let media_box = transform_rect(self.page_settings.media_box().unwrap_or(self.bbox));
+        let media_box = transform_rect(self.page_settings.media_box());
         page.media_box(media_box.to_pdf_rect());
 
         // the remaining type of box are not mandatory, so we only set them if they are present
