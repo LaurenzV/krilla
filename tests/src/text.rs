@@ -490,6 +490,19 @@ fn text_variable_font(surface: &mut Surface) {
     );
 }
 
+#[snapshot]
+fn text_variable_font_names(page: &mut Page) {
+    // The subsets are named NotoSans-Regular, NotoSans-Thin and NotoSans_650wght_80wdth.
+    let coords = vec![
+        vec![],
+        vec![(Tag::new(b"wght"), 100.0)],
+        vec![(Tag::new(b"wght"), 650.0), (Tag::new(b"wdth"), 80.0)],
+    ];
+
+    let mut surface = page.surface();
+    variable_impl(&mut surface, coords, NOTO_SANS_VAR.clone(), "Hi");
+}
+
 #[visreg]
 fn text_variable_font_cff2(surface: &mut Surface) {
     let coords = vec![

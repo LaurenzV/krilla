@@ -22,6 +22,7 @@ pub(crate) mod cid;
 pub(crate) mod font;
 pub(crate) mod glyph;
 pub(crate) mod group;
+mod instance_name;
 #[cfg(feature = "simple-text")]
 pub(crate) mod shape;
 pub(crate) mod type3;
