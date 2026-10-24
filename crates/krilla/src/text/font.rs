@@ -3,8 +3,6 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::Arc;
 
-#[cfg(feature = "simple-text")]
-use harfrust::{Shaper, ShaperData, ShaperInstance};
 #[cfg(feature = "raster-images")]
 use skrifa::bitmap::BitmapFormat;
 use skrifa::instance::{Location, LocationRef, Size};
@@ -118,35 +116,24 @@ impl Font {
         let font_ref = FontRef::from_index(data.as_ref(), index).ok()?;
         let font_info = FontInfo::new(&font_ref, variation_coords)?;
 
-        Font::new_with_info(data.clone(), &font_ref, Arc::new(font_info))
+        Font::new_with_info(data.clone(), Arc::new(font_info))
     }
 
-    #[cfg_attr(not(feature = "simple-text"), allow(unused_variables))]
-    pub(crate) fn new_with_info(
-        data: Data,
-        font_ref: &FontRef<'_>,
-        font_info: Arc<FontInfo>,
-    ) -> Option<Self> {
+    pub(crate) fn new_with_info(data: Data, font_info: Arc<FontInfo>) -> Option<Self> {
         #[cfg(feature = "simple-text")]
-        let (shaper_data, shaper_instance) = {
-            let shaper_data = ShaperData::new(font_ref);
-            let shaper_instance = ShaperInstance::from_variations(
-                font_ref,
-                font_info
-                    .var_coords
-                    .iter()
-                    .map(|variation| (harfrust::Tag::new(variation.0.get()), variation.1.get())),
-            );
-            (shaper_data, shaper_instance)
-        };
+        let shaping_font =
+            {
+                let font = harfrust::Font::new(data.0.clone(), font_info.index)?;
+                font.instance_builder()
+                    .variations(font_info.var_coords.iter().map(|variation| {
+                        (harfrust::Tag::new(variation.0.get()), variation.1.get())
+                    }))
+                    .build()
+            };
 
         let yoke_data = YokeData {
             data: data.0.clone(),
             location: font_info.location.clone(),
-            #[cfg(feature = "simple-text")]
-            shaper_data,
-            #[cfg(feature = "simple-text")]
-            shaper_instance,
         };
 
         let font_ref_yoke = Yoke::<FontRefYoke<'static>, Box<YokeData>>::attach_to_cart(
@@ -158,12 +145,6 @@ impl Font {
                     font_ref: font_ref.clone(),
                     glyph_metrics: font_ref.glyph_metrics(Size::unscaled(), &data.location),
                     outline_glyphs: font_ref.outline_glyphs(),
-                    #[cfg(feature = "simple-text")]
-                    shaper: data
-                        .shaper_data
-                        .shaper(&font_ref)
-                        .instance(Some(&data.shaper_instance))
-                        .build(),
                 }
             },
         );
@@ -171,6 +152,8 @@ impl Font {
         Some(Font(Arc::new(Prehashed::new(Repr {
             font_data: data,
             font_ref_yoke,
+            #[cfg(feature = "simple-text")]
+            shaping_font,
             font_info,
         }))))
     }
@@ -247,8 +230,8 @@ impl Font {
     }
 
     #[cfg(feature = "simple-text")]
-    pub(crate) fn shaper(&self) -> &Shaper<'_> {
-        &self.0.font_ref_yoke.get().shaper
+    pub(crate) fn shaping_font(&self) -> &harfrust::Font {
+        &self.0.shaping_font
     }
 
     pub(crate) fn glyph_metrics(&self) -> &GlyphMetrics<'_> {
@@ -303,10 +286,6 @@ impl Debug for Font {
 struct YokeData {
     data: Arc<dyn AsRef<[u8]> + Send + Sync>,
     location: Location,
-    #[cfg(feature = "simple-text")]
-    shaper_data: ShaperData,
-    #[cfg(feature = "simple-text")]
-    shaper_instance: ShaperInstance,
 }
 
 impl Deref for YokeData {
@@ -356,6 +335,8 @@ struct Repr {
     font_info: Arc<FontInfo>,
     font_data: Data,
     font_ref_yoke: Yoke<FontRefYoke<'static>, Box<YokeData>>,
+    #[cfg(feature = "simple-text")]
+    shaping_font: harfrust::Font,
 }
 
 impl Hash for Repr {
@@ -475,6 +456,4 @@ struct FontRefYoke<'a> {
     pub font_ref: FontRef<'a>,
     pub glyph_metrics: GlyphMetrics<'a>,
     pub outline_glyphs: OutlineGlyphCollection<'a>,
-    #[cfg(feature = "simple-text")]
-    pub shaper: Shaper<'a>,
 }
