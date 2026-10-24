@@ -50,8 +50,7 @@ pub(crate) struct ContentBuilder {
     uses_mask: bool,
     // Calculating the bbox of text is expensive, so we should avoid doing it if not needed.
     // The only time we really need it is if we are currently inside of an XObject, where we
-    // need to provide a bbox of all its contents. If we are on the main page stream, we only
-    // need it if automatic size detection is enabled.
+    // need to provide a bbox of all its contents.
     bbox_important: bool,
     /// A temporary buffer that's reused across the builder.
     scratch: Vec<u8>,

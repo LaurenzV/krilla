@@ -229,7 +229,7 @@ fn pdf_embedded_as_xobject_basic(surface: &mut Surface) {
 // it displays correctly. The PDF looks correctly when opened in viewer,
 // but not when rendered via Quartz directly, hence why we don't add it
 // in CI.
-#[visreg(pdfium)]
+#[visreg(pdfium, width = 1224, height = 969.6)]
 fn pdf_embedded_as_xobject_typst_issue7269(surface: &mut Surface) {
     let pdf = load_pdf("typst_issue7269.pdf");
     surface.draw_pdf_page(&pdf, Size::from_wh(1224.0, 969.6).unwrap(), 0);

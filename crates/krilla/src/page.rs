@@ -29,11 +29,9 @@ use crate::util::Deferred;
 /// The settings of a page.
 pub struct PageSettings {
     /// The media box of the page, which defines the visible area of the surface.
-    media_box: Option<Rect>,
+    media_box: Rect,
     /// The page label of the page.
     page_label: PageLabel,
-    /// The size of the surface.
-    surface_size: Size,
     /// The crop box of the page
     crop_box: Option<Rect>,
     /// The bleed box of the page
@@ -45,34 +43,30 @@ pub struct PageSettings {
 }
 
 impl PageSettings {
-    /// Create new page settings and define the size of the page surface.
-    pub fn new(size: Size) -> Self {
+    /// Create new page settings with the given media box.
+    ///
+    /// The media box defines the visible area of the page in the coordinate system
+    /// of its surface. In the majority of cases, you want it to be aligned at the
+    /// origin of the coordinate system, which is what [`PageSettings::from_wh`] does.
+    pub fn new(media_box: Rect) -> Self {
         Self {
-            media_box: Some(Rect::from_xywh(0.0, 0.0, size.width(), size.height()).unwrap()),
-            surface_size: size,
+            media_box,
             ..Default::default()
         }
     }
 
-    /// Try to create new page settings with the specified width and height.
+    /// Try to create new page settings with the specified width and height and a
+    /// media box that is aligned at the origin.
     ///
     /// Returns `None` if either the width or the height is not > 0.
     pub fn from_wh(width: f32, height: f32) -> Option<Self> {
-        Some(Self::new(Size::from_wh(width, height)?))
-    }
-
-    /// Change the media box.
-    ///
-    /// The media box defines the visible area of the page when opening the PDF,
-    /// so it can be distinct from the size of the surface, but in the majority
-    /// of the cases you want them to match in size and align the media box
-    /// at the origin of the coordinate system.
-    ///
-    /// If set to `None`, the dimensions will be chosen in such a way that all
-    /// contents fit on the page.
-    pub fn with_media_box(mut self, media_box: Option<Rect>) -> PageSettings {
-        self.media_box = media_box;
-        self
+        let size = Size::from_wh(width, height)?;
+        Some(Self::new(Rect::from_xywh(
+            0.0,
+            0.0,
+            size.width(),
+            size.height(),
+        )?))
     }
 
     /// Change the page label.
@@ -82,13 +76,13 @@ impl PageSettings {
     }
 
     /// The current media box.
-    pub(crate) fn media_box(&self) -> Option<Rect> {
+    pub(crate) fn media_box(&self) -> Rect {
         self.media_box
     }
 
-    /// The current surface size.
-    pub(crate) fn surface_size(&self) -> Size {
-        self.surface_size
+    /// The height that is used to convert from surface coordinates to PDF coordinates.
+    pub(crate) fn surface_height(&self) -> f32 {
+        self.media_box.height()
     }
 
     /// The current page label.
@@ -169,8 +163,7 @@ impl Default for PageSettings {
         let height = 842.0;
 
         Self {
-            media_box: Some(Rect::from_xywh(0.0, 0.0, width, height).unwrap()),
-            surface_size: Size::from_wh(width, height).unwrap(),
+            media_box: Rect::from_xywh(0.0, 0.0, width, height).unwrap(),
             page_label: PageLabel::default(),
             crop_box: None,
             bleed_box: None,
@@ -218,7 +211,7 @@ impl<'a> Page<'a> {
     }
 
     pub(crate) fn root_transform(&self) -> Transform {
-        page_root_transform(self.page_settings.surface_size().height())
+        page_root_transform(self.page_settings.surface_height())
     }
 
     /// Add an annotation to the page.
@@ -282,11 +275,7 @@ impl<'a> Page<'a> {
     /// Get the surface of the page to draw on. Calling this multiple times
     /// on the same page will reset any previous drawings.
     pub fn surface(&mut self) -> Surface<'_> {
-        let root_builder = ContentBuilder::new(
-            self.root_transform(),
-            self.page_settings.media_box.is_none(),
-            self.sc,
-        );
+        let root_builder = ContentBuilder::new(self.root_transform(), false, self.sc);
 
         let finish_fn = Box::new(|stream, num_mcids| {
             self.page_stream = stream;
@@ -374,7 +363,6 @@ pub(crate) struct InternalPage {
     pub page_settings: PageSettings,
     pub page_index: usize,
     pub struct_parent: Option<i32>,
-    pub bbox: Rect,
     pub annotations: Vec<Annotation>,
 }
 
@@ -413,7 +401,6 @@ impl InternalPage {
             stream_ref,
             stream_chunk,
             struct_parent,
-            bbox: stream.bbox,
             annotations,
             page_settings,
             page_index,
@@ -437,7 +424,7 @@ impl InternalPage {
                     sc,
                     chunk_container,
                     annot_ref,
-                    self.page_settings.surface_size().height(),
+                    self.page_settings.surface_height(),
                 )?;
                 annotation_refs.push((annot_ref, OnceCell::new()));
             }
@@ -452,14 +439,11 @@ impl InternalPage {
         );
 
         let transform_rect = |rect: Rect| {
-            rect.transform(page_root_transform(
-                self.page_settings.surface_size().height(),
-            ))
-            .unwrap()
+            rect.transform(page_root_transform(self.page_settings.surface_height()))
+                .unwrap()
         };
 
-        // media box is mandatory, so we need to fall back to the default bbox
-        let media_box = transform_rect(self.page_settings.media_box().unwrap_or(self.bbox));
+        let media_box = transform_rect(self.page_settings.media_box());
         page.media_box(media_box.to_pdf_rect());
 
         // the remaining type of box are not mandatory, so we only set them if they are present

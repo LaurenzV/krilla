@@ -9,11 +9,7 @@ use tiny_skia_path::PathBuilder;
 use crate::{blue_fill, green_fill, load_pdf, purple_fill, rect_to_path, red_fill};
 
 fn media_box_impl(d: &mut Document, media_box: Rect) {
-    let mut page = d.start_page_with(
-        PageSettings::from_wh(200.0, 200.0)
-            .unwrap()
-            .with_media_box(Some(media_box)),
-    );
+    let mut page = d.start_page_with(PageSettings::new(media_box));
     let mut surface = page.surface();
     surface.set_fill(Some(red_fill(0.5)));
     surface.draw_path(&rect_to_path(0.0, 0.0, 100.0, 100.0));
@@ -62,7 +58,6 @@ fn page_with_crop_bleeding_trim_art_boxes(d: &mut Document) {
     // Create page settings with different boxes
     let page_settings = PageSettings::from_wh(200.0, 200.0)
         .unwrap()
-        .with_media_box(Some(Rect::from_xywh(0.0, 0.0, 200.0, 200.0).unwrap()))
         .with_crop_box(Some(Rect::from_xywh(10.0, 10.0, 180.0, 180.0).unwrap()))
         .with_bleed_box(Some(Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap()))
         .with_trim_box(Some(Rect::from_xywh(30.0, 30.0, 140.0, 140.0).unwrap()))

@@ -47,7 +47,7 @@ fn svg_outlined_text(surface: &mut Surface) {
     );
 }
 
-#[visreg]
+#[visreg(width = 120, height = 80)]
 fn svg_resized(surface: &mut Surface) {
     surface.draw_svg(
         &sample_svg(),
@@ -56,13 +56,13 @@ fn svg_resized(surface: &mut Surface) {
     );
 }
 
-#[visreg]
+#[visreg(width = 343, height = 285)]
 fn svg_should_be_clipped(surface: &mut Surface) {
     let data =
         std::fs::read(SVGS_PATH.join("custom_paint_servers_pattern_patterns_2.svg")).unwrap();
     let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
 
-    surface.push_transform(&Transform::from_translate(100.0, 0.0));
+    surface.push_transform(&Transform::from_translate(143.0, 1.0));
     surface.draw_svg(
         &tree,
         Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
@@ -71,16 +71,18 @@ fn svg_should_be_clipped(surface: &mut Surface) {
     surface.pop();
 }
 
-#[visreg]
+#[visreg(width = 304, height = 206)]
 fn issue_199(surface: &mut Surface) {
     let data = std::fs::read(SVGS_PATH.join("issue199.svg")).unwrap();
     let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
 
+    surface.push_transform(&Transform::from_translate(2.0, 3.0));
     surface.draw_svg(
         &tree,
         Size::from_wh(tree.size().width(), tree.size().height()).unwrap(),
         SvgSettings::default(),
     );
+    surface.pop();
 }
 
 #[visreg(svg)]
