@@ -1342,6 +1342,9 @@ pub mod variable_text {
         Embedded(Font),
         */
         /// One of the 14 standard type 1 PDF fonts.
+        ///
+        /// They are not available in PDF 2.0, where finishing the document returns
+        /// [`KrillaError::StandardFont`](crate::error::KrillaError::StandardFont).
         Standard(StandardFont),
     }
 

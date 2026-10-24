@@ -2,6 +2,7 @@ use krilla::action::{
     ActionFieldFilter, HttpMethod, ResetFormAction, SubmissionFormat, SubmitFormAction,
 };
 use krilla::color::{cmyk, luma, rgb};
+use krilla::error::KrillaError;
 use krilla::form::kind::{ChoiceOption, PushButton};
 use krilla::form::variable_text::{FormFont, VariableAppearance};
 use krilla::form::{FieldGroup, FieldTree, FormField};
@@ -16,7 +17,8 @@ use krilla::Document;
 use krilla_macros::snapshot;
 
 use crate::{
-    blue_fill, green_fill, rect_to_path, red_fill, square_stream, wh_to_rect, LIBERTINUS_SERIF,
+    blue_fill, green_fill, rect_to_path, red_fill, settings_25, square_stream, wh_to_rect,
+    LIBERTINUS_SERIF,
 };
 
 #[snapshot(document)]
@@ -425,6 +427,33 @@ fn forms_button_actions(d: &mut Document) {
             submit_button_3.into(),
         ],
     });
+}
+
+#[test]
+fn forms_pdf_20_standard_font() {
+    let mut d = Document::new_with(settings_25());
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+
+    let mut surface = page.surface();
+    let appearance = square_stream(surface.stream_builder(), red_fill(1.0));
+    surface.finish();
+
+    // The default appearance of a text field uses Helvetica.
+    let mut text_field = FormField::text("text_field".to_string());
+    let text_widget =
+        text_field.new_widget(Rect::from_xywh(50.0, 0.0, 10.0, 10.0).unwrap(), appearance);
+    page.add_widget_annotation(&mut text_field, text_widget.into());
+
+    page.finish();
+
+    d.set_field_tree(FieldTree {
+        fields: vec![text_field.into()],
+    });
+
+    assert_eq!(
+        d.finish(),
+        Err(KrillaError::StandardFont(StandardFont::Helvetica))
+    );
 }
 
 fn variable_appearance(paint: Paint) -> VariableAppearance {
