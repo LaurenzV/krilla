@@ -160,9 +160,9 @@ pub(crate) enum PageInfo {
     Krilla {
         /// The reference of the page in the chunk.
         ref_: Ref,
-        /// The page size, necessary so that we can convert from PDF coordinates to
+        /// The page height, necessary so that we can convert from PDF coordinates to
         /// krilla coordinates.
-        surface_size: Size,
+        surface_height: f32,
         /// The refs of the annotations that are used by that page, and optionally
         /// a ref to their struct parent in the tag tree.
         ///
@@ -190,10 +190,10 @@ impl PageInfo {
         }
     }
 
-    pub(crate) fn size(&self) -> Size {
+    pub(crate) fn height(&self) -> f32 {
         match self {
-            PageInfo::Krilla { surface_size, .. } => *surface_size,
-            PageInfo::Pdf { size, .. } => *size,
+            PageInfo::Krilla { surface_height, .. } => *surface_height,
+            PageInfo::Pdf { size, .. } => size.height(),
         }
     }
 
@@ -608,7 +608,7 @@ impl SerializeContext {
         let ref_ = self.new_ref();
         self.page_infos.push(PageInfo::Krilla {
             ref_,
-            surface_size: page.page_settings.surface_size(),
+            surface_height: page.page_settings.surface_height(),
             // Will be populated when the page is serialized.
             annotations: vec![],
             page_label: page.page_settings.page_label().clone(),

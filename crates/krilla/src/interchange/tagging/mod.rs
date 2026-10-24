@@ -1013,7 +1013,7 @@ impl TagGroup {
                             sc.page_infos().len()
                         );
                     };
-                    let transform = page_root_transform(page_info.size().height());
+                    let transform = page_root_transform(page_info.height());
                     let actual_rect = rect.transform(transform).unwrap();
                     layout_attributes.bbox(actual_rect.to_pdf_rect());
                 }
