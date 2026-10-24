@@ -28,7 +28,7 @@ use crate::graphics::shading_function::{
 use crate::graphics::shading_pattern::ShadingPattern;
 use crate::graphics::tiling_pattern::TilingPattern;
 use crate::graphics::xobject::XObject;
-use crate::interchange::tagging::ContentTag;
+use crate::interchange::tagging::{ContentTag, XObjectTagIdentifier};
 use crate::num::NormalizedF32;
 use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
@@ -56,6 +56,7 @@ pub(crate) struct ContentBuilder {
     /// A temporary buffer that's reused across the builder.
     scratch: Vec<u8>,
     pub(crate) active_marked_content: bool,
+    pub(crate) xobject_identifier: Option<XObjectTagIdentifier>,
 }
 
 /// Stores either a device-specific color space,
@@ -101,6 +102,7 @@ impl ContentBuilder {
             bbox: None,
             scratch: Vec::new(),
             active_marked_content: false,
+            xobject_identifier: None,
         }
     }
 
@@ -124,6 +126,7 @@ impl ContentBuilder {
             self.validation_errors.into_iter().collect(),
             self.rd_builder.finish(),
             self.uses_mask,
+            self.xobject_identifier.filter(|xi| xi.mcid > 0),
         )
     }
 

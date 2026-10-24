@@ -25,7 +25,9 @@ use crate::graphics::image::Image;
 use crate::graphics::mask::Mask;
 use crate::graphics::paint::{Fill, FillRule, Stroke};
 use crate::graphics::shading_function::ShadingFunction;
-use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
+use crate::interchange::tagging::{
+    ContentTag, Identifier, PageTagIdentifier, XObjectTagIdentifier,
+};
 use crate::num::NormalizedF32;
 use crate::paint::{InnerPaint, Paint};
 #[cfg(feature = "pdf")]
@@ -180,6 +182,13 @@ impl<'a> Surface<'a> {
     /// Panics if an artifact with a required bbox has none.
     pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
         if let Some(id) = &mut self.page_identifier {
+            // Marked content can't be nested, not even across layers. For structure content
+            // items, this is also required by ISO 32000-2, 14.7.5.2, since a form XObject
+            // containing them must not be painted from within one.
+            if self.bd.has_active_marked_content() {
+                panic!("can't start marked content twice");
+            }
+
             match tag {
                 // An artifact is actually not really part of tagged PDF and doesn't have
                 // a marked content identifier, so we need to return a dummy one here. It's just
@@ -216,12 +225,20 @@ impl<'a> Surface<'a> {
                     Identifier::dummy()
                 }
                 ContentTag::Span(_) | ContentTag::Other => {
-                    self.bd.get_mut().start_marked_content_with_properties(
-                        self.sc,
-                        Some(id.mcid),
-                        tag,
-                    );
-                    id.bump().into()
+                    let builder = self.bd.get_mut();
+                    let (mcid, identifier) = match &mut builder.xobject_identifier {
+                        Some(xi) => {
+                            let xi = xi.bump();
+                            (xi.mcid, xi.into())
+                        }
+                        None => {
+                            let pi = id.bump();
+                            (pi.mcid, pi.into())
+                        }
+                    };
+
+                    builder.start_marked_content_with_properties(self.sc, Some(mcid), tag);
+                    identifier
                 }
             }
         } else {
@@ -453,9 +470,7 @@ impl<'a> Surface<'a> {
     pub fn push_mask(&mut self, mask: Mask) {
         self.push_instructions
             .push(PushInstruction::Mask(Box::new(mask)));
-        self.bd
-            .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+        self.push_sub_builder();
     }
 
     #[cfg(feature = "pdf")]
@@ -499,30 +514,48 @@ impl<'a> Surface<'a> {
             .push(PushInstruction::Opacity(opacity));
 
         if opacity != NormalizedF32::ONE {
-            self.bd
-                .sub_builders
-                .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+            self.push_sub_builder();
         }
     }
 
     /// Push a new isolated layer.
     pub fn push_isolated(&mut self) {
         self.push_instructions.push(PushInstruction::Isolated);
-        self.bd
-            .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+        self.push_sub_builder();
+    }
+
+    fn pop_sub_builder(&mut self) -> Stream {
+        let builder = self.bd.sub_builders.pop().unwrap();
+
+        if builder.active_marked_content {
+            panic!("can't pop a layer while marked content inside of it is still active");
+        }
+
+        builder.finish(self.sc)
+    }
+
+    fn push_sub_builder(&mut self) {
+        let mut builder = ContentBuilder::new(Transform::identity(), true, self.sc);
+        // The content of the layer ends up in its own form XObject, whose marked-content
+        // sequences have their own MCIDs and parent tree entry (ISO 32000-2, 14.7.5.4).
+        builder.xobject_identifier = self
+            .page_identifier
+            .map(|pi| XObjectTagIdentifier::new(pi.page_index, self.sc.xobject_tags.new_id()));
+        self.bd.sub_builders.push(builder);
     }
 
     /// Pop the last `push` instruction.
     ///
     /// # Panics
     /// Panics if the there wasn't a corresponding `push` to the `pop`.
+    /// Panics if a tagged section that was started after the corresponding opacity, mask or
+    /// isolated `push` hasn't been ended yet.
     pub fn pop(&mut self) {
         match self.push_instructions.pop().unwrap() {
             PushInstruction::Transform => self.bd.get_mut().restore_graphics_state(),
             PushInstruction::Opacity(o) => {
                 if o != NormalizedF32::ONE {
-                    let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
+                    let stream = self.pop_sub_builder();
                     self.bd
                         .get_mut()
                         .draw_opacified(self.sc, self.chunk_container, o, stream);
@@ -531,13 +564,13 @@ impl<'a> Surface<'a> {
             PushInstruction::ClipPath => self.bd.get_mut().pop_clip_path(),
             PushInstruction::BlendMode => self.bd.get_mut().restore_graphics_state(),
             PushInstruction::Mask(mask) => {
-                let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
+                let stream = self.pop_sub_builder();
                 self.bd
                     .get_mut()
                     .draw_masked(self.sc, self.chunk_container, *mask, stream)
             }
             PushInstruction::Isolated => {
-                let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
+                let stream = self.pop_sub_builder();
                 self.bd
                     .get_mut()
                     .draw_isolated(self.sc, self.chunk_container, stream);
@@ -672,6 +705,14 @@ impl Builders {
 
     fn get(&self) -> &ContentBuilder {
         self.sub_builders.last().unwrap_or(&self.root_builder)
+    }
+
+    // TODO: This is linear in the number of nested layers. Could be made O(1) by computing
+    // the state of the enclosing builders once when a layer is pushed.
+    fn has_active_marked_content(&self) -> bool {
+        std::iter::once(&self.root_builder)
+            .chain(&self.sub_builders)
+            .any(|b| b.active_marked_content)
     }
 }
 

@@ -79,6 +79,12 @@ impl Cacheable for XObject {
             sc.register_validation_error(ValidationError::Transparency(sc.location));
         }
 
+        let struct_parents = self
+            .0
+            .stream
+            .xobject_identifier
+            .map(|xi| sc.register_xobject_struct_parent(xi, root_ref));
+
         let serialize_settings = sc.serialize_settings();
 
         // "Ordinarily, the CS entry may be present only for isolated transparency groups (those
@@ -116,6 +122,10 @@ impl Cacheable for XObject {
                 .unwrap_or(self.0.stream.bbox)
                 .to_pdf_rect(),
         );
+
+        if let Some(struct_parents) = struct_parents {
+            x_object.struct_parents(struct_parents);
+        }
 
         if use_transparency_group {
             let mut group = x_object.group();

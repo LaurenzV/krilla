@@ -25,7 +25,10 @@ use crate::graphics::separation::SeparationColorSpace;
 use crate::interactive::destination::{NamedDestination, XyzDestination};
 use crate::interchange::embed::EmbeddedFile;
 use crate::interchange::outline::Outline;
-use crate::interchange::tagging::{AnnotationIdentifier, PageTagIdentifier, TagTree};
+use crate::interchange::tagging::{
+    AnnotationIdentifier, IdentifierType, PageTagIdentifier, TagTree, XObjectTagIdentifier,
+    XObjectTags,
+};
 use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 #[cfg(feature = "pdf")]
 use crate::pdf::{PdfDocument, PdfSerializerContext};
@@ -222,6 +225,9 @@ enum StructParentElement {
     /// The index of the page where the annotation is present, as well as the index of the
     /// annotation within that one page.
     Annotation(AnnotationIdentifier),
+    /// An XObject containing marked-content sequences, with the `mcid` being the number of
+    /// marked content IDs present in it.
+    XObject(XObjectTagIdentifier),
 }
 
 #[derive(Debug)]
@@ -284,6 +290,7 @@ pub(crate) struct SerializeContext {
     validation_store: ValidationStore,
     /// The current location, if set.
     pub(crate) location: Option<Location>,
+    pub(crate) xobject_tags: XObjectTags,
 }
 
 impl SerializeContext {
@@ -316,6 +323,7 @@ impl SerializeContext {
             serialize_settings: Arc::new(serialize_settings),
             chunk_settings,
             limits: Limits::new(),
+            xobject_tags: XObjectTags::default(),
             validation_store: ValidationStore::new(),
         }
     }
@@ -564,6 +572,22 @@ impl SerializeContext {
         } else {
             None
         }
+    }
+
+    /// Register the struct parent integer of an XObject whose content stream contains
+    /// marked-content sequences. The `mcid` of `xi` is the number of sequences.
+    pub(crate) fn register_xobject_struct_parent(
+        &mut self,
+        xi: XObjectTagIdentifier,
+        xobject_ref: Ref,
+    ) -> i32 {
+        self.xobject_tags.insert_ref(xi.xobject_tag_id, xobject_ref);
+
+        let id = self.global_objects.struct_parents.len();
+        self.global_objects
+            .struct_parents
+            .push(StructParentElement::XObject(xi));
+        i32::try_from(id).unwrap()
     }
 
     pub(crate) fn register_named_destination(&mut self, nd: NamedDestination) -> Option<Ref> {
@@ -851,6 +875,29 @@ impl SerializeContext {
         Ok(())
     }
 
+    fn write_mcid_parents(
+        &mut self,
+        identifiers: impl Iterator<Item = IdentifierType>,
+        parent_tree_map: &HashMap<IdentifierType, Ref>,
+        sub_chunks: &mut Vec<Chunk>,
+    ) -> Ref {
+        let mut list_chunk = self.new_chunk();
+        let list_ref = self.new_ref();
+
+        let mut refs = list_chunk.indirect(list_ref).array();
+
+        for identifier in identifiers {
+            refs.item(parent_tree_map.get(&identifier).unwrap_or_else(|| {
+                panic!("identifier {identifier:?} doesn't appear in the tag tree")
+            }));
+        }
+
+        refs.finish();
+
+        sub_chunks.push(list_chunk);
+        list_ref
+    }
+
     fn serialize_tag_tree(&mut self, chunk_container: &mut ChunkContainer) -> KrillaResult<()> {
         let tag_tree = self.global_objects.tag_tree.take();
         let struct_parents = self.global_objects.struct_parents.take();
@@ -919,27 +966,19 @@ impl SerializeContext {
                 let mut tree_nums = parent_tree.nums();
 
                 for (index, struct_parent) in struct_parents.iter().enumerate() {
-                    match *struct_parent {
-                        StructParentElement::Page(page_index, num_mcids) => {
-                            let mut list_chunk = self.new_chunk();
-                            let list_ref = self.new_ref();
-
-                            let mut refs = list_chunk.indirect(list_ref).array();
-
-                            for mcid in 0..num_mcids {
-                                let rci = PageTagIdentifier::new(page_index, mcid);
-                                refs.item(parent_tree_map.get(&rci.into()).unwrap_or_else(|| {
-                                    panic!(
-                                        "page tag identifier {rci:?} doesn't appear in the tag tree"
-                                    )
-                                }));
-                            }
-
-                            refs.finish();
-
-                            sub_chunks.push(list_chunk);
-                            tree_nums.insert(index as i32, list_ref);
-                        }
+                    let value = match *struct_parent {
+                        StructParentElement::Page(page_index, num_mcids) => self
+                            .write_mcid_parents(
+                                (0..num_mcids)
+                                    .map(|mcid| PageTagIdentifier::new(page_index, mcid).into()),
+                                &parent_tree_map,
+                                &mut sub_chunks,
+                            ),
+                        StructParentElement::XObject(xi) => self.write_mcid_parents(
+                            (0..xi.mcid).map(|mcid| XObjectTagIdentifier { mcid, ..xi }.into()),
+                            &parent_tree_map,
+                            &mut sub_chunks,
+                        ),
                         StructParentElement::Annotation(ai) => {
                             // Write a reference to the parent structure element.
                             // From the PDF 1.7 spec (14.7.5.4 Finding structure elements from content items):
@@ -947,13 +986,15 @@ impl SerializeContext {
                             // > (see 14.7.5.3, "PDF objects as content items"), the value shall be an
                             // > indirect reference to the parent structure element.
                             let page_annotations = &self.page_infos[ai.page_index].annotations();
-                            let parent_ref =
-                                *page_annotations[ai.annot_index].1.get().unwrap_or_else(|| {
-                                    panic!("annotation identifier {ai:?} doesn't appear in the tag tree")
-                                });
-                            tree_nums.insert(index as i32, parent_ref);
+                            *page_annotations[ai.annot_index].1.get().unwrap_or_else(|| {
+                                panic!(
+                                    "annotation identifier {ai:?} doesn't appear in the tag tree"
+                                )
+                            })
                         }
-                    }
+                    };
+
+                    tree_nums.insert(index as i32, value);
                 }
 
                 tree_nums.finish();
