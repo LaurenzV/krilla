@@ -27,6 +27,7 @@ pub struct Metadata {
     pub(crate) creation_date: Option<DateTime>,
     pub(crate) text_direction: Option<TextDirection>,
     pub(crate) page_layout: Option<PageLayout>,
+    pub(crate) display_doc_title: bool,
     pub(crate) custom_fields: BTreeMap<String, String>,
 }
 
@@ -129,6 +130,15 @@ impl Metadata {
     /// How the viewer should lay out the pages.
     pub fn page_layout(mut self, page_layout: PageLayout) -> Self {
         self.page_layout = Some(page_layout);
+        self
+    }
+
+    /// Whether the viewer should show the title of the document in its title bar, rather
+    /// than the file name.
+    ///
+    /// Validators that require it set it regardless.
+    pub fn display_doc_title(mut self, display_doc_title: bool) -> Self {
+        self.display_doc_title = display_doc_title;
         self
     }
 

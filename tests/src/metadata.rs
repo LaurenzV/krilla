@@ -64,6 +64,14 @@ fn metadata_version_id_pdf_a1(document: &mut Document) {
 }
 
 #[snapshot(document)]
+fn metadata_display_doc_title(document: &mut Document) {
+    let metadata = Metadata::new()
+        .title("An awesome title".to_string())
+        .display_doc_title(true);
+    document.set_metadata(metadata);
+}
+
+#[snapshot(document)]
 fn metadata_custom_fields(document: &mut Document) {
     document.set_metadata(custom_metadata());
 }
