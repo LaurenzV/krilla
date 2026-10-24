@@ -28,7 +28,7 @@ use crate::graphics::shading_function::{
 use crate::graphics::shading_pattern::ShadingPattern;
 use crate::graphics::tiling_pattern::TilingPattern;
 use crate::graphics::xobject::XObject;
-use crate::interchange::tagging::{ContentTag, XObjectTagId};
+use crate::interchange::tagging::{ContentTag, XObjectTagIdentifier};
 use crate::num::NormalizedF32;
 use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
@@ -56,12 +56,7 @@ pub(crate) struct ContentBuilder {
     /// A temporary buffer that's reused across the builder.
     scratch: Vec<u8>,
     pub(crate) active_marked_content: bool,
-    /// If set, this sub-builder is tagged and will produce an XObject with StructParents.
-    pub(crate) xobject_tag_id: Option<XObjectTagId>,
-    /// The page index inherited from the parent surface (for MCR /Pg entries).
-    pub(crate) page_index: Option<usize>,
-    /// Per-XObject MCID counter, incremented by start_tagged in sub-builder context.
-    pub(crate) mcid_counter: i32,
+    pub(crate) xobject_identifier: Option<XObjectTagIdentifier>,
 }
 
 /// Stores either a device-specific color space,
@@ -107,9 +102,7 @@ impl ContentBuilder {
             bbox: None,
             scratch: Vec::new(),
             active_marked_content: false,
-            xobject_tag_id: None,
-            page_index: None,
-            mcid_counter: 0,
+            xobject_identifier: None,
         }
     }
 
@@ -133,6 +126,7 @@ impl ContentBuilder {
             self.validation_errors.into_iter().collect(),
             self.rd_builder.finish(),
             self.uses_mask,
+            self.xobject_identifier.filter(|xi| xi.mcid > 0),
         )
     }
 
@@ -935,21 +929,10 @@ impl ContentBuilder {
         chunk_container: &mut ChunkContainer,
         mask: Mask,
         stream: Stream,
-        xobject_tag_id: Option<XObjectTagId>,
-        page_index: Option<usize>,
-        num_mcids: i32,
     ) {
         let state = ExtGState::new().mask(mask, sc, chunk_container);
         self.uses_mask = true;
-        let x_object = XObject::new(
-            stream,
-            false,
-            true,
-            None,
-            xobject_tag_id,
-            page_index,
-            num_mcids,
-        );
+        let x_object = XObject::new(stream, false, true, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
@@ -959,22 +942,11 @@ impl ContentBuilder {
         chunk_container: &mut ChunkContainer,
         opacity: NormalizedF32,
         stream: Stream,
-        xobject_tag_id: Option<XObjectTagId>,
-        page_index: Option<usize>,
-        num_mcids: i32,
     ) {
         let state = ExtGState::new()
             .stroking_alpha(opacity)
             .non_stroking_alpha(opacity);
-        let x_object = XObject::new(
-            stream,
-            true,
-            false,
-            None,
-            xobject_tag_id,
-            page_index,
-            num_mcids,
-        );
+        let x_object = XObject::new(stream, true, false, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
@@ -983,20 +955,9 @@ impl ContentBuilder {
         sc: &mut SerializeContext,
         chunk_container: &mut ChunkContainer,
         stream: Stream,
-        xobject_tag_id: Option<XObjectTagId>,
-        page_index: Option<usize>,
-        num_mcids: i32,
     ) {
         let state = ExtGState::new();
-        let x_object = XObject::new(
-            stream,
-            true,
-            false,
-            None,
-            xobject_tag_id,
-            page_index,
-            num_mcids,
-        );
+        let x_object = XObject::new(stream, true, false, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 

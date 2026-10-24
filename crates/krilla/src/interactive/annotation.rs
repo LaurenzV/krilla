@@ -636,7 +636,7 @@ fn register_appearance_entry(
     chunk_container: &mut ChunkContainer,
     appearance: Stream,
 ) -> Ref {
-    let xobject = XObject::new(appearance, false, false, None, None, None, 0);
+    let xobject = XObject::new(appearance, false, false, None);
     sc.register_cacheable(chunk_container, xobject)
 }
 

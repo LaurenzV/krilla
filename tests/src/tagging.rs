@@ -4,7 +4,9 @@ use krilla::action::{Action, LinkAction};
 use krilla::annotation::{LinkAnnotation, Target};
 use krilla::error::KrillaError;
 use krilla::geom::{PathBuilder, Point, Rect, Size, Transform};
+use krilla::mask::MaskType;
 use krilla::metadata::Metadata;
+use krilla::num::NormalizedF32;
 use krilla::outline::Outline;
 use krilla::page::PageSettings;
 use krilla::paint::{Fill, Stroke};
@@ -19,7 +21,9 @@ use krilla::Document;
 use krilla_macros::snapshot;
 use krilla_svg::{SurfaceExt, SvgSettings};
 
-use crate::{green_fill, load_png_image, loc, rect_to_path, red_stroke, NOTO_SANS, SVGS_PATH};
+use crate::{
+    basic_mask, green_fill, load_png_image, loc, rect_to_path, red_stroke, NOTO_SANS, SVGS_PATH,
+};
 
 pub trait SurfaceTaggingExt {
     fn fill_text_(&mut self, y: f32, content: &str);
@@ -727,6 +731,94 @@ fn tagging_title_impl(document: &mut Document) {
 
     tag_tree.push(title);
     document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document)]
+fn tagging_transparency_groups(document: &mut Document) {
+    let mut tag_tree = TagTree::new();
+    let mut par = TagGroup::new(Tag::P);
+
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let id1 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(25.0, "page");
+    surface.end_tagged();
+
+    surface.push_opacity(NormalizedF32::new(0.5).unwrap());
+    let id2 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(50.0, "opacity");
+    surface.end_tagged();
+
+    surface.push_isolated();
+    let id3 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(75.0, "nested");
+    surface.end_tagged();
+    surface.pop();
+
+    let id4 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(100.0, "opacity");
+    surface.end_tagged();
+    surface.pop();
+
+    let mask = basic_mask(&mut surface, MaskType::Luminosity);
+    surface.push_mask(mask);
+    let id5 = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.fill_text_(125.0, "mask");
+    surface.end_tagged();
+    surface.pop();
+
+    surface.finish();
+    page.finish();
+
+    for id in [id1, id2, id3, id4, id5] {
+        par.push(id);
+    }
+    tag_tree.push(par);
+
+    document.set_tag_tree(tag_tree);
+}
+
+#[snapshot(document)]
+fn tagging_untagged_transparency_groups(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    for _ in 0..2 {
+        surface.push_opacity(NormalizedF32::new(0.5).unwrap());
+        surface.set_fill(Some(green_fill(1.0)));
+        surface.draw_path(&rect_to_path(50.0, 50.0, 100.0, 100.0));
+        surface.pop();
+    }
+
+    surface.finish();
+    page.finish();
+
+    document.set_tag_tree(TagTree::new());
+}
+
+#[test]
+#[should_panic(expected = "can't pop a layer while marked content inside of it is still active")]
+fn tagging_pop_with_active_tagged_section() {
+    let mut document = Document::new();
+    let mut page = document.start_page();
+    let mut surface = std::mem::ManuallyDrop::new(page.surface());
+
+    surface.push_opacity(NormalizedF32::new(0.5).unwrap());
+    surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.pop();
+}
+
+#[test]
+#[should_panic(expected = "can't start marked content twice")]
+fn tagging_nested_across_transparency_group() {
+    let mut document = Document::new();
+    let mut page = document.start_page();
+    let mut surface = std::mem::ManuallyDrop::new(page.surface());
+
+    surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.push_opacity(NormalizedF32::new(0.5).unwrap());
+    surface.start_tagged(ContentTag::Span(SpanTag::empty()));
 }
 
 #[test]

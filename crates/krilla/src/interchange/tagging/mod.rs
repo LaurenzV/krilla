@@ -436,20 +436,54 @@ impl<'a> SpanTag<'a> {
     }
 }
 
-/// A unique identifier for a tagged sub-builder (XObject).
-/// Assigned when creating a sub-builder for transparency groups.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct XObjectTagId(pub(crate) usize);
 
-/// Tracks MCIDs within a specific XObject content stream.
+#[derive(Default)]
+pub(crate) struct XObjectTags {
+    next_id: usize,
+    refs: HashMap<XObjectTagId, Ref>,
+}
+
+impl XObjectTags {
+    pub(crate) fn new_id(&mut self) -> XObjectTagId {
+        let id = XObjectTagId(self.next_id);
+        self.next_id += 1;
+        id
+    }
+
+    pub(crate) fn insert_ref(&mut self, id: XObjectTagId, xobject_ref: Ref) {
+        self.refs.insert(id, xobject_ref);
+    }
+
+    pub(crate) fn get_ref(&self, id: XObjectTagId) -> Option<Ref> {
+        self.refs.get(&id).copied()
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct XObjectTagIdentifier {
-    /// The page where the XObject is drawn (for MCR /Pg reference).
     pub(crate) page_index: usize,
-    /// The unique XObject tag ID.
     pub(crate) xobject_tag_id: XObjectTagId,
-    /// The marked content identifier within this XObject.
     pub(crate) mcid: i32,
+}
+
+impl XObjectTagIdentifier {
+    pub(crate) fn new(page_index: usize, xobject_tag_id: XObjectTagId) -> Self {
+        Self {
+            page_index,
+            xobject_tag_id,
+            mcid: 0,
+        }
+    }
+
+    pub(crate) fn bump(&mut self) -> XObjectTagIdentifier {
+        let old = *self;
+
+        self.mcid = self.mcid.checked_add(1).unwrap();
+
+        old
+    }
 }
 
 impl From<XObjectTagIdentifier> for IdentifierType {
@@ -1345,9 +1379,12 @@ fn serialize_children(
                         ))
                         .ref_();
 
-                    let xobj_ref = sc.xobject_tag_ref(xi.xobject_tag_id).unwrap_or_else(|| {
-                        panic!("xobject tag ref not found for {:?}", xi.xobject_tag_id)
-                    });
+                    let xobj_ref =
+                        sc.xobject_tags
+                            .get_ref(xi.xobject_tag_id)
+                            .unwrap_or_else(|| {
+                                panic!("tag tree contains unknown xobject identifier {xi:?}")
+                            });
 
                     if parent_tree_map.contains_key(&xi.into()) {
                         panic!("identifier {xi:?} appears twice in the tag tree");
