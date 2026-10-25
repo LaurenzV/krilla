@@ -52,7 +52,8 @@ impl TilingPattern {
             stream
         } else {
             let stream = {
-                let mut builder = StreamBuilder::new(serializer_context, chunk_container);
+                let mut builder =
+                    StreamBuilder::new(serializer_context, chunk_container, Transform::identity());
                 let mut surface = builder.surface();
                 surface.draw_opacified_stream(base_opacity, stream);
                 surface.finish();

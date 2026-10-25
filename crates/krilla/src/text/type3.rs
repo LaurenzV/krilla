@@ -144,7 +144,8 @@ impl Type3Font {
             .iter()
             .enumerate()
             .map(|(index, glyph)| {
-                let mut stream_surface = StreamBuilder::new(sc, chunk_container);
+                let mut stream_surface =
+                    StreamBuilder::new(sc, chunk_container, Transform::identity());
                 let mut surface = stream_surface.surface();
 
                 // In case this returns `None`, the surface is guaranteed to be empty.

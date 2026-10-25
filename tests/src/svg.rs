@@ -165,3 +165,54 @@ fn svg_with_filter(surface: &mut Surface) {
 }
 
 include!("svg_generated.rs");
+
+/// Draws a 30x20 SVG at 300x200, where `wrap` places a rect with a filter covering the whole SVG.
+fn filter_raster_pdf(wrap: impl Fn(&str) -> String) -> Vec<u8> {
+    let filtered = r#"<rect width="30" height="20" fill="white" filter="url(#f)"/>"#;
+    let svg = format!(
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="30" height="20" viewBox="0 0 30 20">
+            <filter id="f" filterUnits="userSpaceOnUse" x="0" y="0" width="30" height="20">
+                <feColorMatrix type="saturate" values="0"/>
+            </filter>
+            {}
+        </svg>"#,
+        wrap(filtered)
+    );
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+
+    let mut d = Document::new();
+    let mut page = d.start_page_with(PageSettings::from_wh(300.0, 200.0).unwrap());
+    let mut surface = page.surface();
+    let settings = SvgSettings {
+        filter_scale: 1.0,
+        ..Default::default()
+    };
+    surface.draw_svg(&tree, Size::from_wh(300.0, 200.0).unwrap(), settings);
+    surface.finish();
+    page.finish();
+    d.finish().unwrap()
+}
+
+fn contains(haystack: &[u8], needle: &[u8]) -> bool {
+    haystack.windows(needle.len()).any(|w| w == needle)
+}
+
+#[test]
+fn svg_filter_scale_in_mask() {
+    let pdf = filter_raster_pdf(|filtered| {
+        format!(
+            r#"<mask id="m">{filtered}</mask>
+            <rect width="30" height="20" fill="green" mask="url(#m)"/>"#
+        )
+    });
+    // The filter is drawn at 10x, so it should be rasterized at 300x200 instead of 30x20.
+    assert!(contains(&pdf, b"/Width 300"));
+    assert!(contains(&pdf, b"/Height 200"));
+}
+
+#[test]
+fn svg_filter_scale_in_opacity_group() {
+    let pdf = filter_raster_pdf(|filtered| format!(r#"<g opacity="0.5">{filtered}</g>"#));
+    assert!(contains(&pdf, b"/Width 300"));
+    assert!(contains(&pdf, b"/Height 200"));
+}

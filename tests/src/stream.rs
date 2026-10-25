@@ -1,6 +1,6 @@
 use krilla::blend::BlendMode;
 use krilla::geom::{Point, Size, Transform};
-use krilla::page::Page;
+use krilla::page::{Page, PageSettings};
 use krilla::text::{Font, TextDirection};
 use krilla_macros::snapshot;
 
@@ -78,4 +78,39 @@ fn stream_compress_by_default(document: &mut Document) {
         false,
         TextDirection::Auto,
     );
+}
+
+#[test]
+fn stream_absolute_transform() {
+    let mut d = Document::new();
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+    let mut surface = page.surface();
+
+    let scale = Transform::from_scale(2.0, 3.0);
+    let translate = Transform::from_translate(5.0, 0.0);
+    surface.push_transform(&scale);
+    surface.push_isolated();
+    surface.push_transform(&translate);
+
+    let scaled_translate = Transform::from_row(2.0, 0.0, 0.0, 3.0, 10.0, 0.0);
+    // The isolated group is drawn with `scale`, so it starts a new content stream.
+    assert_eq!(surface.cur_transform(), translate);
+    assert_eq!(surface.absolute_transform(), scaled_translate);
+
+    {
+        let mut stream_builder = surface.stream_builder();
+        let sub_surface = stream_builder.surface();
+        assert_eq!(sub_surface.cur_transform(), Transform::identity());
+        assert_eq!(sub_surface.absolute_transform(), scaled_translate);
+    }
+
+    surface.pop();
+    surface.pop();
+    assert_eq!(surface.absolute_transform(), scale);
+    surface.pop();
+    assert_eq!(surface.absolute_transform(), Transform::identity());
+
+    surface.finish();
+    page.finish();
+    d.finish().unwrap();
 }
