@@ -216,3 +216,47 @@ fn svg_filter_scale_in_opacity_group() {
     assert!(contains(&pdf, b"/Width 300"));
     assert!(contains(&pdf, b"/Height 200"));
 }
+
+#[test]
+fn svg_filter_downscale_in_mask_and_opacity_group() {
+    let filtered = r#"<rect width="30" height="20" fill="white" filter="url(#f)"/>"#;
+    let wrappers = [
+        format!(
+            r#"<mask id="m">{filtered}</mask>
+            <rect width="30" height="20" fill="green" mask="url(#m)"/>"#
+        ),
+        format!(r#"<g opacity="0.5">{filtered}</g>"#),
+    ];
+
+    for wrapped in wrappers {
+        let svg = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="30" height="20">
+                <filter id="f" filterUnits="userSpaceOnUse" x="0" y="0" width="30" height="20">
+                    <feColorMatrix type="saturate" values="0"/>
+                </filter>
+                {wrapped}
+            </svg>"#
+        );
+        let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+        let mut document = Document::new();
+        let mut page = document.start_page_with(PageSettings::from_wh(3.0, 2.0).unwrap());
+        let mut surface = page.surface();
+        surface.draw_svg(
+            &tree,
+            Size::from_wh(3.0, 2.0).unwrap(),
+            SvgSettings {
+                filter_scale: 1.0,
+                ..Default::default()
+            },
+        );
+        surface.finish();
+        page.finish();
+        let pdf = document.finish().unwrap();
+
+        // Downscaling must also reach filters in masks and opacity groups.
+        assert!(contains(&pdf, b"/Width 3/"));
+        assert!(contains(&pdf, b"/Height 2/"));
+        assert!(!contains(&pdf, b"/Width 30/"));
+        assert!(!contains(&pdf, b"/Height 20/"));
+    }
+}
