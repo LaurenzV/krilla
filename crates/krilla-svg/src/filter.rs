@@ -19,11 +19,10 @@ pub(crate) fn render(
 
     let raster_scale = {
         // Find out what dimensions the SVG will actually have in user space units inside of the
-        // PDF. Use the absolute transform, since the current content stream might for example be
-        // a mask or an isolated group that is drawn with a different transform.
+        // PDF.
         let actual_bbox = group
             .layer_bounding_box()
-            .transform(surface.absolute_transform().to_usvg())?
+            .transform(surface.ctm().to_usvg())?
             .transform(group.transform())?;
         // Calculate the necessary scale in the x/y direction, and take the maximum of that.
         let scale = {

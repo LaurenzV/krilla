@@ -5,7 +5,7 @@ use krilla::graphic::Graphic;
 use krilla::page::PageSettings;
 use krilla::surface::Surface;
 use krilla::Document;
-use krilla_macros::visreg;
+use krilla_macros::{snapshot, visreg};
 use krilla_svg::{SurfaceExt, SvgSettings};
 
 use crate::{FONTDB, SVGS_PATH};
@@ -166,97 +166,37 @@ fn svg_with_filter(surface: &mut Surface) {
 
 include!("svg_generated.rs");
 
-/// Draws a 30x20 SVG at 300x200, where `wrap` places a rect with a filter covering the whole SVG.
-fn filter_raster_pdf(wrap: impl Fn(&str) -> String) -> Vec<u8> {
-    let filtered = r#"<rect width="30" height="20" fill="white" filter="url(#f)"/>"#;
-    let svg = format!(
-        r#"<svg xmlns="http://www.w3.org/2000/svg" width="30" height="20" viewBox="0 0 30 20">
-            <filter id="f" filterUnits="userSpaceOnUse" x="0" y="0" width="30" height="20">
-                <feColorMatrix type="saturate" values="0"/>
-            </filter>
-            {}
-        </svg>"#,
-        wrap(filtered)
-    );
-    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+fn filters_in_groups(document: &mut Document, scale: f32) {
+    let data = std::fs::read(SVGS_PATH.join("filters_in_groups.svg")).unwrap();
+    let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
+    let size = Size::from_wh(tree.size().width() * scale, tree.size().height() * scale).unwrap();
 
-    let mut d = Document::new();
-    let mut page = d.start_page_with(PageSettings::from_wh(300.0, 200.0).unwrap());
+    let mut page =
+        document.start_page_with(PageSettings::from_wh(size.width(), size.height()).unwrap());
     let mut surface = page.surface();
-    let settings = SvgSettings {
-        filter_scale: 1.0,
-        ..Default::default()
-    };
-    surface.draw_svg(&tree, Size::from_wh(300.0, 200.0).unwrap(), settings);
+    surface.draw_svg(
+        &tree,
+        size,
+        SvgSettings {
+            filter_scale: 1.0,
+            ..Default::default()
+        },
+    );
     surface.finish();
     page.finish();
-    d.finish().unwrap()
 }
 
-fn contains(haystack: &[u8], needle: &[u8]) -> bool {
-    haystack.windows(needle.len()).any(|w| w == needle)
+#[snapshot(document)]
+fn svg_filter_upscaled(document: &mut Document) {
+    filters_in_groups(document, 10.0);
 }
 
-#[test]
-fn svg_filter_scale_in_mask() {
-    let pdf = filter_raster_pdf(|filtered| {
-        format!(
-            r#"<mask id="m">{filtered}</mask>
-            <rect width="30" height="20" fill="green" mask="url(#m)"/>"#
-        )
-    });
-    // The filter is drawn at 10x, so it should be rasterized at 300x200 instead of 30x20.
-    assert!(contains(&pdf, b"/Width 300"));
-    assert!(contains(&pdf, b"/Height 200"));
+#[visreg(document)]
+fn svg_filter_upscaled(document: &mut Document) {
+    filters_in_groups(document, 10.0);
 }
 
-#[test]
-fn svg_filter_scale_in_opacity_group() {
-    let pdf = filter_raster_pdf(|filtered| format!(r#"<g opacity="0.5">{filtered}</g>"#));
-    assert!(contains(&pdf, b"/Width 300"));
-    assert!(contains(&pdf, b"/Height 200"));
-}
-
-#[test]
-fn svg_filter_downscale_in_mask_and_opacity_group() {
-    let filtered = r#"<rect width="30" height="20" fill="white" filter="url(#f)"/>"#;
-    let wrappers = [
-        format!(
-            r#"<mask id="m">{filtered}</mask>
-            <rect width="30" height="20" fill="green" mask="url(#m)"/>"#
-        ),
-        format!(r#"<g opacity="0.5">{filtered}</g>"#),
-    ];
-
-    for wrapped in wrappers {
-        let svg = format!(
-            r#"<svg xmlns="http://www.w3.org/2000/svg" width="30" height="20">
-                <filter id="f" filterUnits="userSpaceOnUse" x="0" y="0" width="30" height="20">
-                    <feColorMatrix type="saturate" values="0"/>
-                </filter>
-                {wrapped}
-            </svg>"#
-        );
-        let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
-        let mut document = Document::new();
-        let mut page = document.start_page_with(PageSettings::from_wh(3.0, 2.0).unwrap());
-        let mut surface = page.surface();
-        surface.draw_svg(
-            &tree,
-            Size::from_wh(3.0, 2.0).unwrap(),
-            SvgSettings {
-                filter_scale: 1.0,
-                ..Default::default()
-            },
-        );
-        surface.finish();
-        page.finish();
-        let pdf = document.finish().unwrap();
-
-        // Downscaling must also reach filters in masks and opacity groups.
-        assert!(contains(&pdf, b"/Width 3/"));
-        assert!(contains(&pdf, b"/Height 2/"));
-        assert!(!contains(&pdf, b"/Width 30/"));
-        assert!(!contains(&pdf, b"/Height 20/"));
-    }
+#[snapshot(document)]
+fn svg_filter_downscaled(document: &mut Document) {
+    filters_in_groups(document, 0.1);
 }

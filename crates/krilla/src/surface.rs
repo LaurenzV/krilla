@@ -106,11 +106,8 @@ impl<'a> Surface<'a> {
     }
 
     /// Return a `StreamBuilder` to allow drawing on a sub-context.
-    ///
-    /// The surfaces of the stream builder assume that the stream will be drawn with the current
-    /// transformation matrix of this surface, see [`Surface::absolute_transform`].
     pub fn stream_builder(&mut self) -> StreamBuilder<'_> {
-        let base_transform = self.absolute_transform();
+        let base_transform = self.ctm();
         StreamBuilder::new(self.sc, self.chunk_container, base_transform)
     }
 
@@ -446,9 +443,19 @@ impl<'a> Surface<'a> {
         self.sc.reset_location();
     }
 
-    /// Return the current transformation matrix.
+    /// Return the current transformation matrix, relative to the outermost surface, usually the
+    /// page.
+    ///
+    /// This also accounts for the transforms that the current content stream will be drawn with,
+    /// for example inside of [`Surface::push_mask`], [`Surface::push_opacity`] or
+    /// [`Surface::push_isolated`]. It is useful for determining at which resolution content
+    /// should be rasterized.
+    ///
+    /// Inside of a surface created with [`Surface::stream_builder`], it is assumed that the
+    /// stream will be drawn with the transformation matrix the builder was created at, which
+    /// is not accurate if the stream is drawn somewhere else, for example as a pattern.
     pub fn ctm(&self) -> Transform {
-        self.bd.get().cur_transform()
+        self.bd.ctm()
     }
 
     /// Concatenate a new transform to the current transformation matrix.
@@ -622,27 +629,6 @@ impl<'a> Surface<'a> {
             .draw_opacified(self.sc, self.chunk_container, opacity, stream)
     }
 
-    /// Return the current transformation matrix of the surface.
-    pub fn cur_transform(&self) -> Transform {
-        self.bd.get().cur_transform()
-    }
-
-    /// Return the current transformation matrix relative to the outermost surface, usually the
-    /// page.
-    ///
-    /// Unlike [`Surface::cur_transform`], which is relative to the current content stream, this
-    /// also accounts for the transforms that the content stream will be drawn with, for example
-    /// inside of [`Surface::push_mask`], [`Surface::push_opacity`] or [`Surface::push_isolated`],
-    /// or inside of a surface created with [`Surface::stream_builder`]. It is useful for
-    /// determining at which resolution content should be rasterized.
-    ///
-    /// Note that inside of a stream builder, it is assumed that the stream is drawn with the
-    /// current transformation matrix the builder was created at, which is for example not
-    /// accurate for patterns.
-    pub fn absolute_transform(&self) -> Transform {
-        self.bd.absolute_transform()
-    }
-
     fn context_color(&self) -> rgb::Color {
         self.fill
             .as_ref()
@@ -726,7 +712,7 @@ impl Builders {
 
     /// Push a new sub builder, whose content will be drawn with the current transform.
     fn push(&mut self, builder: ContentBuilder) {
-        self.sub_base_transforms.push(self.absolute_transform());
+        self.sub_base_transforms.push(self.ctm());
         self.sub_builders.push(builder);
     }
 
@@ -735,7 +721,7 @@ impl Builders {
         self.sub_builders.pop().unwrap()
     }
 
-    fn absolute_transform(&self) -> Transform {
+    fn ctm(&self) -> Transform {
         self.sub_base_transforms
             .last()
             .unwrap_or(&self.root_base_transform)
