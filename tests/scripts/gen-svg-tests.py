@@ -97,6 +97,7 @@ MANUAL_TESTS = {
     "custom_typst_issue_5509_1.svg",
     "custom_typst_issue_5509_2.svg",
     "custom_typst_issue_5509_3.svg",
+    "filters_in_groups.svg",
     "issue199.svg",
     "issue291.svg",
     "issue293.svg",

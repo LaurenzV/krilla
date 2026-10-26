@@ -65,7 +65,8 @@ impl Mask {
         let shading_function = ShadingFunction::new(gradient_properties, true);
 
         let shading_stream = {
-            let mut builder = StreamBuilder::new(serializer_context, chunk_container);
+            let mut builder =
+                StreamBuilder::new(serializer_context, chunk_container, Transform::identity());
             let mut surface = builder.surface();
             surface.push_transform(&shading_transform);
             surface.draw_shading(&shading_function);

@@ -292,6 +292,7 @@ impl<'a> Page<'a> {
             self.sc,
             self.chunk_container,
             root_builder,
+            Transform::identity(),
             page_identifier,
             finish_fn,
         )

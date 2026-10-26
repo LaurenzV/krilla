@@ -89,13 +89,14 @@ impl<'a> Surface<'a> {
         sc: &'a mut SerializeContext,
         chunk_container: &'a mut ChunkContainer,
         root_builder: ContentBuilder,
+        base_transform: Transform,
         page_identifier: Option<PageTagIdentifier>,
         finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
             chunk_container,
-            bd: Builders::new(root_builder),
+            bd: Builders::new(root_builder, base_transform),
             page_identifier,
             fill: None,
             stroke: None,
@@ -106,7 +107,8 @@ impl<'a> Surface<'a> {
 
     /// Return a `StreamBuilder` to allow drawing on a sub-context.
     pub fn stream_builder(&mut self) -> StreamBuilder<'_> {
-        StreamBuilder::new(self.sc, self.chunk_container)
+        let base_transform = self.ctm();
+        StreamBuilder::new(self.sc, self.chunk_container, base_transform)
     }
 
     /// Set the fill that should be used for the next drawing operation.
@@ -441,9 +443,19 @@ impl<'a> Surface<'a> {
         self.sc.reset_location();
     }
 
-    /// Return the current transformation matrix.
+    /// Return the current transformation matrix, relative to the outermost surface, usually the
+    /// page.
+    ///
+    /// This also accounts for the transforms that the current content stream will be drawn with,
+    /// for example inside of [`Surface::push_mask`], [`Surface::push_opacity`] or
+    /// [`Surface::push_isolated`]. It is useful for determining at which resolution content
+    /// should be rasterized.
+    ///
+    /// Inside of a surface created with [`Surface::stream_builder`], it is assumed that the
+    /// stream will be drawn with the transformation matrix the builder was created at, which
+    /// is not accurate if the stream is drawn somewhere else, for example as a pattern.
     pub fn ctm(&self) -> Transform {
-        self.bd.get().cur_transform()
+        self.bd.ctm()
     }
 
     /// Concatenate a new transform to the current transformation matrix.
@@ -525,7 +537,7 @@ impl<'a> Surface<'a> {
     }
 
     fn pop_sub_builder(&mut self) -> Stream {
-        let builder = self.bd.sub_builders.pop().unwrap();
+        let builder = self.bd.pop();
 
         if builder.active_marked_content {
             panic!("can't pop a layer while marked content inside of it is still active");
@@ -541,7 +553,7 @@ impl<'a> Surface<'a> {
         builder.xobject_identifier = self
             .page_identifier
             .map(|pi| XObjectTagIdentifier::new(pi.page_index, self.sc.xobject_tags.new_id()));
-        self.bd.sub_builders.push(builder);
+        self.bd.push(builder);
     }
 
     /// Pop the last `push` instruction.
@@ -617,11 +629,6 @@ impl<'a> Surface<'a> {
             .draw_opacified(self.sc, self.chunk_container, opacity, stream)
     }
 
-    /// Return the current transformation matrix of the surface.
-    pub fn cur_transform(&self) -> Transform {
-        self.bd.get().cur_transform()
-    }
-
     fn context_color(&self) -> rgb::Color {
         self.fill
             .as_ref()
@@ -687,14 +694,38 @@ impl Drop for Surface<'_> {
 struct Builders {
     pub(crate) root_builder: ContentBuilder,
     pub(crate) sub_builders: Vec<ContentBuilder>,
+    /// The transform that the root builder will be drawn with, relative to the outermost surface.
+    root_base_transform: Transform,
+    /// The transforms that each sub builder will be drawn with, relative to the outermost surface.
+    sub_base_transforms: Vec<Transform>,
 }
 
 impl Builders {
-    fn new(root_builder: ContentBuilder) -> Self {
+    fn new(root_builder: ContentBuilder, root_base_transform: Transform) -> Self {
         Self {
             root_builder,
             sub_builders: vec![],
+            root_base_transform,
+            sub_base_transforms: vec![],
         }
+    }
+
+    /// Push a new sub builder, whose content will be drawn with the current transform.
+    fn push(&mut self, builder: ContentBuilder) {
+        self.sub_base_transforms.push(self.ctm());
+        self.sub_builders.push(builder);
+    }
+
+    fn pop(&mut self) -> ContentBuilder {
+        self.sub_base_transforms.pop();
+        self.sub_builders.pop().unwrap()
+    }
+
+    fn ctm(&self) -> Transform {
+        self.sub_base_transforms
+            .last()
+            .unwrap_or(&self.root_base_transform)
+            .pre_concat(self.get().cur_transform())
     }
 
     fn get_mut(&mut self) -> &mut ContentBuilder {

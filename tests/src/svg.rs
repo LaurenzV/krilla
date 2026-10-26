@@ -5,7 +5,7 @@ use krilla::graphic::Graphic;
 use krilla::page::PageSettings;
 use krilla::surface::Surface;
 use krilla::Document;
-use krilla_macros::visreg;
+use krilla_macros::{snapshot, visreg};
 use krilla_svg::{SurfaceExt, SvgSettings};
 
 use crate::{FONTDB, SVGS_PATH};
@@ -165,3 +165,38 @@ fn svg_with_filter(surface: &mut Surface) {
 }
 
 include!("svg_generated.rs");
+
+fn filters_in_groups(document: &mut Document, scale: f32) {
+    let data = std::fs::read(SVGS_PATH.join("filters_in_groups.svg")).unwrap();
+    let tree = usvg::Tree::from_data(&data, &usvg::Options::default()).unwrap();
+    let size = Size::from_wh(tree.size().width() * scale, tree.size().height() * scale).unwrap();
+
+    let mut page =
+        document.start_page_with(PageSettings::from_wh(size.width(), size.height()).unwrap());
+    let mut surface = page.surface();
+    surface.draw_svg(
+        &tree,
+        size,
+        SvgSettings {
+            filter_scale: 1.0,
+            ..Default::default()
+        },
+    );
+    surface.finish();
+    page.finish();
+}
+
+#[snapshot(document)]
+fn svg_filter_upscaled(document: &mut Document) {
+    filters_in_groups(document, 10.0);
+}
+
+#[visreg(document)]
+fn svg_filter_upscaled(document: &mut Document) {
+    filters_in_groups(document, 10.0);
+}
+
+#[snapshot(document)]
+fn svg_filter_downscaled(document: &mut Document) {
+    filters_in_groups(document, 0.1);
+}

@@ -101,17 +101,21 @@ pub struct StreamBuilder<'a> {
     sc: &'a mut SerializeContext,
     chunk_container: &'a mut ChunkContainer,
     stream: Stream,
+    /// The transform that the stream is assumed to be drawn with, relative to the outermost surface.
+    base_transform: Transform,
 }
 
 impl<'a> StreamBuilder<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializeContext,
         chunk_container: &'a mut ChunkContainer,
+        base_transform: Transform,
     ) -> Self {
         Self {
             sc,
             chunk_container,
             stream: Stream::empty(),
+            base_transform,
         }
     }
 
@@ -142,6 +146,7 @@ impl<'a> StreamBuilder<'a> {
             self.sc,
             self.chunk_container,
             content_builder,
+            self.base_transform,
             None,
             finish_fn,
         )

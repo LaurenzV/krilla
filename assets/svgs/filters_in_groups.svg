@@ -1,0 +1,18 @@
+<svg id="svg1" width="60" height="20" xmlns="http://www.w3.org/2000/svg">
+    <title>Filters in a mask, an opacity group and a mask inside an opacity group</title>
+
+    <filter id="filter1">
+        <feColorMatrix type="hueRotate" values="180"/>
+    </filter>
+    <mask id="mask1">
+        <circle cx="10" cy="10" r="8" fill="white" filter="url(#filter1)"/>
+    </mask>
+
+    <rect width="20" height="20" fill="green" mask="url(#mask1)"/>
+    <g opacity="0.5">
+        <circle cx="30" cy="10" r="8" fill="red" filter="url(#filter1)"/>
+    </g>
+    <g opacity="0.5" transform="translate(40 0)">
+        <rect width="20" height="20" fill="green" mask="url(#mask1)"/>
+    </g>
+</svg>
