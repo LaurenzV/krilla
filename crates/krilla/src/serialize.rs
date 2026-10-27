@@ -34,6 +34,7 @@ use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::pdf::{PdfDocument, PdfSerializerContext};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
+use crate::sink::{ObjectSink, SinkOutput};
 use crate::surface::{Location, Surface};
 use crate::text::{Font, FontContainer, FontIdentifier, GlyphId, StandardFont};
 use crate::util::{NameExt, SipHashable};
@@ -469,33 +470,58 @@ impl SerializeContext {
         &mut self.validation_store
     }
 
+    /// Writes the objects of `chunk_container` into `sink` instead of a PDF
+    /// file.
+    pub(crate) fn finish_into(
+        mut self,
+        mut chunk_container: ChunkContainer,
+        sink: &mut dyn ObjectSink,
+    ) -> KrillaResult<SinkOutput> {
+        self.serialize_deferred(&mut chunk_container)?;
+        let output = chunk_container.finish_into(&mut self, sink)?;
+        self.check()?;
+
+        Ok(output)
+    }
+
     pub(crate) fn finish(mut self, mut chunk_container: ChunkContainer) -> KrillaResult<Pdf> {
+        self.serialize_deferred(&mut chunk_container)?;
+
+        // Create the final PDF.
+        let pdf = chunk_container.finish(&mut self)?;
+        self.register_limits(pdf.limits());
+        self.check()?;
+
+        Ok(pdf)
+    }
+
+    fn serialize_deferred(&mut self, chunk_container: &mut ChunkContainer) -> KrillaResult<()> {
         // We need to be careful here that we serialize the objects in the right order,
         // as in some cases we use MaybeTake::take to remove an object, which means that
         // no object that is serialized afterwards must depend on it.
 
         // Serialize all objects that can only be written in the end.
-        self.serialize_destination_profiles(&mut chunk_container);
-        self.serialize_page_label_tree(&mut chunk_container);
-        self.serialize_outline(&mut chunk_container);
-        self.serialize_pages(&mut chunk_container)?;
-        self.serialize_page_tree(&mut chunk_container);
-        self.serialize_forms(&mut chunk_container);
+        self.serialize_destination_profiles(chunk_container);
+        self.serialize_page_label_tree(chunk_container);
+        self.serialize_outline(chunk_container);
+        self.serialize_pages(chunk_container)?;
+        self.serialize_page_tree(chunk_container);
+        self.serialize_forms(chunk_container);
         // Forms register fonts for variable text /DA strings,
         // so it's important we serialize fonts afterwards!
-        self.serialize_fonts(&mut chunk_container)?;
+        self.serialize_fonts(chunk_container)?;
         #[cfg(feature = "pdf")]
-        self.serialize_embedded_pdfs(&mut chunk_container)?;
-        self.serialize_xyz_destinations(&mut chunk_container)?;
+        self.serialize_embedded_pdfs(chunk_container)?;
+        self.serialize_xyz_destinations(chunk_container)?;
         // It is important that we serialize the tags AFTER we have serialized the pages,
         // because page serialization will update the annotation refs of the page infos,
         // and when serializing the parent tree map we need to know the refs of the annotations
-        self.serialize_tag_tree(&mut chunk_container)?;
+        self.serialize_tag_tree(chunk_container)?;
 
-        // Create the final PDF.
-        let pdf = chunk_container.finish(&mut self)?;
-        self.register_limits(pdf.limits());
+        Ok(())
+    }
 
+    fn check(mut self) -> KrillaResult<()> {
         self.check_validator_limits();
 
         if !self.validation_errors.is_empty() {
@@ -524,7 +550,7 @@ impl SerializeContext {
         // Just a sanity check that we've actually processed all items.
         self.global_objects.assert_all_taken();
 
-        Ok(pdf)
+        Ok(())
     }
 }
 
