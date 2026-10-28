@@ -29,7 +29,8 @@ pub(crate) fn metadata_impl(document: &mut Document) {
         .title("An awesome title".to_string())
         .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()])
         .text_direction(TextDirection::LeftToRight)
-        .page_layout(PageLayout::TwoColumnRight);
+        .page_layout(PageLayout::TwoColumnRight)
+        .display_doc_title(true);
     document.set_metadata(metadata);
 }
 
@@ -60,14 +61,6 @@ fn metadata_version_id_pdf_a1(document: &mut Document) {
     let metadata = Metadata::new()
         .creation_date(datetime())
         .version_id("1.2.3".to_string());
-    document.set_metadata(metadata);
-}
-
-#[snapshot(document)]
-fn metadata_display_doc_title(document: &mut Document) {
-    let metadata = Metadata::new()
-        .title("An awesome title".to_string())
-        .display_doc_title(true);
     document.set_metadata(metadata);
 }
 

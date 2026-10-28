@@ -65,6 +65,7 @@ endobj
   /Metadata 6 0 R
   /Lang (en)
   /ViewerPreferences <<
+    /DisplayDocTitle true
     /Direction /L2R
   >>
   /PageLayout /TwoColumnRight
@@ -89,5 +90,5 @@ trailer
   /ID [(n8mlnPR1ns3UbKG+gfCU9w==) (lP7l5hzg4HequjqhwKmb+g==)]
 >>
 startxref
-2227
+2253
 %%EOF
