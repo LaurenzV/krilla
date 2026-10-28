@@ -29,7 +29,8 @@ pub(crate) fn metadata_impl(document: &mut Document) {
         .title("An awesome title".to_string())
         .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()])
         .text_direction(TextDirection::LeftToRight)
-        .page_layout(PageLayout::TwoColumnRight);
+        .page_layout(PageLayout::TwoColumnRight)
+        .display_doc_title(true);
     document.set_metadata(metadata);
 }
 
