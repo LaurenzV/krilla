@@ -1305,7 +1305,7 @@ pub mod variable_text {
         */
         /// One of the 14 standard type 1 PDF fonts.
         ///
-        /// They are not available in PDF 2.0, where finishing the document returns
+        /// krilla doesn't support them in PDF 2.0 yet; see
         /// [`KrillaError::StandardFont`](crate::error::KrillaError::StandardFont).
         Standard(StandardFont),
     }

@@ -54,8 +54,7 @@ pub enum KrillaError {
     /// supported by the used PDF version (only available in PDF 1.5+).
     #[cfg(feature = "raster-images")]
     SixteenBitImage(Image, Option<Location>),
-    /// One of the standard 14 fonts was used, even though it isn't
-    /// supported by the used PDF version (only available up to PDF 1.7).
+    /// A standard font was used in PDF 2.0, which krilla doesn't support yet.
     StandardFont(StandardFont),
 }
 
@@ -103,13 +102,11 @@ impl Display for KrillaError {
                 )?;
                 write_location(f, *location)
             }
-            KrillaError::StandardFont(font) => {
-                write!(
-                    f,
-                    "the standard font {} requires PDF 1.7 or older, but the selected PDF version does not support it",
-                    font.base_font()
-                )
-            }
+            KrillaError::StandardFont(font) => write!(
+                f,
+                "krilla doesn't support the standard font {} in PDF 2.0",
+                font.base_font()
+            ),
         }
     }
 }
