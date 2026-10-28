@@ -34,6 +34,7 @@ use crate::page::{InternalPage, PageLabel, PageLabelContainer};
 use crate::pdf::{PdfDocument, PdfSerializerContext};
 use crate::resource;
 use crate::resource::{Resource, Resourceable};
+use crate::resources::Resources;
 use crate::sink::{ObjectSink, SinkOutput};
 use crate::surface::{Location, Surface};
 use crate::text::{Font, FontContainer, FontIdentifier, GlyphId, StandardFont};
@@ -292,6 +293,27 @@ pub(crate) struct SerializeContext {
     /// The current location, if set.
     pub(crate) location: Option<Location>,
     pub(crate) xobject_tags: XObjectTags,
+    /// The fonts and images that this document shares with the documents
+    /// before and after it. Its fonts are in `global_objects.font_map` while
+    /// the document lives.
+    resources: Resources,
+    /// Whether the document finishes with its resources, which then write
+    /// its fonts, instead of writing every object itself.
+    keep_resources: bool,
+    /// The references of objects that the sink numbered before this
+    /// document, with their numbers.
+    pinned: HashMap<Ref, Ref>,
+    /// The images that an earlier document wrote, with their references in
+    /// this document and their numbers. They are written again unless the
+    /// document finishes with its resources.
+    #[cfg(feature = "raster-images")]
+    held_images: Vec<(Ref, i32, Image)>,
+    /// The fonts of `resources` that this document uses, with their
+    /// references in this document.
+    resource_fonts: Vec<(FontIdentifier, Ref)>,
+    /// The images that this document writes and that `resources` keeps
+    /// afterwards, by hash, with their references in this document.
+    resource_images: Vec<(u128, Ref)>,
 }
 
 impl SerializeContext {
@@ -301,6 +323,7 @@ impl SerializeContext {
         serialize_settings.enable_tagging |= serialize_settings.validators().requires_tagging();
         serialize_settings.xmp_metadata |= serialize_settings.validators().requires_xmp_metadata();
 
+        let resources = Resources::new(serialize_settings.clone());
         let mut cur_ref = Ref::new(1);
         let page_tree_ref = cur_ref.bump();
         let pdf2_ns = Pdf2Namespaces {
@@ -326,7 +349,27 @@ impl SerializeContext {
             limits: Limits::new(),
             xobject_tags: XObjectTags::default(),
             validation_store: ValidationStore::new(),
+            resources,
+            keep_resources: false,
+            pinned: HashMap::new(),
+            #[cfg(feature = "raster-images")]
+            held_images: vec![],
+            resource_fonts: vec![],
+            resource_images: vec![],
         }
+    }
+
+    /// Creates a context that draws with the fonts and images of
+    /// `resources`.
+    pub(crate) fn new_with_resources(mut resources: Resources) -> Self {
+        let mut sc = Self::new(resources.settings.clone());
+        *sc.global_objects.font_map = std::mem::take(&mut resources.fonts)
+            .into_iter()
+            .map(|(font, container)| (font, Rc::new(RefCell::new(container))))
+            .collect();
+        sc.resources = resources;
+
+        sc
     }
 
     pub(crate) fn page_infos(&self) -> &[PageInfo] {
@@ -478,8 +521,62 @@ impl SerializeContext {
         sink: &mut dyn ObjectSink,
     ) -> KrillaResult<SinkOutput> {
         self.serialize_deferred(&mut chunk_container)?;
-        let output = chunk_container.finish_into(&mut self, sink)?;
+        let (output, _) = chunk_container.finish_into(&mut self, sink, &HashMap::new())?;
         self.check()?;
+
+        Ok(output)
+    }
+
+    /// Writes the objects of `chunk_container` into `sink`, apart from the
+    /// fonts and images of the resources that it refers to, and returns the
+    /// resources whether or not writing succeeded.
+    pub(crate) fn finish_with_resources(
+        mut self,
+        chunk_container: ChunkContainer,
+        sink: &mut dyn ObjectSink,
+    ) -> (KrillaResult<SinkOutput>, Resources) {
+        self.keep_resources = true;
+        let result = self.write_with_resources(chunk_container, sink);
+        if !self.global_objects.font_map.is_taken() {
+            self.resources.fonts = unwrap_fonts(self.global_objects.font_map.take());
+        }
+
+        (result, self.resources)
+    }
+
+    fn write_with_resources(
+        &mut self,
+        mut chunk_container: ChunkContainer,
+        sink: &mut dyn ObjectSink,
+    ) -> KrillaResult<SinkOutput> {
+        self.serialize_deferred(&mut chunk_container)?;
+
+        // A font that no document used before gets its number now. The
+        // resources keep it only once the document is written.
+        let resources = &self.resources;
+        let mut pinned = std::mem::take(&mut self.pinned);
+        let mut new_fonts = vec![];
+        for (identifier, ref_) in std::mem::take(&mut self.resource_fonts) {
+            let number = match resources.font_numbers.get(&identifier) {
+                Some(&number) => number,
+                None => {
+                    let number = sink.allocate();
+                    new_fonts.push((identifier, number));
+                    number
+                }
+            };
+            pinned.insert(ref_, Ref::new(number));
+        }
+
+        let (output, remapper) = chunk_container.finish_into(self, sink, &pinned)?;
+        self.check()?;
+
+        let images = std::mem::take(&mut self.resource_images);
+        let resources = &mut self.resources;
+        resources.font_numbers.extend(new_fonts);
+        for (hash, ref_) in images {
+            resources.images.insert(hash, remapper[&ref_].get());
+        }
 
         Ok(output)
     }
@@ -501,6 +598,8 @@ impl SerializeContext {
         // no object that is serialized afterwards must depend on it.
 
         // Serialize all objects that can only be written in the end.
+        #[cfg(feature = "raster-images")]
+        self.serialize_held_images(chunk_container);
         self.serialize_destination_profiles(chunk_container);
         self.serialize_page_label_tree(chunk_container);
         self.serialize_outline(chunk_container);
@@ -521,7 +620,17 @@ impl SerializeContext {
         Ok(())
     }
 
-    fn check(mut self) -> KrillaResult<()> {
+    fn check(&mut self) -> KrillaResult<()> {
+        self.check_errors()?;
+
+        // Just a sanity check that we've actually processed all items.
+        self.global_objects.assert_all_taken();
+
+        Ok(())
+    }
+
+    /// Returns the validation errors and the exceeded limits.
+    pub(crate) fn check_errors(&mut self) -> KrillaResult<()> {
         self.check_validator_limits();
 
         if !self.validation_errors.is_empty() {
@@ -533,7 +642,7 @@ impl SerializeContext {
             )]
             let mut seen = HashSet::new();
 
-            for error in self.validation_errors {
+            for error in std::mem::take(&mut self.validation_errors) {
                 if !seen.contains(&error) {
                     seen.insert(error.clone());
                     errors.push(error);
@@ -546,9 +655,6 @@ impl SerializeContext {
         if let Some(limit_error) = self.check_version_limits() {
             return Err(KrillaError::Limit(limit_error));
         }
-
-        // Just a sanity check that we've actually processed all items.
-        self.global_objects.assert_all_taken();
 
         Ok(())
     }
@@ -688,9 +794,23 @@ impl SerializeContext {
         chunk_container: &mut ChunkContainer,
         image: Image,
     ) -> Ref {
-        self.register_cached(image, |sc, object, root_ref| {
-            object.serialize(sc, chunk_container, root_ref);
-        })
+        let hash = image.sip_hash();
+        if let Some(&ref_) = self.cached_mappings.get(&hash) {
+            return ref_;
+        }
+
+        let root_ref = self.new_ref();
+        self.cached_mappings.insert(hash, root_ref);
+        match self.resources.images.get(&hash).copied() {
+            // A document before this one wrote the image.
+            Some(number) => self.held_images.push((root_ref, number, image)),
+            None => {
+                image.serialize(self, chunk_container, root_ref);
+                self.resource_images.push((hash, root_ref));
+            }
+        }
+
+        root_ref
     }
 
     pub(crate) fn register_xyz_destination(&mut self, dest: XyzDestination) -> Ref {
@@ -827,22 +947,27 @@ impl SerializeContext {
 
     fn serialize_fonts(&mut self, chunk_container: &mut ChunkContainer) -> KrillaResult<()> {
         let fonts = self.global_objects.font_map.take();
-        for font_container in fonts.values() {
-            let borrowed = font_container.borrow();
-
-            if !borrowed.type3_mapper().is_empty() {
-                for t3_font in borrowed.type3_mapper().fonts() {
-                    let f = self.register_font_identifier(t3_font.identifier());
-                    t3_font.serialize(self, chunk_container, f.get_ref());
+        if self.keep_resources {
+            // The resources write their fonts when they are finalized. The
+            // document only refers to the ones it uses.
+            for font_container in fonts.values() {
+                let borrowed = font_container.borrow();
+                let cid_font = borrowed.cid_font();
+                let identifiers = borrowed
+                    .type3_mapper()
+                    .fonts()
+                    .iter()
+                    .map(|t3_font| t3_font.identifier())
+                    .chain((!cid_font.is_empty()).then(|| cid_font.identifier()));
+                for identifier in identifiers {
+                    if let Some(&ref_) = self.cached_mappings.get(&identifier.sip_hash()) {
+                        self.resource_fonts.push((identifier, ref_));
+                    }
                 }
             }
-
-            if !borrowed.cid_font().is_empty() {
-                let f = self.register_font_identifier(borrowed.cid_font().identifier());
-                borrowed
-                    .cid_font()
-                    .serialize(self, chunk_container, f.get_ref())?;
-            }
+            self.resources.fonts = unwrap_fonts(fonts);
+        } else {
+            self.serialize_own_fonts(chunk_container, &fonts)?;
         }
 
         for font in StandardFont::ALL {
@@ -856,6 +981,54 @@ impl SerializeContext {
                     .fonts
                     .type1_font(ref_)
                     .base_font(font.base_font().to_pdf_name());
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Refers to the images that an earlier document wrote, if the document
+    /// finishes with its resources, and writes them again otherwise.
+    #[cfg(feature = "raster-images")]
+    fn serialize_held_images(&mut self, chunk_container: &mut ChunkContainer) {
+        for (root_ref, number, image) in std::mem::take(&mut self.held_images) {
+            if self.keep_resources {
+                self.pinned.insert(root_ref, Ref::new(number));
+            } else {
+                image.serialize(self, chunk_container, root_ref);
+            }
+        }
+    }
+
+    fn serialize_own_fonts(
+        &mut self,
+        chunk_container: &mut ChunkContainer,
+        fonts: &IndexMap<Font, Rc<RefCell<FontContainer>>>,
+    ) -> KrillaResult<()> {
+        for font_container in fonts.values() {
+            let borrowed = font_container.borrow();
+
+            // A font that only earlier documents of the same resources used
+            // has no reference in this one.
+            let used = |sc: &Self, identifier: FontIdentifier| {
+                sc.cached_mappings.contains_key(&identifier.sip_hash())
+            };
+
+            if !borrowed.type3_mapper().is_empty() {
+                for t3_font in borrowed.type3_mapper().fonts() {
+                    if !used(self, t3_font.identifier()) {
+                        continue;
+                    }
+                    let f = self.register_font_identifier(t3_font.identifier());
+                    t3_font.serialize(self, chunk_container, f.get_ref());
+                }
+            }
+
+            if !borrowed.cid_font().is_empty() && used(self, borrowed.cid_font().identifier()) {
+                let f = self.register_font_identifier(borrowed.cid_font().identifier());
+                borrowed
+                    .cid_font()
+                    .serialize(self, chunk_container, f.get_ref())?;
             }
         }
 
@@ -1153,6 +1326,21 @@ pub(crate) struct Pdf2Namespaces {
     pub(crate) ssn_ref: Ref,
     /// The ref of the custom krilla namespace used for role mapping.
     pub(crate) krilla_ref: Ref,
+}
+
+/// Takes the font containers out of the context that a finished document
+/// leaves.
+fn unwrap_fonts(
+    fonts: IndexMap<Font, Rc<RefCell<FontContainer>>>,
+) -> IndexMap<Font, FontContainer> {
+    fonts
+        .into_iter()
+        .map(|(font, container)| {
+            let container = Rc::try_unwrap(container)
+                .unwrap_or_else(|_| panic!("a font container should not outlive its document"));
+            (font, container.into_inner())
+        })
+        .collect()
 }
 
 #[derive(Default)]
