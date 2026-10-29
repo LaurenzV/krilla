@@ -167,6 +167,8 @@ pub mod num;
 pub mod page;
 #[cfg(feature = "pdf")]
 pub mod pdf;
+pub mod resources;
+pub mod sink;
 pub mod stream;
 pub mod surface;
 pub mod text;

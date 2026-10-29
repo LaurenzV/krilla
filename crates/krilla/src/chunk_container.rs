@@ -1,4 +1,4 @@
-use pdf_writer::{Chunk, Finish, Name, Pdf, Ref, Str, TextStr};
+use pdf_writer::{Chunk, Finish, Limits, Name, Pdf, Ref, Str, TextStr};
 use std::collections::HashMap;
 use std::sync::OnceLock;
 use xmp_writer::{RenditionClass, XmpWriter};
@@ -8,6 +8,7 @@ use crate::error::KrillaResult;
 use crate::interchange::metadata::Metadata;
 use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
+use crate::sink::{ObjectSink, SinkOutput};
 use crate::util::{stable_hash_base64, Deferred};
 
 type DChunk = Deferred<Chunk>;
@@ -101,12 +102,104 @@ impl ChunkContainer {
         }
     }
 
+    /// Assigns each object of every chunk its final reference, from `pinned`
+    /// where it names one and from `allocate` otherwise, and returns the
+    /// mapping, which also holds every entry of `pinned`, with the total
+    /// length of the chunks.
+    fn remap(
+        &self,
+        sc: &mut SerializeContext,
+        pinned: &HashMap<Ref, Ref>,
+        allocate: &mut dyn FnMut() -> Ref,
+    ) -> KrillaResult<(HashMap<Ref, Ref>, usize)> {
+        let mut remapper = pinned.clone();
+        let mut chunks_byte_len = 0;
+
+        self.visit(sc, &mut |chunk| {
+            for object_ref in chunk.refs() {
+                if !pinned.contains_key(&object_ref) {
+                    let existing = remapper.insert(object_ref, allocate());
+                    debug_assert!(existing.is_none());
+                }
+            }
+            chunks_byte_len += chunk.len();
+        })?;
+
+        Ok((remapper, chunks_byte_len))
+    }
+
+    /// Writes every chunk into `sink`, numbered as [`ChunkContainer::remap`]
+    /// numbers them with `pinned`, and returns the mapping.
+    pub(crate) fn write_into(
+        &self,
+        sc: &mut SerializeContext,
+        sink: &mut dyn ObjectSink,
+        pinned: &HashMap<Ref, Ref>,
+    ) -> KrillaResult<HashMap<Ref, Ref>> {
+        let (remapper, _) = self.remap(sc, pinned, &mut || Ref::new(sink.allocate()))?;
+
+        let mut limits = Limits::new();
+        self.visit(sc, &mut |chunk| {
+            let renumbered = chunk.renumber(|old| remapper[&old]);
+            limits.merge(renumbered.limits());
+            sink.write(renumbered.as_bytes());
+        })?;
+        sc.register_limits(&limits);
+
+        Ok(remapper)
+    }
+
+    /// Writes every chunk into `sink` instead of a PDF file, numbered with
+    /// references that the sink allocates or that `pinned` names, and
+    /// returns the references that a document catalog would hold, with the
+    /// mapping.
+    pub(crate) fn finish_into(
+        self,
+        sc: &mut SerializeContext,
+        sink: &mut dyn ObjectSink,
+        pinned: &HashMap<Ref, Ref>,
+    ) -> KrillaResult<(SinkOutput, HashMap<Ref, Ref>)> {
+        let remapper = self.write_into(sc, sink, pinned)?;
+
+        let mut named_destinations = sc
+            .global_objects
+            .named_destinations
+            .take()
+            .into_iter()
+            .map(|(name, (dest_ref, _))| (name.as_bytes().to_vec(), remapper[&dest_ref].get()))
+            .collect::<Vec<_>>();
+        named_destinations.sort();
+        let embedded_files = sc
+            .global_objects
+            .embedded_files
+            .take()
+            .into_iter()
+            .map(|(name, file_ref)| (name.into_bytes(), remapper[&file_ref].get()))
+            .collect();
+
+        let get = |entry: &Option<(Ref, Chunk)>| entry.as_ref().map(|e| remapper[&e.0].get());
+        let page_tree = self
+            .non_stream
+            .page_tree
+            .as_ref()
+            .expect("page tree should exist");
+
+        let output = SinkOutput {
+            pages: remapper[&page_tree.0].get(),
+            acro_form: get(&self.non_stream.forms),
+            page_labels: get(&self.non_stream.page_label_tree),
+            output_intents: get(&self.non_stream.destination_profiles),
+            struct_tree_root: get(&self.non_stream.struct_tree_root),
+            outlines: get(&self.non_stream.outline),
+            named_destinations,
+            embedded_files,
+        };
+
+        Ok((output, remapper))
+    }
+
     pub(crate) fn finish(self, sc: &mut SerializeContext) -> KrillaResult<Pdf> {
         let mut remapped_ref = Ref::new(1);
-        let mut remapper = HashMap::new();
-
-        // Allows us to estimate the capacity we will need for the new PDF.
-        let mut chunks_byte_len = 0;
 
         // This traverses the chunks in the order that we will write them to the PDF and assigns new
         // references as we go. This gives us the advantage that the PDF will be numbered with
@@ -115,13 +208,8 @@ impl ChunkContainer {
         // easier down the road.
         //
         // It also allows us to estimate the capacity we will need for the new PDF.
-        self.visit(sc, &mut |chunk| {
-            for object_ref in chunk.refs() {
-                let existing = remapper.insert(object_ref, remapped_ref.bump());
-                debug_assert!(existing.is_none());
-            }
-            chunks_byte_len += chunk.len();
-        })?;
+        let (remapper, chunks_byte_len) =
+            self.remap(sc, &HashMap::new(), &mut || remapped_ref.bump())?;
 
         // Chunk length is not an exact number because the length might change as we renumber,
         // so we add a bit of a padding by multiplying with 1.1. The 200 is additional padding

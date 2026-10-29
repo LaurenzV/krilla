@@ -25,7 +25,9 @@ use crate::interchange::tagging::TagTree;
 use crate::page::{Page, PageSettings};
 #[cfg(feature = "pdf")]
 use crate::pdf::PdfDocument;
+use crate::resources::Resources;
 use crate::serialize::{SerializeContext, SerializeSettings};
+use crate::sink::{ObjectSink, SinkOutput};
 use crate::surface::Location;
 
 /// A PDF document.
@@ -55,6 +57,23 @@ impl Document {
     /// Create a new document with custom serialize settings.
     pub fn new_with(serialize_settings: SerializeSettings) -> Self {
         let serializer_context = SerializeContext::new(serialize_settings);
+        let chunk_container = ChunkContainer::new(&serializer_context);
+
+        Self {
+            serializer_context,
+            chunk_container,
+        }
+    }
+
+    /// Create a new document that draws with the fonts and images of
+    /// `resources`, and with their serialize settings.
+    ///
+    /// [`Document::finish_with_resources`] returns the resources with what
+    /// the document added. [`Document::finish`] and
+    /// [`Document::finish_into`] write every font and image the document
+    /// uses themselves, and drop the resources.
+    pub fn new_with_resources(resources: Resources) -> Self {
+        let serializer_context = SerializeContext::new_with_resources(resources);
         let chunk_container = ChunkContainer::new(&serializer_context);
 
         Self {
@@ -158,5 +177,50 @@ impl Document {
         } = self;
 
         Ok(serializer_context.finish(chunk_container)?.finish())
+    }
+
+    /// Write the objects of the document into `sink` instead of a PDF file.
+    ///
+    /// The objects are numbered with numbers that the sink allocates, and the
+    /// result names the objects that a document catalog would reference.
+    pub fn finish_into(mut self, sink: &mut dyn ObjectSink) -> KrillaResult<SinkOutput> {
+        // Write empty page if none has been created yet.
+        if self.serializer_context.page_infos().is_empty() {
+            self.start_page();
+        }
+
+        let Self {
+            serializer_context,
+            chunk_container,
+        } = self;
+
+        serializer_context.finish_into(chunk_container, sink)
+    }
+
+    /// Write the objects of the document into `sink`, as
+    /// [`Document::finish_into`] does, apart from its fonts and the images
+    /// that an earlier document of the same resources wrote. Its content
+    /// refers to them by the numbers that the resources keep, and
+    /// [`Resources::finalize_into`] writes the fonts.
+    ///
+    /// Returns the resources, with the glyphs that the document drew, whether
+    /// or not writing succeeded. When it fails, the resources keep no number
+    /// that this call allocated. A document created without resources starts
+    /// with empty ones that use its serialize settings.
+    pub fn finish_with_resources(
+        mut self,
+        sink: &mut dyn ObjectSink,
+    ) -> (KrillaResult<SinkOutput>, Resources) {
+        // Write empty page if none has been created yet.
+        if self.serializer_context.page_infos().is_empty() {
+            self.start_page();
+        }
+
+        let Self {
+            serializer_context,
+            chunk_container,
+        } = self;
+
+        serializer_context.finish_with_resources(chunk_container, sink)
     }
 }
