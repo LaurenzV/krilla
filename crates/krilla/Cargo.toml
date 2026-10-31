@@ -26,6 +26,11 @@ default = ["raster-images", "simple-text"]
 # Allow embedding pages from other PDF documents.
 "pdf" = ["dep:hayro-write"]
 
+[package.metadata.docs.rs]
+features = ["pdf"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+
 [dependencies]
 base64 = { workspace = true }
 bumpalo = { workspace = true }
