@@ -3,6 +3,7 @@ use krilla::image::Image;
 use krilla::surface::Surface;
 use usvg::tiny_skia_path::Transform;
 
+use crate::cache::RasterKey;
 use crate::util::KrillaTransformExt;
 use crate::ProcessContext;
 
@@ -13,7 +14,7 @@ use crate::ProcessContext;
 pub(crate) fn render(
     group: &usvg::Group,
     surface: &mut Surface,
-    process_context: &ProcessContext,
+    process_context: &mut ProcessContext,
 ) -> Option<()> {
     let layer_bbox = group.layer_bounding_box().transform(group.transform())?;
 
@@ -55,8 +56,6 @@ pub(crate) fn render(
     let width = pixmap_size.width().round() as u32;
     let height = pixmap_size.height().round() as u32;
 
-    let mut pixmap = tiny_skia::Pixmap::new(width, height)?;
-
     let initial_transform = Transform::from_scale(raster_scale, raster_scale)
         .pre_concat(Transform::from_translate(-layer_bbox.x(), -layer_bbox.y()))
         // This one is a hack because resvg::render_node will take the absolute layer bbox into consideration
@@ -67,22 +66,47 @@ pub(crate) fn render(
             group.abs_layer_bounding_box().y(),
         ));
 
-    resvg::render_node(
-        &usvg::Node::Group(Box::new(group.clone())),
-        initial_transform,
-        &mut pixmap.as_mut(),
-    );
+    let key = process_context.cache.as_ref().map(|(tree, _)| {
+        RasterKey::new(
+            tree,
+            group,
+            initial_transform,
+            width,
+            height,
+            process_context.svg_settings.filter_scale,
+        )
+    });
+    let cached = match (&mut process_context.cache, key) {
+        (Some((_, cache)), Some(key)) => cache.get(key),
+        _ => None,
+    };
 
-    let demultiplied = pixmap
-        .pixels()
-        .iter()
-        .flat_map(|p| {
-            let c = p.demultiply();
-            [c.red(), c.green(), c.blue(), c.alpha()]
-        })
-        .collect::<Vec<_>>();
+    let image = if let Some(image) = cached {
+        image
+    } else {
+        let mut pixmap = tiny_skia::Pixmap::new(width, height)?;
 
-    let image = Image::from_rgba8(demultiplied, width, height);
+        resvg::render_node(
+            &usvg::Node::Group(Box::new(group.clone())),
+            initial_transform,
+            &mut pixmap.as_mut(),
+        );
+
+        let demultiplied = pixmap
+            .pixels()
+            .iter()
+            .flat_map(|p| {
+                let c = p.demultiply();
+                [c.red(), c.green(), c.blue(), c.alpha()]
+            })
+            .collect::<Vec<_>>();
+
+        let image = Image::from_rgba8(demultiplied, width, height);
+        if let (Some((tree, cache)), Some(key)) = (&mut process_context.cache, key) {
+            cache.insert(key, tree, image.clone());
+        }
+        image
+    };
     let size = Size::from_wh(layer_bbox.width(), layer_bbox.height())?;
 
     surface.push_transform(&krilla::geom::Transform::from_translate(
