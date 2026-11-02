@@ -825,11 +825,12 @@ impl SerializeContext {
                 if self.serialize_settings.pdf_version() >= PdfVersion::Pdf20 {
                     return Err(KrillaError::StandardFont(font));
                 }
-                chunk_container
-                    .non_stream
-                    .fonts
-                    .type1_font(ref_)
-                    .base_font(font.base_font().to_pdf_name());
+
+                let mut font_writer = chunk_container.non_stream.fonts.type1_font(ref_);
+                font_writer.base_font(font.base_font().to_pdf_name());
+                if let Some(encoding) = font.encoding() {
+                    font_writer.encoding_predefined(encoding.to_pdf_name());
+                }
             }
         }
 
