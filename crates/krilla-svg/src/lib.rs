@@ -26,6 +26,7 @@ pub use usvg;
 use crate::text::Fonts;
 use crate::util::RectExt;
 
+mod cache;
 mod clip_path;
 mod filter;
 mod group;
@@ -34,6 +35,8 @@ mod mask;
 mod path;
 mod text;
 mod util;
+
+pub use cache::FilterCache;
 
 /// Settings that should be applied when converting a SVG.
 #[derive(Copy, Clone, Debug)]
@@ -59,38 +62,74 @@ impl Default for SvgSettings {
 pub trait SurfaceExt {
     /// Draw a `usvg` tree onto a surface with the given size and settings.
     fn draw_svg(&mut self, tree: &Tree, size: Size, svg_settings: SvgSettings) -> Option<()>;
+
+    /// Draw an immutable resolved tree, reusing filtered rasters within `cache`.
+    /// Keep the cache local to one export to bound retention to that export.
+    fn draw_svg_cached(
+        &mut self,
+        tree: &Arc<Tree>,
+        size: Size,
+        svg_settings: SvgSettings,
+        _cache: &mut FilterCache,
+    ) -> Option<()> {
+        self.draw_svg(tree, size, svg_settings)
+    }
 }
 
 impl SurfaceExt for Surface<'_> {
     fn draw_svg(&mut self, tree: &Tree, size: Size, svg_settings: SvgSettings) -> Option<()> {
-        let old_fill = self.get_fill().cloned();
-        let old_stroke = self.get_stroke().cloned();
-
-        let transform = Transform::from_scale(
-            size.width() / tree.size().width(),
-            size.height() / tree.size().height(),
-        );
-        self.push_transform(&transform);
-        self.push_clip_path(
-            &Rect::from_xywh(0.0, 0.0, tree.size().width(), tree.size().height())
-                .unwrap()
-                .to_clip_path(),
-            &FillRule::NonZero,
-        );
-        render_tree(tree, svg_settings, self);
-        self.pop();
-        self.pop();
-
-        self.set_fill(old_fill);
-        self.set_stroke(old_stroke);
-
-        Some(())
+        draw_svg_impl(self, tree, size, svg_settings, None)
     }
+
+    fn draw_svg_cached(
+        &mut self,
+        tree: &Arc<Tree>,
+        size: Size,
+        svg_settings: SvgSettings,
+        cache: &mut FilterCache,
+    ) -> Option<()> {
+        draw_svg_impl(self, tree, size, svg_settings, Some((tree, cache)))
+    }
+}
+
+fn draw_svg_impl(
+    surface: &mut Surface,
+    tree: &Tree,
+    size: Size,
+    svg_settings: SvgSettings,
+    cache: Option<(&Arc<Tree>, &mut FilterCache)>,
+) -> Option<()> {
+    let mut db = tree.fontdb().clone();
+    let mut fc = ProcessContext::new(Arc::make_mut(&mut db), svg_settings);
+    fc.cache = cache;
+    let old_fill = surface.get_fill().cloned();
+    let old_stroke = surface.get_stroke().cloned();
+
+    let transform = Transform::from_scale(
+        size.width() / tree.size().width(),
+        size.height() / tree.size().height(),
+    );
+    surface.push_transform(&transform);
+    surface.push_clip_path(
+        &Rect::from_xywh(0.0, 0.0, tree.size().width(), tree.size().height())
+            .unwrap()
+            .to_clip_path(),
+        &FillRule::NonZero,
+    );
+    group::render(tree.root(), surface, &mut fc);
+    surface.pop();
+    surface.pop();
+
+    surface.set_fill(old_fill);
+    surface.set_stroke(old_stroke);
+
+    Some(())
 }
 
 struct ProcessContext<'a> {
     pub(crate) fonts: Fonts<'a>,
     svg_settings: SvgSettings,
+    cache: Option<(&'a Arc<Tree>, &'a mut FilterCache)>,
 }
 
 impl<'a> ProcessContext<'a> {
@@ -98,6 +137,7 @@ impl<'a> ProcessContext<'a> {
         Self {
             fonts: Fonts::new(tree_fontdb),
             svg_settings,
+            cache: None,
         }
     }
 }
