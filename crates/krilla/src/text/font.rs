@@ -89,6 +89,13 @@ impl StandardFont {
             Self::ZapfDingbats => "ZapfDingbats",
         }
     }
+
+    pub(crate) fn encoding(&self) -> Option<&'static str> {
+        match self {
+            StandardFont::Symbol | StandardFont::ZapfDingbats => None,
+            _ => Some("WinAnsiEncoding"),
+        }
+    }
 }
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
