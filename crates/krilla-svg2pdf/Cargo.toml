@@ -1,0 +1,16 @@
+[package]
+name = "krilla-svg2pdf"
+version = "0.1.0"
+description = "The command line interface for krilla-svg."
+authors = { workspace = true }
+edition = { workspace = true }
+rust-version = { workspace = true }
+repository = { workspace = true }
+readme = { workspace = true }
+license = { workspace = true }
+
+[dependencies]
+clap = { workspace = true }
+fontdb = { workspace = true }
+krilla = { workspace = true }
+krilla-svg = { workspace = true }
