@@ -55,6 +55,7 @@ pub(crate) struct ContentBuilder {
     /// A temporary buffer that's reused across the builder.
     scratch: Vec<u8>,
     pub(crate) active_marked_content: bool,
+    pub(crate) active_variable_text: bool,
     pub(crate) xobject_identifier: Option<XObjectTagIdentifier>,
 }
 
@@ -101,6 +102,7 @@ impl ContentBuilder {
             bbox: None,
             scratch: Vec::new(),
             active_marked_content: false,
+            active_variable_text: false,
             xobject_identifier: None,
         }
     }
@@ -1078,7 +1080,7 @@ impl ContentBuilder {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
                     content_builder.set_fill_opacity(opacity);
-                    let cs = color.color_space(sc);
+                    let cs = content_builder.get_color_space(sc, color);
                     let color_space_resource = ContentColorSpace::from_color_space(
                         sc,
                         chunk_container,
@@ -1125,7 +1127,7 @@ impl ContentBuilder {
 
         match &paint.0 {
             InnerPaint::Color(c) => {
-                let cs = c.color_space(sc);
+                let cs = self.get_color_space(sc, c);
                 let color_space_resource = ContentColorSpace::from_color_space(
                     sc,
                     chunk_container,
@@ -1303,6 +1305,20 @@ impl ContentBuilder {
                     self.content.close_path();
                 }
             };
+        }
+    }
+
+    fn get_color_space(&self, sc: &mut SerializeContext, color: &Color) -> ColorSpace {
+        // Adobe Acrobat does not render the appearance stream of textboxes and
+        // choice fields in interactive mode if they use a non-device color space.
+        // In read-only/print mode, non-device color spaces are rendered correctly.
+        // Therefore, we provide a best-effort workaround by preferring device color spaces
+        // even when no_device_cs is true in `SerializeSettings`.
+        // This is still PDF/A compliant due to the sRGB OutputIntent.
+        if self.active_variable_text {
+            color.color_space_prefer_device(sc)
+        } else {
+            color.color_space(sc)
         }
     }
 }
