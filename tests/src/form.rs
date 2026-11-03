@@ -427,6 +427,71 @@ fn forms_button_actions(d: &mut Document) {
     });
 }
 
+#[snapshot(document, settings_2)]
+fn forms_prefer_device_color(d: &mut Document) {
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+
+    let font_data = LIBERTINUS_SERIF.clone();
+    let font = Font::new(font_data, 0).unwrap();
+    let mut surface = page.surface();
+
+    let paint: Paint = rgb::Color::new(100, 150, 50).into();
+    let appearance = {
+        let mut stream_builder = surface.stream_builder();
+        let mut stream_surface = stream_builder.surface_with_bbox(wh_to_rect(40.0, 20.0));
+
+        stream_surface.start_variable_text();
+
+        stream_surface.set_fill(Some(Fill {
+            paint: paint.clone(),
+            ..Default::default()
+        }));
+        stream_surface.draw_text(
+            Point::from_xy(25.0, 15.0),
+            font.clone(),
+            10.0,
+            "Hi.",
+            false,
+            TextDirection::Auto,
+        );
+
+        stream_surface.end_variable_text();
+        stream_surface.finish();
+
+        stream_builder.finish()
+    };
+
+    surface.set_fill(Some(Fill {
+        paint: paint.clone(),
+        ..Default::default()
+    }));
+    surface.draw_text(
+        Point::from_xy(25.0, 50.0),
+        font,
+        10.0,
+        "Text outside field.",
+        false,
+        TextDirection::Auto,
+    );
+
+    surface.finish();
+
+    let mut text_field = FormField::text("text_field".to_string());
+    text_field.set_value("Hi.".to_string());
+    text_field.set_appearance(variable_appearance(paint));
+
+    let text_widget =
+        text_field.new_widget(Rect::from_xywh(50.0, 0.0, 40.0, 20.0).unwrap(), appearance);
+
+    page.add_widget_annotation(&mut text_field, text_widget.into());
+
+    page.finish();
+
+    d.set_field_tree(FieldTree {
+        fields: vec![text_field.into()],
+    });
+}
+
 fn variable_appearance(paint: Paint) -> VariableAppearance {
     VariableAppearance {
         font: FormFont::Standard(StandardFont::TimesRoman),

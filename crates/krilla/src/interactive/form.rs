@@ -1304,14 +1304,16 @@ pub mod variable_text {
             if let Some(paint) = &self.paint {
                 match &paint.0 {
                     InnerPaint::Color(color) => {
-                        let color_space = color.color_space(sc);
+                        let color = color.to_regular();
+                        // Most readers only support device color spaces in the `/DA` field.
+                        let color_space = color.color_space_prefer_device(sc);
                         let content_color_space = ContentColorSpace::from_color_space(
                             sc,
                             chunk_container,
                             rd_builder,
-                            color_space,
+                            color_space.into(),
                         );
-                        set_solid_fill(&mut content, content_color_space, color);
+                        set_solid_fill(&mut content, content_color_space, &color.into());
                     }
                     _ => {
                         panic!("Only solid colors are supported on variable text");
