@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
+use krilla::configure::{ConfigurationBuilder, PdfVersion};
 use krilla::geom::Size;
-use krilla::image::Image;
-use krilla::page::Page;
+use krilla::image::{BitsPerComponent, CustomImage, Image, ImageColorspace};
+use krilla::page::{Page, PageSettings};
 use krilla::surface::Surface;
 use krilla::Document;
 use krilla_macros::{snapshot, visreg};
@@ -8,6 +11,7 @@ use krilla_macros::{snapshot, visreg};
 use crate::{
     load_custom_image, load_gif_image, load_jpg_image, load_png_image, load_webp_image, ASSETS_PATH,
 };
+use crate::{settings_1, SerializeSettings};
 
 fn image_visreg_impl(surface: &mut Surface, name: &str, load_fn: fn(&str) -> Image) {
     let image = load_fn(name);
@@ -223,4 +227,62 @@ fn image_no_device_cs(page: &mut Page) {
     let image = load_png_image("rgb8.png");
     let size = Size::from_wh(image.size().0 as f32, image.size().1 as f32).unwrap();
     surface.draw_image(image, size);
+}
+
+#[derive(Clone, Hash)]
+struct CmykImage {
+    icc: Arc<Vec<u8>>,
+}
+
+impl CustomImage for CmykImage {
+    fn color_channel(&self) -> &[u8] {
+        &[0, 255, 255, 0]
+    }
+
+    fn alpha_channel(&self) -> Option<&[u8]> {
+        None
+    }
+
+    fn bits_per_component(&self) -> BitsPerComponent {
+        BitsPerComponent::Eight
+    }
+
+    fn size(&self) -> (u32, u32) {
+        (1, 1)
+    }
+
+    fn icc_profile(&self) -> Option<&[u8]> {
+        Some(&self.icc)
+    }
+
+    fn color_space(&self) -> ImageColorspace {
+        ImageColorspace::Cmyk
+    }
+}
+
+#[test]
+fn image_cmyk_icc_v2_4_is_embedded() {
+    // The profile header declares ICC version 2.4, which PDF 1.7 supports.
+    let icc = std::fs::read(ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap();
+    assert_eq!((icc[8], icc[9]), (2, 0x40));
+
+    let image = Image::from_custom(CmykImage { icc: Arc::new(icc) }, false).unwrap();
+    let settings = SerializeSettings {
+        configuration: ConfigurationBuilder::new()
+            .with_version(PdfVersion::Pdf17)
+            .finish()
+            .unwrap(),
+        ..settings_1()
+    };
+    let mut document = Document::new_with(settings);
+    let mut page = document.start_page_with(PageSettings::from_wh(100.0, 100.0).unwrap());
+    let mut surface = page.surface();
+    surface.draw_image(image, Size::from_wh(100.0, 100.0).unwrap());
+    surface.finish();
+    page.finish();
+    let pdf = document.finish().unwrap();
+
+    let contains = |needle: &[u8]| pdf.windows(needle.len()).any(|w| w == needle);
+    assert!(contains(b"/ICCBased"));
+    assert!(!contains(b"/DeviceCMYK"));
 }
