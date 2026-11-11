@@ -73,18 +73,12 @@ impl PdfVersion {
 
     #[cfg(feature = "raster-images")]
     pub(crate) fn supports_icc(&self, metadata: &ICCMetadata) -> bool {
-        // The highest ICC profile version per PDF version, see Table 67 in
-        // ISO 32000-1:2008. Profiles of earlier ICC versions are supported as well.
+        // See Table 67 in ISO 32000-1:2008 and Table 66 in ISO 32000-2:2020.
         let max_version = match self {
-            // ICC.1:1998-09 and its addendum ICC.1A:1999-04.
             PdfVersion::Pdf14 => (2, 3),
-            // ICC.1:2001-12.
             PdfVersion::Pdf15 => (4, 0),
-            // ICC.1:2003-09.
             PdfVersion::Pdf16 => (4, 1),
-            // ICC.1:2004-10.
             PdfVersion::Pdf17 => (4, 2),
-            // ICC.1:2010 (ISO 15076-1:2010), see Table 66 in ISO 32000-2:2020.
             PdfVersion::Pdf20 => (4, 3),
         };
 

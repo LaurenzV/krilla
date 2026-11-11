@@ -262,7 +262,6 @@ impl CustomImage for CmykImage {
 
 #[test]
 fn image_cmyk_icc_v2_4_is_embedded() {
-    // The profile header declares ICC version 2.4, which PDF 1.7 supports.
     let icc = std::fs::read(ASSETS_PATH.join("icc/eciCMYK_v2.icc")).unwrap();
     assert_eq!((icc[8], icc[9]), (2, 0x40));
 
