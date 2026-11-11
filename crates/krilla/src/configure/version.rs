@@ -73,7 +73,6 @@ impl PdfVersion {
 
     #[cfg(feature = "raster-images")]
     pub(crate) fn supports_icc(&self, metadata: &ICCMetadata) -> bool {
-        // See Table 67 in ISO 32000-1:2008 and Table 66 in ISO 32000-2:2020.
         let max_version = match self {
             PdfVersion::Pdf14 => (2, 3),
             PdfVersion::Pdf15 => (4, 0),
