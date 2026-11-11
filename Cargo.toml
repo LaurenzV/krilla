@@ -57,3 +57,4 @@ xmp-writer = "0.3.3"
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.18.1"
 zune-jpeg = "0.5.5"
+

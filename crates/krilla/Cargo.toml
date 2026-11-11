@@ -27,9 +27,8 @@ default = ["raster-images", "simple-text"]
 "pdf" = ["dep:hayro-write"]
 
 [package.metadata.docs.rs]
-features = ["pdf"]
+all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
-
 
 [dependencies]
 base64 = { workspace = true }
