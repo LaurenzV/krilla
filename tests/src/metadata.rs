@@ -87,3 +87,15 @@ fn metadata_pdf_20_author(document: &mut Document) {
         .creation_date(datetime());
     document.set_metadata(metadata);
 }
+
+#[snapshot(document, settings_5)]
+fn metadata_trapped(document: &mut Document) {
+    let metadata = Metadata::new().trapped(false);
+    document.set_metadata(metadata);
+}
+
+#[snapshot(document, settings_19)]
+fn metadata_trapped_pdf_a1(document: &mut Document) {
+    let metadata = Metadata::new().creation_date(datetime()).trapped(true);
+    document.set_metadata(metadata);
+}
