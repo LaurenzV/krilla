@@ -1523,6 +1523,7 @@ impl<'a> ValueWriter<'a, '_> {
             Value::Struct(fields) => {
                 let struct_type = match value_type {
                     Some(ValueType::Struct(ty)) => Some(&**ty),
+                    Some(ValueType::PredefinedStruct(ty)) => predefined_struct_type(*ty),
                     _ => None,
                 };
                 self.write_struct(element.obj(), fields, struct_type)?;
@@ -1545,7 +1546,9 @@ impl<'a> ValueWriter<'a, '_> {
                     let desc = ty
                         .fields
                         .iter()
-                        .find(|desc| desc.name == field.name && field.namespace == ty.namespace)
+                        .find(|desc| {
+                            desc.name == field.name && field.namespace.uri() == ty.namespace.uri()
+                        })
                         .ok_or_else(|| XmpError::InvalidValue(self.property.to_string()))?;
                     Some(&desc.value_type)
                 }
@@ -1567,7 +1570,9 @@ impl<'a> ValueWriter<'a, '_> {
 
         if let Some(ty) = struct_type {
             check_required(&ty.fields, |name| {
-                fields.iter().any(|field| field.name == name)
+                fields
+                    .iter()
+                    .any(|field| field.name == name && field.namespace.uri() == ty.namespace.uri())
             })?;
         }
 
@@ -1649,6 +1654,112 @@ fn simple_value_text(value: &Value) -> Option<String> {
         Value::Real(r) => Some(r.to_string()),
         _ => None,
     }
+}
+
+/// The fields of the predefined structure types, as listed in TechNote 0008,
+/// chapter 3. Returns `None` for types whose fields aren't known.
+pub(crate) fn predefined_struct_type(ty: PredefinedStruct) -> Option<&'static StructType> {
+    use std::sync::LazyLock;
+
+    fn struct_type(
+        prefix: &str,
+        uri: &str,
+        name: &str,
+        fields: &[(&str, ValueType)],
+    ) -> StructType {
+        fields.iter().fold(
+            StructType::new(Namespace::new(prefix, uri), name, ""),
+            |ty, (name, value_type)| {
+                ty.field(PropertyDescription::new(*name, value_type.clone(), ""))
+            },
+        )
+    }
+
+    static TYPES: LazyLock<[StructType; 6]> = LazyLock::new(|| {
+        use SimpleType::*;
+        let open = |ty| ValueType::OpenChoice(ty, vec![]);
+        [
+            struct_type(
+                "stDim",
+                "http://ns.adobe.com/xap/1.0/sType/Dimensions#",
+                "Dimensions",
+                &[("w", Real.into()), ("h", Real.into()), ("unit", open(Text))],
+            ),
+            struct_type(
+                "xmpGImg",
+                "http://ns.adobe.com/xap/1.0/g/img/",
+                "Thumbnail",
+                &[
+                    ("height", Integer.into()),
+                    ("width", Integer.into()),
+                    ("format", open(Text)),
+                    ("image", Text.into()),
+                ],
+            ),
+            struct_type(
+                "stEvt",
+                "http://ns.adobe.com/xap/1.0/sType/ResourceEvent#",
+                "ResourceEvent",
+                &[
+                    ("action", open(Text)),
+                    ("instanceID", Uri.into()),
+                    ("parameters", Text.into()),
+                    ("softwareAgent", AgentName.into()),
+                    ("when", Date.into()),
+                ],
+            ),
+            struct_type(
+                "stRef",
+                "http://ns.adobe.com/xap/1.0/sType/ResourceRef#",
+                "ResourceRef",
+                &[
+                    ("instanceID", Uri.into()),
+                    ("documentID", Uri.into()),
+                    ("versionID", Text.into()),
+                    ("renditionClass", RenditionClass.into()),
+                    ("renditionParams", Text.into()),
+                    ("manager", AgentName.into()),
+                    ("managerVariant", Text.into()),
+                    ("manageTo", Uri.into()),
+                    ("manageUI", Uri.into()),
+                ],
+            ),
+            struct_type(
+                "stVer",
+                "http://ns.adobe.com/xap/1.0/sType/Version#",
+                "Version",
+                &[
+                    ("comments", Text.into()),
+                    ("event", PredefinedStruct::ResourceEvent.into()),
+                    ("modifyDate", Date.into()),
+                    ("modifier", ProperName.into()),
+                    ("version", Text.into()),
+                ],
+            ),
+            struct_type(
+                "stJob",
+                "http://ns.adobe.com/xap/1.0/sType/Job#",
+                "Job",
+                &[
+                    ("name", Text.into()),
+                    ("id", Text.into()),
+                    ("url", Url.into()),
+                ],
+            ),
+        ]
+    });
+
+    let index = match ty {
+        PredefinedStruct::Dimensions => 0,
+        PredefinedStruct::Thumbnail => 1,
+        PredefinedStruct::ResourceEvent => 2,
+        PredefinedStruct::ResourceRef => 3,
+        PredefinedStruct::Version => 4,
+        PredefinedStruct::Job => 5,
+        PredefinedStruct::Colorant | PredefinedStruct::Font => return None,
+    };
+
+    Some(&TYPES[index])
 }
 
 /// The user-defined structure types used by `value_type`, including those

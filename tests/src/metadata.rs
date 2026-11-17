@@ -4,8 +4,8 @@ use krilla::configure::ValidationError;
 use krilla::embed::{AssociationKind, EmbeddedFile, MimeType};
 use krilla::error::{KrillaError, KrillaResult};
 use krilla::metadata::xmp::{
-    Namespace, Property, PropertyDescription, Schema, SimpleType, StructType, Value, ValueType,
-    XmpError,
+    Namespace, PredefinedStruct, Property, PropertyDescription, Schema, SimpleType, StructType,
+    Value, ValueType, XmpError,
 };
 use krilla::metadata::{DateTime, Metadata, PageLayout, TextDirection};
 use krilla::Document;
@@ -618,6 +618,53 @@ fn metadata_custom_xmp_escaped_namespace_uri() {
     let pdf = document.finish().unwrap();
     let expected = b"xmlns:ex=\"http://example.com/xmp?a=1&amp;b=&quot;2&quot;#\"";
     assert!(pdf.windows(expected.len()).any(|w| w == expected));
+}
+
+#[test]
+fn metadata_custom_xmp_invalid_predefined_struct() {
+    let ex = Namespace::new("ex", "http://example.com/xmp/print#");
+    let metadata = |dim: &Namespace, fields: Vec<(&str, Value)>| {
+        Metadata::new()
+            .custom_xmp_schema(Schema::new(ex.clone()).property(PropertyDescription::new(
+                "pageSize",
+                PredefinedStruct::Dimensions,
+                "The page size",
+            )))
+            .custom_xmp_property(
+                ex.property(
+                    "pageSize",
+                    Value::Struct(
+                        fields
+                            .into_iter()
+                            .map(|(name, value)| dim.property(name, value))
+                            .collect(),
+                    ),
+                ),
+            )
+    };
+
+    let st_dim = Namespace::new("stDim", "http://ns.adobe.com/xap/1.0/sType/Dimensions#");
+    assert_xmp_error(
+        metadata(&st_dim, vec![("depth", 4.0.into())]),
+        XmpError::InvalidValue("pageSize".to_string()),
+    );
+    assert_xmp_error(
+        metadata(&st_dim, vec![("w", "wide".into())]),
+        XmpError::InvalidValue("pageSize".to_string()),
+    );
+
+    // Fields of a predefined type are matched by URI, not prefix.
+    let dim = Namespace::new("dim", "http://ns.adobe.com/xap/1.0/sType/Dimensions#");
+    let mut document = Document::new();
+    document.set_metadata(metadata(
+        &dim,
+        vec![
+            ("w", 210.0.into()),
+            ("h", 297.0.into()),
+            ("unit", "mm".into()),
+        ],
+    ));
+    assert!(document.finish().is_ok());
 }
 
 #[test]

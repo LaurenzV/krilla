@@ -6,10 +6,8 @@ use std::borrow::Cow;
 
 use xmlwriter::{Indent, Options, XmlWriter};
 
-use super::build_xmp_namespace;
-use super::xmp::{
-    Namespace, PredefinedStruct, PropertyDescription, Schema, SimpleType, StructType, ValueType,
-};
+use super::xmp::{Namespace, Schema, SimpleType, StructType, ValueType};
+use super::{build_xmp_namespace, predefined_struct_type};
 
 const UI_NAMESPACE: &str = "http://ns.iso.org/iso-16684-2/xmp-schema-ui-info/1.0";
 
@@ -462,112 +460,6 @@ fn simple_type_data(ty: SimpleType) -> Option<(&'static str, Option<&'static str
         | SimpleType::Part
         | SimpleType::XPath => None,
     }
-}
-
-/// The fields of the predefined structure types, as listed in TechNote 0008,
-/// chapter 3. Returns `None` for types whose fields aren't known.
-fn predefined_struct_type(ty: PredefinedStruct) -> Option<&'static StructType> {
-    use std::sync::LazyLock;
-
-    fn struct_type(
-        prefix: &str,
-        uri: &str,
-        name: &str,
-        fields: &[(&str, ValueType)],
-    ) -> StructType {
-        fields.iter().fold(
-            StructType::new(Namespace::new(prefix, uri), name, ""),
-            |ty, (name, value_type)| {
-                ty.field(PropertyDescription::new(*name, value_type.clone(), ""))
-            },
-        )
-    }
-
-    static TYPES: LazyLock<[StructType; 6]> = LazyLock::new(|| {
-        use SimpleType::*;
-        let open = |ty| ValueType::OpenChoice(ty, vec![]);
-        [
-            struct_type(
-                "stDim",
-                "http://ns.adobe.com/xap/1.0/sType/Dimensions#",
-                "Dimensions",
-                &[("w", Real.into()), ("h", Real.into()), ("unit", open(Text))],
-            ),
-            struct_type(
-                "xmpGImg",
-                "http://ns.adobe.com/xap/1.0/g/img/",
-                "Thumbnail",
-                &[
-                    ("height", Integer.into()),
-                    ("width", Integer.into()),
-                    ("format", open(Text)),
-                    ("image", Text.into()),
-                ],
-            ),
-            struct_type(
-                "stEvt",
-                "http://ns.adobe.com/xap/1.0/sType/ResourceEvent#",
-                "ResourceEvent",
-                &[
-                    ("action", open(Text)),
-                    ("instanceID", Uri.into()),
-                    ("parameters", Text.into()),
-                    ("softwareAgent", AgentName.into()),
-                    ("when", Date.into()),
-                ],
-            ),
-            struct_type(
-                "stRef",
-                "http://ns.adobe.com/xap/1.0/sType/ResourceRef#",
-                "ResourceRef",
-                &[
-                    ("instanceID", Uri.into()),
-                    ("documentID", Uri.into()),
-                    ("versionID", Text.into()),
-                    ("renditionClass", RenditionClass.into()),
-                    ("renditionParams", Text.into()),
-                    ("manager", AgentName.into()),
-                    ("managerVariant", Text.into()),
-                    ("manageTo", Uri.into()),
-                    ("manageUI", Uri.into()),
-                ],
-            ),
-            struct_type(
-                "stVer",
-                "http://ns.adobe.com/xap/1.0/sType/Version#",
-                "Version",
-                &[
-                    ("comments", Text.into()),
-                    ("event", PredefinedStruct::ResourceEvent.into()),
-                    ("modifyDate", Date.into()),
-                    ("modifier", ProperName.into()),
-                    ("version", Text.into()),
-                ],
-            ),
-            struct_type(
-                "stJob",
-                "http://ns.adobe.com/xap/1.0/sType/Job#",
-                "Job",
-                &[
-                    ("name", Text.into()),
-                    ("id", Text.into()),
-                    ("url", Url.into()),
-                ],
-            ),
-        ]
-    });
-
-    let index = match ty {
-        PredefinedStruct::Dimensions => 0,
-        PredefinedStruct::Thumbnail => 1,
-        PredefinedStruct::ResourceEvent => 2,
-        PredefinedStruct::ResourceRef => 3,
-        PredefinedStruct::Version => 4,
-        PredefinedStruct::Job => 5,
-        PredefinedStruct::Colorant | PredefinedStruct::Font => return None,
-    };
-
-    Some(&TYPES[index])
 }
 
 /// Escapes what xmlwriter doesn't: it only escapes quotes in attribute values
