@@ -12,6 +12,7 @@ use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
 use std::borrow::Cow;
 use std::cell::LazyCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::fmt::Write;
 use std::sync::LazyLock;
 use xmp_writer::{
     CustomNamespace, LangId, Namespace as XmpNamespace, RdfCollectionType, Timezone, XmpWriter,
@@ -660,6 +661,41 @@ fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
         second: Some(datetime.second.unwrap_or(0)),
         timezone,
     }
+}
+
+/// Formats a date of a custom property in the closest of the forms allowed by
+/// XMP Specification Part 1, section 8.2.1.2.
+fn custom_xmp_date(date: DateTime) -> String {
+    let mut text = format!("{:04}", date.year);
+    let (Some(month), Some(day)) = (date.month, date.day) else {
+        if let Some(month) = date.month {
+            write!(text, "-{month:02}").unwrap();
+        }
+        return text;
+    };
+
+    write!(text, "-{month:02}-{day:02}").unwrap();
+    let Some(hour) = date.hour else {
+        return text;
+    };
+
+    write!(text, "T{hour:02}:{:02}", date.minute.unwrap_or(0)).unwrap();
+    if let Some(second) = date.second {
+        write!(text, ":{second:02}").unwrap();
+    }
+
+    if let Some(offset_hour) = date.utc_offset_hour {
+        let sign = if offset_hour < 0 { '-' } else { '+' };
+        write!(
+            text,
+            "{sign}{:02}:{:02}",
+            offset_hour.unsigned_abs(),
+            date.utc_offset_minute
+        )
+        .unwrap();
+    }
+
+    text
 }
 
 /// The main text direction of the document.
@@ -1453,7 +1489,7 @@ impl<'a> ValueWriter<'a, '_> {
             Value::Real(_) | Value::Rational(..) => {
                 return Err(XmpError::InvalidNumber(self.property.to_string()))
             }
-            Value::Date(d) => element.value(xmp_date(*d)),
+            Value::Date(d) => element.value(custom_xmp_date(*d).as_str()),
             Value::OrderedArray(items) => {
                 self.write_array(element.array(RdfCollectionType::Seq), items, item_type)?
             }
@@ -1741,10 +1777,39 @@ mod tests {
 
     use super::xmp::{Namespace, PropertyDescription, Schema, SimpleType};
     use super::{
-        write_extension_schemas, Metadata, PDF_A1_FALSE_FRIENDS, PDF_A1_ONLY_PROPERTIES,
-        PDF_A1_PREDEFINED_PROPERTIES, PDF_A2_A3_ADDITIONAL_PROPERTIES,
+        custom_xmp_date, write_extension_schemas, DateTime, Metadata, PDF_A1_FALSE_FRIENDS,
+        PDF_A1_ONLY_PROPERTIES, PDF_A1_PREDEFINED_PROPERTIES, PDF_A2_A3_ADDITIONAL_PROPERTIES,
     };
 
+    #[test]
+    fn custom_dates_keep_their_precision() {
+        let date = DateTime::new(2024);
+        assert_eq!(custom_xmp_date(date), "2024");
+        assert_eq!(custom_xmp_date(date.day(3)), "2024");
+        assert_eq!(custom_xmp_date(date.month(5)), "2024-05");
+        assert_eq!(custom_xmp_date(date.month(5).hour(10)), "2024-05");
+
+        let day = date.month(5).day(3);
+        assert_eq!(custom_xmp_date(day), "2024-05-03");
+        assert_eq!(custom_xmp_date(day.utc_offset_hour(2)), "2024-05-03");
+        assert_eq!(custom_xmp_date(day.hour(10)), "2024-05-03T10:00");
+        assert_eq!(
+            custom_xmp_date(day.hour(10).minute(30).second(15)),
+            "2024-05-03T10:30:15"
+        );
+        assert_eq!(
+            custom_xmp_date(day.hour(10).minute(30).utc_offset_hour(2)),
+            "2024-05-03T10:30+02:00"
+        );
+        assert_eq!(
+            custom_xmp_date(day.hour(10).utc_offset_hour(-3).utc_offset_minute(30)),
+            "2024-05-03T10:00-03:30"
+        );
+        assert_eq!(
+            custom_xmp_date(day.hour(10).utc_offset_hour(0)),
+            "2024-05-03T10:00+00:00"
+        );
+    }
     #[test]
     fn relax_ng_prefixes_dont_collide_with_custom_prefixes() {
         let rng = Metadata::new()
