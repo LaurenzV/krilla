@@ -544,6 +544,28 @@ fn metadata_custom_xmp_invalid_struct() {
 }
 
 #[test]
+fn metadata_custom_xmp_duplicate_property() {
+    assert_xmp_error(
+        Metadata::new()
+            .custom_xmp_property(cc_namespace().property("license", "CC-BY"))
+            .custom_xmp_property(cc_namespace().property("license", "CC0")),
+        XmpError::DuplicateProperty("cc:license".to_string()),
+    );
+
+    let ex = Namespace::new("ex", "http://example.com/xmp/address#");
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(ex.property(
+            "address",
+            Value::Struct(vec![
+                ex.property("street", "Main Street 1"),
+                ex.property("street", "Main Street 2"),
+            ]),
+        )),
+        XmpError::DuplicateProperty("ex:street".to_string()),
+    );
+}
+
+#[test]
 fn metadata_custom_xmp_managed_property() {
     let dc = Namespace::new("dc", "http://purl.org/dc/elements/1.1/");
     assert_xmp_error(

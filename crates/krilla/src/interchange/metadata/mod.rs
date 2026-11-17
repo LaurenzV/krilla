@@ -379,12 +379,18 @@ impl Metadata {
                 property: &property.name,
             };
             let namespace = writer.namespace(&property.namespace)?;
+            if !written.insert((uri, property.name.as_str())) {
+                return Err(XmpError::DuplicateProperty(format!(
+                    "{}:{}",
+                    namespace.prefix(),
+                    property.name
+                )));
+            }
             writer.write_property(
                 xmp.element(&property.name, namespace),
                 &property.value,
                 description.map(|desc| &desc.value_type),
             )?;
-            written.insert((uri, property.name.as_str()));
         }
 
         for schema in &self.custom_xmp_schemas {
@@ -1443,6 +1449,7 @@ impl<'a> ValueWriter<'a, '_> {
         fields: &'a [Property],
         struct_type: Option<&'a StructType>,
     ) -> Result<(), XmpError> {
+        let mut written = HashSet::new();
         for field in fields {
             let field_type = match struct_type {
                 Some(ty) => {
@@ -1456,7 +1463,15 @@ impl<'a> ValueWriter<'a, '_> {
                 None => None,
             };
 
-            let element = s.element(field.name.as_str(), self.namespace(&field.namespace)?);
+            let namespace = self.namespace(&field.namespace)?;
+            if !written.insert((field.namespace.uri(), field.name.as_str())) {
+                return Err(XmpError::DuplicateProperty(format!(
+                    "{}:{}",
+                    namespace.prefix(),
+                    field.name
+                )));
+            }
+            let element = s.element(field.name.as_str(), namespace);
             self.write_property(element, &field.value, field_type)?;
         }
 

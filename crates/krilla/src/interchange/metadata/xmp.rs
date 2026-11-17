@@ -531,6 +531,8 @@ pub enum XmpError {
     /// set via [`Metadata`](super::Metadata), if at all. Contains the
     /// qualified name of the property.
     ManagedProperty(String),
+    /// A property or structure field was set more than once.
+    DuplicateProperty(String),
 }
 
 impl std::fmt::Display for XmpError {
@@ -568,6 +570,9 @@ impl std::fmt::Display for XmpError {
             }
             XmpError::ManagedProperty(name) => {
                 write!(f, "the property {name} is managed by krilla")
+            }
+            XmpError::DuplicateProperty(name) => {
+                write!(f, "the property {name} was set more than once")
             }
         }
     }
