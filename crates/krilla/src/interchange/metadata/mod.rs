@@ -361,21 +361,10 @@ impl Metadata {
                     .iter()
                     .any(|s| s.namespace.uri() == uri && s.get(&property.name).is_some())
             {
-                let namespace_uri = uri.to_string();
-                let property_name = property.name.clone();
-                sc.register_validation_error(
-                    if !xmp_2005 && contains_property(PDF_A1_FALSE_FRIENDS, uri, &property.name) {
-                        ValidationError::ForbiddenXmpProperty {
-                            namespace_uri,
-                            property_name,
-                        }
-                    } else {
-                        ValidationError::MissingXmpPropertyDescription {
-                            namespace_uri,
-                            property_name,
-                        }
-                    },
-                );
+                sc.register_validation_error(ValidationError::MissingXmpPropertyDescription {
+                    namespace_uri: uri.to_string(),
+                    property_name: property.name.clone(),
+                });
             }
 
             let mut writer = ValueWriter {
@@ -1231,45 +1220,6 @@ static PDF_A1_PREDEFINED_PROPERTIES: &[(&str, &[&str])] = &[
     ),
 ];
 
-/// Properties that are often mistaken for predefined properties, but aren't
-/// allowed in PDF/A-1. Called "false friends" in TechNote 0008, "Predefined
-/// XMP Properties in PDF/A-1":
-/// <https://pdfa.org/wp-content/uploads/2011/08/tn0008_predefined_xmp_properties_in_pdfa-1_2008-03-20.pdf>
-///
-/// `xmpMM:InstanceID` is a false friend as well, but by agreement of the
-/// PDF/A community, it isn't flagged.
-///
-/// Sorted by namespace URI and property name.
-static PDF_A1_FALSE_FRIENDS: &[(&str, &[&str])] = &[
-    (
-        "http://ns.adobe.com/pdf/1.3/",
-        &[
-            "Author",
-            "BaseURL",
-            "CreationDate",
-            "Creator",
-            "ModDate",
-            "Subject",
-            "Title",
-            "Trapped",
-        ],
-    ),
-    (
-        "http://ns.adobe.com/photoshop/1.0/",
-        &["Author", "Copyright", "History", "Title"],
-    ),
-    (
-        "http://ns.adobe.com/xap/1.0/",
-        &["Author", "Description", "Label", "Rating", "Title"],
-    ),
-    ("http://ns.adobe.com/xap/1.0/mm/", &["Manifest"]),
-    ("http://ns.adobe.com/xap/1.0/rights/", &["Copyright"]),
-    (
-        "http://ns.adobe.com/xap/1.0/t/pg/",
-        &["Colorants", "Fonts", "PlateNames"],
-    ),
-];
-
 /// The properties PDF/A-2 and PDF/A-3 predefine in addition to
 /// [`PDF_A1_PREDEFINED_PROPERTIES`]: those the XMP Specification, September
 /// 2005, added to the January 2004 edition, plus `pdfaid:corr` of ISO 19005-2.
@@ -1943,8 +1893,8 @@ mod tests {
 
     use super::xmp::{Namespace, PropertyDescription, Schema, SimpleType};
     use super::{
-        custom_xmp_date, write_extension_schemas, DateTime, Metadata, PDF_A1_FALSE_FRIENDS,
-        PDF_A1_ONLY_PROPERTIES, PDF_A1_PREDEFINED_PROPERTIES, PDF_A2_A3_ADDITIONAL_PROPERTIES,
+        custom_xmp_date, write_extension_schemas, DateTime, Metadata, PDF_A1_ONLY_PROPERTIES,
+        PDF_A1_PREDEFINED_PROPERTIES, PDF_A2_A3_ADDITIONAL_PROPERTIES,
     };
 
     #[test]
@@ -1998,7 +1948,6 @@ mod tests {
     fn predefined_property_lists_are_sorted() {
         for list in [
             PDF_A1_PREDEFINED_PROPERTIES,
-            PDF_A1_FALSE_FRIENDS,
             PDF_A2_A3_ADDITIONAL_PROPERTIES,
             PDF_A1_ONLY_PROPERTIES,
         ] {

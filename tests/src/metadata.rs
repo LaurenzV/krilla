@@ -722,14 +722,15 @@ fn metadata_custom_xmp_pdf_a1_predefined_properties() {
 #[test]
 fn metadata_custom_xmp_pdf_a1_false_friend() {
     let xmp = Namespace::new("xmp", "http://ns.adobe.com/xap/1.0/");
-    let result = pdf_a1_result(pdf_a_metadata(xmp.property("Label", "Draft")));
-    let Err(KrillaError::Validation(errors)) = result else {
-        panic!("expected validation error, got {result:?}");
-    };
-    assert!(errors.iter().any(|(e, _)| matches!(
-        e,
-        ValidationError::ForbiddenXmpProperty { property_name, .. } if property_name == "Label"
-    )));
+    assert_missing_description(
+        pdf_a1_result(pdf_a_metadata(xmp.property("Label", "Draft"))),
+        xmp.uri(),
+        "Label",
+    );
+
+    let described = pdf_a_metadata(xmp.property("Label", "Draft"))
+        .custom_xmp_schema(Schema::new(xmp.clone()).property(text_description("Label", "A label")));
+    assert!(pdf_a1_result(described).is_ok());
 
     // XMP 2005 added `xmp:Label`, so it is predefined in PDF/A-3.
     let mut document = Document::new_with(settings_10());
