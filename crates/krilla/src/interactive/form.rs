@@ -77,7 +77,7 @@ impl Default for AcroForm {
     fn default() -> Self {
         Self {
             field_tree: Default::default(),
-            rd_builder: ResourceDictionaryBuilder::new_with_prefix("f"),
+            rd_builder: ResourceDictionaryBuilder::new_with_prefix("f").with_optional(true),
         }
     }
 }
