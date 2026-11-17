@@ -210,6 +210,8 @@ pub enum FieldKind {
     ListBox(FormField<kind::ListBox>),
     /// A combo box (dropdown) field.
     ComboBox(FormField<kind::ComboBox>),
+    /// A signature field.
+    Signature(FormField<kind::Signature>),
 }
 
 impl FieldKind {
@@ -226,6 +228,7 @@ impl FieldKind {
             Self::Text(f) => f.serialize_field(sc, chunk_container, parent_ref),
             Self::ListBox(f) => f.serialize_field(sc, chunk_container, parent_ref),
             Self::ComboBox(f) => f.serialize_field(sc, chunk_container, parent_ref),
+            Self::Signature(f) => f.serialize_field(sc, chunk_container, parent_ref),
         }
     }
 }
@@ -263,6 +266,12 @@ impl From<FormField<kind::ComboBox>> for FieldKind {
 impl From<FormField<kind::ListBox>> for FieldKind {
     fn from(value: FormField<kind::ListBox>) -> Self {
         Self::ListBox(value)
+    }
+}
+
+impl From<FormField<kind::Signature>> for FieldKind {
+    fn from(value: FormField<kind::Signature>) -> Self {
+        Self::Signature(value)
     }
 }
 
@@ -928,6 +937,42 @@ impl FormField<kind::ComboBox> {
     }
 }
 
+impl FormField<kind::Signature> {
+    /// Create a signature field.
+    /// The field name must not contain any period character (`.`).
+    pub fn signature(name: String) -> Self {
+        Self {
+            name,
+            ..Default::default()
+        }
+    }
+
+    /// Set which fields to lock when the document is signed via this signature field.
+    /// Default: all fields.
+    pub fn set_lock_field_filter(&mut self, field_filter: kind::SignatureLockFieldFilter) {
+        self.kind.field_filter = field_filter;
+    }
+
+    /// Set which fields to lock when the document is signed via this signature field.
+    /// Default: all fields.
+    pub fn with_lock_field_filter(mut self, field_filter: kind::SignatureLockFieldFilter) -> Self {
+        self.set_lock_field_filter(field_filter);
+        self
+    }
+
+    /// Create a widget annotation for the signature field.
+    ///
+    /// - `rect`: The bounding box of the widget annotation that it should cover on the page.
+    /// - `appearance`: The appearance of the widget annotation.
+    pub fn new_widget(
+        &self,
+        rect: Rect,
+        appearance: Stream,
+    ) -> WidgetAnnotation<SimpleAppearanceStream> {
+        WidgetAnnotation::simple(rect, appearance)
+    }
+}
+
 #[allow(private_bounds)]
 impl<T: SerializableField> FormField<T> {
     fn serialize_field(
@@ -937,6 +982,7 @@ impl<T: SerializableField> FormField<T> {
         parent_ref: Option<Ref>,
     ) -> Ref {
         let root_ref = self.identifier.unwrap_or_else(|| sc.new_ref());
+        let pre_serialize_data = self.kind.pre_serialize(sc, chunk_container);
         let mut field = chunk_container.non_stream.fields.form_field(root_ref);
 
         let mut flags = self.flags;
@@ -963,7 +1009,7 @@ impl<T: SerializableField> FormField<T> {
             field.mapping_name(TextStr(mapping_name));
         }
 
-        self.kind.serialize_field(&mut field);
+        self.kind.serialize_field(&mut field, pre_serialize_data);
 
         if !self.annotations.is_empty() {
             let annotations = self.annotations.iter().map(|identifier| {
@@ -978,12 +1024,29 @@ impl<T: SerializableField> FormField<T> {
 }
 
 pub(crate) trait SerializableField {
-    fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>);
+    type PreSerializeData;
+
+    fn pre_serialize(
+        &self,
+        sc: &mut SerializeContext,
+        chunk_container: &mut ChunkContainer,
+    ) -> Self::PreSerializeData;
+
+    fn serialize_field<'a>(
+        &self,
+        field: &mut pdf_writer::writers::Field<'a>,
+        pre_serialize_data: Self::PreSerializeData,
+    );
 }
 
 /// Field kind structs.
 pub mod kind {
+    use pdf_writer::Ref;
     use pdf_writer::{types::CheckBoxState, Finish, Name, TextStr};
+
+    use crate::chunk_container::ChunkContainer;
+    use crate::configure::PdfVersion;
+    use crate::serialize::SerializeContext;
 
     use super::variable_text::VariableText;
     use super::SerializableField;
@@ -994,7 +1057,19 @@ pub mod kind {
     pub struct PushButton;
 
     impl SerializableField for PushButton {
-        fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+        type PreSerializeData = ();
+        fn pre_serialize(
+            &self,
+            _: &mut SerializeContext,
+            _: &mut ChunkContainer,
+        ) -> Self::PreSerializeData {
+        }
+
+        fn serialize_field<'a>(
+            &self,
+            field: &mut pdf_writer::writers::Field<'a>,
+            _: Self::PreSerializeData,
+        ) {
             field.field_type(pdf_writer::types::FieldType::Button);
         }
     }
@@ -1008,7 +1083,19 @@ pub mod kind {
     }
 
     impl SerializableField for Checkbox {
-        fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+        type PreSerializeData = ();
+        fn pre_serialize(
+            &self,
+            _: &mut SerializeContext,
+            _: &mut ChunkContainer,
+        ) -> Self::PreSerializeData {
+        }
+
+        fn serialize_field<'a>(
+            &self,
+            field: &mut pdf_writer::writers::Field<'a>,
+            _: Self::PreSerializeData,
+        ) {
             let value = if self.checked {
                 CheckBoxState::Yes
             } else {
@@ -1036,7 +1123,19 @@ pub mod kind {
     }
 
     impl SerializableField for Radio {
-        fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+        type PreSerializeData = ();
+        fn pre_serialize(
+            &self,
+            _: &mut SerializeContext,
+            _: &mut ChunkContainer,
+        ) -> Self::PreSerializeData {
+        }
+
+        fn serialize_field<'a>(
+            &self,
+            field: &mut pdf_writer::writers::Field<'a>,
+            _: Self::PreSerializeData,
+        ) {
             let value = if let Some(value) = &self.value {
                 value.as_bytes()
             } else {
@@ -1066,7 +1165,19 @@ pub mod kind {
     }
 
     impl SerializableField for Text {
-        fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+        type PreSerializeData = ();
+        fn pre_serialize(
+            &self,
+            _: &mut SerializeContext,
+            _: &mut ChunkContainer,
+        ) -> Self::PreSerializeData {
+        }
+
+        fn serialize_field<'a>(
+            &self,
+            field: &mut pdf_writer::writers::Field<'a>,
+            _: Self::PreSerializeData,
+        ) {
             field.field_type(pdf_writer::types::FieldType::Text);
             if let Some(value) = &self.value {
                 field.text_value(TextStr(value));
@@ -1130,7 +1241,19 @@ pub mod kind {
     }
 
     impl SerializableField for ListBox {
-        fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+        type PreSerializeData = ();
+        fn pre_serialize(
+            &self,
+            _: &mut SerializeContext,
+            _: &mut ChunkContainer,
+        ) -> Self::PreSerializeData {
+        }
+
+        fn serialize_field<'a>(
+            &self,
+            field: &mut pdf_writer::writers::Field<'a>,
+            _: Self::PreSerializeData,
+        ) {
             field.field_type(pdf_writer::types::FieldType::Choice);
             field.choice_indices(self.value.iter().map(|i| *i as i32));
 
@@ -1176,7 +1299,19 @@ pub mod kind {
     }
 
     impl SerializableField for ComboBox {
-        fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
+        type PreSerializeData = ();
+        fn pre_serialize(
+            &self,
+            _: &mut SerializeContext,
+            _: &mut ChunkContainer,
+        ) -> Self::PreSerializeData {
+        }
+
+        fn serialize_field<'a>(
+            &self,
+            field: &mut pdf_writer::writers::Field<'a>,
+            _: Self::PreSerializeData,
+        ) {
             field.field_type(pdf_writer::types::FieldType::Choice);
 
             if let Some(i) = self.value {
@@ -1196,6 +1331,78 @@ pub mod kind {
             options.finish();
 
             self.variable_text.serialize(field);
+        }
+    }
+
+    /// Define which form fields to lock when signing.
+    #[derive(Debug, Clone, Default, Hash, Eq, PartialEq)]
+    pub enum SignatureLockFieldFilter {
+        /// Lock all fields in the document.
+        #[default]
+        All,
+        /// Lock only the fields with the given fully qualified names.
+        Include(Vec<String>),
+        /// Lock all fields in the document except the ones with the given fully qualified names.
+        Exclude(Vec<String>),
+    }
+
+    impl SignatureLockFieldFilter {
+        fn serialize(&self, lock_dict: &mut pdf_writer::writers::SignatureFieldLock) {
+            match self {
+                SignatureLockFieldFilter::All => {
+                    lock_dict.action(pdf_writer::types::SignatureLockAction::All);
+                }
+                SignatureLockFieldFilter::Include(items) => {
+                    lock_dict.action(pdf_writer::types::SignatureLockAction::Include);
+                    lock_dict.fields(items.iter().map(|s| TextStr(s)));
+                }
+                SignatureLockFieldFilter::Exclude(items) => {
+                    lock_dict.action(pdf_writer::types::SignatureLockAction::Exclude);
+                    lock_dict.fields(items.iter().map(|s| TextStr(s)));
+                }
+            }
+        }
+    }
+
+    /// A signature field.
+    /// Create a field of this type via [`FormField::signature`](super::FormField::signature).
+    #[derive(Debug, Clone, Default)]
+    pub struct Signature {
+        pub(super) field_filter: SignatureLockFieldFilter,
+    }
+
+    impl SerializableField for Signature {
+        type PreSerializeData = Option<Ref>;
+        fn pre_serialize(
+            &self,
+            sc: &mut SerializeContext,
+            chunk_container: &mut ChunkContainer,
+        ) -> Self::PreSerializeData {
+            if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf15 {
+                let lock_dict_ref = sc.new_ref();
+                let mut lock_dict = chunk_container
+                    .non_stream
+                    .fields
+                    .signature_field_lock(lock_dict_ref);
+
+                self.field_filter.serialize(&mut lock_dict);
+
+                Some(lock_dict_ref)
+            } else {
+                None
+            }
+        }
+
+        fn serialize_field<'a>(
+            &self,
+            field: &mut pdf_writer::writers::Field<'a>,
+            lock_dict_ref: Self::PreSerializeData,
+        ) {
+            field.field_type(pdf_writer::types::FieldType::Signature);
+
+            if let Some(_ref) = lock_dict_ref {
+                field.signature_field_lock(_ref);
+            };
         }
     }
 }
