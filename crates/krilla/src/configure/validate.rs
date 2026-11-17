@@ -171,6 +171,14 @@ pub enum ValidationError {
         /// The name of the offending property.
         property_name: String,
     },
+    /// A custom XMP property or structure field was described with a value
+    /// type that PDF/A extension schemas can't express.
+    UnsupportedXmpValueType {
+        /// The namespace URI of the offending property or structure type.
+        namespace_uri: String,
+        /// The name of the offending property or field.
+        property_name: String,
+    },
 }
 
 /// Features that may require a later PDF version than the current one.
@@ -770,7 +778,8 @@ impl Archival {
             (
                 _,
                 ValidationError::MissingXmpPropertyDescription { .. }
-                | ValidationError::ForbiddenXmpProperty { .. },
+                | ValidationError::ForbiddenXmpProperty { .. }
+                | ValidationError::UnsupportedXmpValueType { .. },
             ) => self.requires_xmp_metadata_extension_schema(),
         }
     }
@@ -1274,7 +1283,8 @@ impl Accessibility {
                 | ValidationError::ContainsAdditionalActions(_)
                 | ValidationError::MissingDocumentDate
                 | ValidationError::MissingXmpPropertyDescription { .. }
-                | ValidationError::ForbiddenXmpProperty { .. },
+                | ValidationError::ForbiddenXmpProperty { .. }
+                | ValidationError::UnsupportedXmpValueType { .. },
             ) => false,
         }
     }

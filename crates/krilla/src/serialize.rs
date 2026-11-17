@@ -889,6 +889,8 @@ impl SerializeContext {
             .validators()
             .recommends_xmp_relax_ng_schema()
             || metadata.custom_xmp_properties.is_empty()
+            // The schema is only recommended, so a file the user embedded
+            // under the same name takes precedence.
             || self.global_objects.embedded_files.contains_key(PATH)
         {
             return;

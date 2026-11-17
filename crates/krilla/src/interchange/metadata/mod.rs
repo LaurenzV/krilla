@@ -336,6 +336,9 @@ impl Metadata {
 
         let validators = sc.serialize_settings().validators();
         let check_descriptions = validators.requires_xmp_metadata_extension_schema();
+        if check_descriptions {
+            check_pdfa_value_types(&self.extension_schemas(validators), sc);
+        }
         let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
         let builtin_schemas = validators.extension_schemas();
 
@@ -1792,6 +1795,45 @@ pub(crate) fn build_xmp_namespace(ns: &Namespace) -> XmpNamespace<'_> {
             ns.escaped_uri(),
         )))
     })
+}
+
+/// Registers a validation error for each property and structure field in
+/// `schemas` whose value type PDF/A extension schemas can't express.
+fn check_pdfa_value_types(schemas: &[Cow<Schema>], sc: &mut SerializeContext) {
+    fn is_expressible(value_type: &ValueType) -> bool {
+        match value_type {
+            ValueType::OrderedArray(item)
+            | ValueType::UnorderedArray(item)
+            | ValueType::AlternativeArray(item) => !matches!(
+                **item,
+                ValueType::OrderedArray(_)
+                    | ValueType::UnorderedArray(_)
+                    | ValueType::AlternativeArray(_)
+                    | ValueType::LanguageAlternative
+            ),
+            _ => true,
+        }
+    }
+
+    let mut check = |namespace: &Namespace, descriptions: &[PropertyDescription]| {
+        for desc in descriptions {
+            if !is_expressible(&desc.value_type) {
+                sc.register_validation_error(ValidationError::UnsupportedXmpValueType {
+                    namespace_uri: namespace.uri().to_string(),
+                    property_name: desc.name.clone(),
+                });
+            }
+        }
+    };
+
+    for schema in schemas {
+        check(&schema.namespace, &schema.properties);
+        for desc in &schema.properties {
+            for ty in struct_types(&desc.value_type) {
+                check(&ty.namespace, &ty.fields);
+            }
+        }
+    }
 }
 
 /// The value of `pdfaProperty:valueType` describing `value_type`.

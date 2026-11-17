@@ -825,6 +825,50 @@ fn metadata_custom_xmp_relax_ng_only_with_embedded_files() {
     assert!(!contains_schema(settings_26()));
 }
 
+#[test]
+fn metadata_custom_xmp_pdf_a_unsupported_value_type() {
+    let ex = Namespace::new("ex", "http://example.com/xmp/matrix#");
+    let row = StructType::new(ex.clone(), "Row", "A row").field(PropertyDescription::new(
+        "titles",
+        ValueType::ordered_array(ValueType::LanguageAlternative),
+        "Titles",
+    ));
+    let metadata = || {
+        pdf_a_metadata(ex.property(
+            "matrix",
+            Value::OrderedArray(vec![Value::OrderedArray(vec![1.into()])]),
+        ))
+        .custom_xmp_schema(
+            Schema::new(ex.clone())
+                .property(PropertyDescription::new(
+                    "matrix",
+                    ValueType::ordered_array(ValueType::ordered_array(SimpleType::Integer)),
+                    "A matrix",
+                ))
+                .property(PropertyDescription::new("row", row.clone(), "A row")),
+        )
+    };
+
+    let Err(KrillaError::Validation(errors)) = pdf_a3_result(metadata()) else {
+        panic!("expected validation errors");
+    };
+    for name in ["matrix", "titles"] {
+        assert!(
+            errors.iter().any(|(e, _)| matches!(
+                e,
+                ValidationError::UnsupportedXmpValueType { namespace_uri, property_name }
+                    if namespace_uri == ex.uri() && property_name == name
+            )),
+            "expected UnsupportedXmpValueType for {name}, got {errors:?}",
+        );
+    }
+
+    // Outside of PDF/A-1 to PDF/A-3, no extension schemas are written.
+    let mut document = Document::new();
+    document.set_metadata(metadata());
+    assert!(document.finish().is_ok());
+}
+
 fn pdf_a3_result(metadata: Metadata) -> KrillaResult<Vec<u8>> {
     let mut document = Document::new_with(settings_10());
     document.set_metadata(metadata);
