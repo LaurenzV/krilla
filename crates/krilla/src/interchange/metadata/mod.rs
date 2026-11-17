@@ -176,9 +176,9 @@ impl Metadata {
     /// replaced. Returns `None` for empty names and names reserved for standard
     /// document information fields.
     ///
-    /// **WARNING**: Custom fields will currently be ignored when exporting to
-    /// PDF/A-2 and PDF/A-3 and PDF/A-4. This is a temporary limitation that will be lifted
-    /// in the future.
+    /// **Note**: Custom fields are ignored when exporting to PDF/A-2, PDF/A-3 and
+    /// PDF/A-4. PDF/A-2 and PDF/A-3 readers ignore the document information
+    /// dictionary, and in PDF/A-4 it may only contain `ModDate`.
     #[must_use]
     pub fn custom_field(mut self, name: String, value: String) -> Option<Self> {
         if name.is_empty() || is_standard_document_info_field(&name) {
@@ -497,7 +497,6 @@ impl Metadata {
                 document_info.creation_date(pdf_date(date_time));
             }
 
-            // This is temporary until custom fields can be written to XMP.
             // See https://github.com/LaurenzV/krilla/pull/419#issuecomment-5142992957.
             if !matches!(
                 config.validators().archival(),
