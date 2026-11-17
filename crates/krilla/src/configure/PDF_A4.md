@@ -162,8 +162,8 @@ See `README.md` for the meaning of each color.
 - krilla uses the outlined namespaces and prefixes. 🟢
 - If custom XMP properties are used, krilla embeds a RELAX NG schema (ISO 16684-2) describing the
   metadata as an associated file with the relationship `Schema`, referenced from the metadata stream and
-  the catalog. Since plain PDF/A-4 doesn't allow embedded files, this is only done for PDF/A-4f and
-  PDF/A-4e. 🟢
+  the catalog. Since associated files are limited to PDF/A-4f and PDF/A-4e and embedded files
+  in plain PDF/A-4 must themselves be PDF/A files, this is only done for PDF/A-4f and PDF/A-4e. 🟢
 
 ### 6.7.3 Version identification
 - krilla always writes the required version identification parts. 🟢
@@ -209,4 +209,3 @@ See `README.md` for the meaning of each color.
 - krilla does not support any of the 3D features. 🟢
 - krilla deals similarly with embedded files similarly to A4-F. 🟢
 - krilla always writes the corresponding file identification. 🟢
-
