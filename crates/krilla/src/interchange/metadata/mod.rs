@@ -343,10 +343,9 @@ impl Metadata {
         for property in &self.custom_xmp_properties {
             check_name(&property.name)?;
             let uri = property.namespace.uri();
-            if let Some(schema) = managed_schema(uri, &property.name) {
+            if let Some(prefix) = managed_prefix(uri, &property.name) {
                 return Err(XmpError::ManagedProperty(format!(
-                    "{}:{}",
-                    schema.namespace.prefix(),
+                    "{prefix}:{}",
                     property.name
                 )));
             }
@@ -965,11 +964,26 @@ fn managed_schemas() -> &'static [Schema] {
     &SCHEMAS
 }
 
-/// The schema of the managed property `name` in `uri`, if any.
-fn managed_schema(uri: &str, name: &str) -> Option<&'static Schema> {
+/// The prefix of the managed property `name` in `uri`, if it is one.
+fn managed_prefix(uri: &str, name: &str) -> Option<&'static str> {
+    const PDFA_EXTENSION_NAMESPACES: [XmpNamespace; 5] = [
+        XmpNamespace::PdfAExtension,
+        XmpNamespace::PdfASchema,
+        XmpNamespace::PdfAProperty,
+        XmpNamespace::PdfAType,
+        XmpNamespace::PdfAField,
+    ];
+
     managed_schemas()
         .iter()
         .find(|schema| schema.namespace.uri() == uri && schema.get(name).is_some())
+        .map(|schema| schema.namespace.prefix())
+        .or_else(|| {
+            PDFA_EXTENSION_NAMESPACES
+                .iter()
+                .find(|ns| ns.url() == uri)
+                .map(|ns| ns.prefix())
+        })
 }
 
 /// Merges the `user` schemas into the `builtin` schemas of the same namespace.

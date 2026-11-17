@@ -628,6 +628,17 @@ fn metadata_custom_xmp_managed_property() {
         XmpError::ManagedProperty("dc:title".to_string()),
     );
 
+    let pdfa_extension = Namespace::new("pdfaExtension", "http://www.aiim.org/pdfa/ns/extension/");
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(pdfa_extension.property("schemas", "Schemas")),
+        XmpError::ManagedProperty("pdfaExtension:schemas".to_string()),
+    );
+    let pdfa_field = Namespace::new("pdfaField", "http://www.aiim.org/pdfa/ns/field#");
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(pdfa_field.property("anything", "Value")),
+        XmpError::ManagedProperty("pdfaField:anything".to_string()),
+    );
+
     let mut document = Document::new();
     document.set_metadata(Metadata::new().custom_xmp_property(dc.property("rights", "CC-BY")));
     assert!(document.finish().is_ok());
