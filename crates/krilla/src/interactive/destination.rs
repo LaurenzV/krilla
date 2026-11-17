@@ -14,7 +14,7 @@ use tiny_skia_path::Transform;
 use crate::chunk_container::ChunkContainer;
 use crate::error::{KrillaError, KrillaResult};
 use crate::geom::Point;
-use crate::serialize::{PageInfo, SerializeContext};
+use crate::serialize::SerializeContext;
 
 /// The type of destination.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -139,15 +139,8 @@ impl XyzDestination {
             )
         });
 
-        let (ref_, surface_size) = match page_info {
-            PageInfo::Krilla {
-                ref_, surface_size, ..
-            } => (ref_, surface_size),
-            PageInfo::Pdf { ref_, size, .. } => (ref_, size),
-        };
-
-        let page_ref = *ref_;
-        let page_size = surface_size.height();
+        let page_ref = page_info.ref_();
+        let page_size = page_info.height();
 
         let mut mapped_point = self.0.point.to_tsp();
         // Convert to PDF coordinates

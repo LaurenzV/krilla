@@ -135,7 +135,7 @@ fn image_rgb8_icc_png(surface: &mut Surface) {
     image_visreg_impl(surface, "rgb8_icc.png", load_png_image);
 }
 
-#[visreg]
+#[visreg(width = 100, height = 80)]
 fn image_resized(surface: &mut Surface) {
     let image = load_png_image("rgba8.png");
     surface.draw_image(image, Size::from_wh(100.0, 80.0).unwrap());

@@ -29,7 +29,7 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
     let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
     surface.set_fill(Some(red_fill(0.5)));
     surface.draw_text(
-        Point::from_xy(0.0, 80.0),
+        Point::from_xy(2.0, 19.0),
         font.clone(),
         20.0,
         "red outlined text",
@@ -39,7 +39,7 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
 
     surface.set_fill(Some(blue_fill(0.8)));
     surface.draw_text(
-        Point::from_xy(0.0, 100.0),
+        Point::from_xy(2.0, 39.0),
         font.clone(),
         20.0,
         "blue outlined text",
@@ -54,7 +54,7 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
 
     surface.set_fill(Some(grad_fill));
     surface.draw_text(
-        Point::from_xy(0.0, 120.0),
+        Point::from_xy(2.0, 59.0),
         font.clone(),
         20.0,
         "gradient text",
@@ -66,7 +66,7 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
 
     surface.set_fill(Some(blue_fill(0.8)));
     surface.draw_text(
-        Point::from_xy(0.0, 140.0),
+        Point::from_xy(2.0, 79.0),
         noto_font.clone(),
         20.0,
         "😄😁😆",
@@ -81,7 +81,7 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
 
     surface.set_fill(Some(grad_fill));
     surface.draw_text(
-        Point::from_xy(0.0, 160.0),
+        Point::from_xy(2.0, 99.0),
         font,
         20.0,
         "longer gradient text with repeat",
@@ -90,7 +90,7 @@ fn text_with_fill_impl(surface: &mut Surface, outlined: bool) {
     );
 }
 
-#[visreg]
+#[visreg(width = 305, height = 107)]
 fn text_outlined_with_fill(surface: &mut Surface) {
     text_with_fill_impl(surface, true)
 }
@@ -99,7 +99,7 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
     let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
     surface.set_stroke(Some(red_stroke(0.5, 1.0)));
     surface.draw_text(
-        Point::from_xy(0.0, 80.0),
+        Point::from_xy(3.0, 19.0),
         font.clone(),
         20.0,
         "red outlined text",
@@ -109,7 +109,7 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
 
     surface.set_stroke(Some(blue_stroke(0.8)));
     surface.draw_text(
-        Point::from_xy(0.0, 100.0),
+        Point::from_xy(3.0, 39.0),
         font.clone(),
         20.0,
         "blue outlined text",
@@ -124,7 +124,7 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
 
     surface.set_stroke(Some(grad_stroke));
     surface.draw_text(
-        Point::from_xy(0.0, 120.0),
+        Point::from_xy(3.0, 59.0),
         font,
         20.0,
         "gradient text",
@@ -136,7 +136,7 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
 
     surface.set_stroke(Some(blue_stroke(0.8)));
     surface.draw_text(
-        Point::from_xy(0.0, 140.0),
+        Point::from_xy(3.0, 79.0),
         font,
         20.0,
         "😄😁😆",
@@ -145,16 +145,16 @@ fn text_with_stroke_impl(surface: &mut Surface, outlined: bool) {
     );
 }
 
-#[visreg]
+#[visreg(width = 172, height = 86)]
 fn text_outlined_with_stroke(surface: &mut Surface) {
     text_with_stroke_impl(surface, true);
 }
 
-#[visreg]
+#[visreg(width = 99, height = 123)]
 fn text_zalgo(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
     surface.draw_text(
-        Point::from_xy(0.0, 100.0),
+        Point::from_xy(3.0, 85.0),
         font,
         32.0,
         "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
@@ -163,11 +163,11 @@ fn text_zalgo(surface: &mut Surface) {
     );
 }
 
-#[visreg]
+#[visreg(width = 205, height = 26)]
 fn text_direction_ltr(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0).unwrap();
     surface.draw_text(
-        Point::from_xy(0.0, 100.0),
+        Point::from_xy(3.0, 21.0),
         font,
         20.0,
         "你好这是一段则是文字",
@@ -176,11 +176,11 @@ fn text_direction_ltr(surface: &mut Surface) {
     );
 }
 
-#[visreg]
+#[visreg(width = 205, height = 26)]
 fn text_direction_rtl(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0).unwrap();
     surface.draw_text(
-        Point::from_xy(0.0, 100.0),
+        Point::from_xy(2.0, 21.0),
         font,
         20.0,
         "你好这是一段则是文字",
@@ -189,11 +189,11 @@ fn text_direction_rtl(surface: &mut Surface) {
     );
 }
 
-#[visreg]
+#[visreg(width = 26, height = 206)]
 fn text_direction_ttb(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0).unwrap();
     surface.draw_text(
-        Point::from_xy(100.0, 0.0),
+        Point::from_xy(13.0, 3.0),
         font,
         20.0,
         "你好这是一段则是文字",
@@ -220,11 +220,11 @@ fn text_vertical_advance(document: &mut Document) {
     }
 }
 
-#[visreg]
+#[visreg(width = 26, height = 206)]
 fn text_direction_btt(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS_CJK.clone(), 0).unwrap();
     surface.draw_text(
-        Point::from_xy(100.0, 0.0),
+        Point::from_xy(13.0, 3.0),
         font,
         20.0,
         "你好这是一段则是文字",
@@ -356,11 +356,11 @@ fn text_small_caps(page: &mut Page) {
     );
 }
 
-#[visreg]
+#[visreg(width = 98, height = 124)]
 fn text_zalgo_outlined(surface: &mut Surface) {
     let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
     surface.draw_text(
-        Point::from_xy(0.0, 100.0),
+        Point::from_xy(2.0, 85.0),
         font,
         32.0,
         "z͈̤̭͖̉͑́a̳ͫ́̇͑̽͒ͯlͨ͗̍̀̍̔̀ģ͔̫̫̄o̗̠͔̦͆̏̓͢",
@@ -402,12 +402,12 @@ fn text_stroke(page: &mut Page) {
 // will still embed a CID font for glyphs that don't have an entry in the
 // bitmap table instead of falling back to a Type3 font.
 #[cfg(target_os = "macos")]
-#[visreg]
+#[visreg(width = 43, height = 31)]
 fn text_mixed_ttf_ebdt_font(surface: &mut Surface) {
     let data = std::fs::read("/System/Library/Fonts/Supplemental/PTSans.ttc").unwrap();
     let font = Font::new(data.into(), 0).unwrap();
     surface.draw_text(
-        Point::from_xy(0.0, 100.0),
+        Point::from_xy(2.0, 26.0),
         font,
         32.0,
         "Hi!",
@@ -455,13 +455,13 @@ fn text_two_fonts_reproducibility() {
 }
 
 fn variable_impl(surface: &mut Surface, coords: Vec<Vec<(Tag, f32)>>, font: Data, text: &str) {
-    let mut cur_y = 20.0;
+    let mut cur_y = 17.0;
 
     for coords in coords {
         let font = Font::new_variable(font.clone(), 0, &coords).unwrap();
 
         surface.draw_text(
-            Point::from_xy(0.0, cur_y),
+            Point::from_xy(4.0, cur_y),
             font,
             16.0,
             text,
@@ -473,7 +473,7 @@ fn variable_impl(surface: &mut Surface, coords: Vec<Vec<(Tag, f32)>>, font: Data
     }
 }
 
-#[visreg]
+#[visreg(width = 178, height = 81)]
 fn text_variable_font(surface: &mut Surface) {
     let coords = vec![
         vec![(Tag::new(b"wght"), 400.0)],
@@ -490,7 +490,7 @@ fn text_variable_font(surface: &mut Surface) {
     );
 }
 
-#[visreg]
+#[visreg(width = 161, height = 62)]
 fn text_variable_font_cff2(surface: &mut Surface) {
     let coords = vec![
         vec![(Tag::new(b"wght"), 400.0)],

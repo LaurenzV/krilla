@@ -7,15 +7,59 @@ use syn::punctuated::Punctuated;
 use syn::{parse_macro_input, Ident, ItemFn, Token};
 
 struct AttributeInput {
-    identifiers: Punctuated<Ident, Token![,]>,
+    identifiers: Vec<Ident>,
+    #[cfg_attr(not(feature = "visreg"), allow(dead_code))]
+    width: Option<f32>,
+    #[cfg_attr(not(feature = "visreg"), allow(dead_code))]
+    height: Option<f32>,
 }
 
-// Implement the Parse trait for our custom struct
+enum Attribute {
+    Ident(Ident),
+    Width(f32),
+    Height(f32),
+}
+
+impl Parse for Attribute {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let ident = Ident::parse(input)?;
+
+        if !input.peek(Token![=]) {
+            return Ok(Attribute::Ident(ident));
+        }
+
+        input.parse::<Token![=]>()?;
+        let value: f32 = match input.parse::<syn::Lit>()? {
+            syn::Lit::Int(lit) => lit.base10_parse()?,
+            syn::Lit::Float(lit) => lit.base10_parse()?,
+            lit => return Err(syn::Error::new(lit.span(), "expected a number")),
+        };
+
+        match ident.to_string().as_str() {
+            "width" => Ok(Attribute::Width(value)),
+            "height" => Ok(Attribute::Height(value)),
+            _ => Err(syn::Error::new(ident.span(), "unknown attribute")),
+        }
+    }
+}
+
 impl Parse for AttributeInput {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        Ok(AttributeInput {
-            identifiers: input.parse_terminated(Ident::parse, Token![,])?,
-        })
+        let mut attrs = AttributeInput {
+            identifiers: vec![],
+            width: None,
+            height: None,
+        };
+
+        for attribute in Punctuated::<Attribute, Token![,]>::parse_terminated(input)? {
+            match attribute {
+                Attribute::Ident(ident) => attrs.identifiers.push(ident),
+                Attribute::Width(width) => attrs.width = Some(width),
+                Attribute::Height(height) => attrs.height = Some(height),
+            }
+        }
+
+        Ok(attrs)
     }
 }
 
@@ -144,6 +188,8 @@ pub fn visreg(_attr: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attrs = parse_macro_input!(attr as AttributeInput);
+    let width = attrs.width.unwrap_or(200.0);
+    let height = attrs.height.unwrap_or(200.0);
     let mut serialize_settings = format_ident!("default");
 
     let mut pdfium = false;
@@ -225,7 +271,7 @@ pub fn visreg(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! {
             let settings = crate::#serialize_settings();
             let mut d = Document::new_with(settings);
-            let page_settings = PageSettings::from_wh(200.0, 200.0).unwrap().with_media_box(None);
+            let page_settings = PageSettings::from_wh(#width, #height).unwrap();
             let mut page = d.start_page_with(page_settings);
             let mut surface = page.surface();
             #impl_ident(&mut surface);

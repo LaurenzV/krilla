@@ -147,6 +147,7 @@ The minimum supported Rust version is **1.92**.
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod chunk_container;
 mod graphics;

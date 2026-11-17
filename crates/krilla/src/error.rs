@@ -15,7 +15,7 @@ use crate::interchange::metadata::xmp::XmpError;
 use crate::pdf::{PdfDocument, PdfError};
 use crate::surface::Location;
 use crate::tagging::TagId;
-use crate::text::Font;
+use crate::text::{Font, StandardFont};
 
 /// A wrapper type for krilla errors.
 pub type KrillaResult<T> = Result<T, KrillaError>;
@@ -60,6 +60,8 @@ pub enum KrillaError {
     /// supported by the used PDF version (only available in PDF 1.5+).
     #[cfg(feature = "raster-images")]
     SixteenBitImage(Image, Option<Location>),
+    /// A standard font was used in PDF 2.0, which krilla doesn't support yet.
+    StandardFont(StandardFont),
 }
 
 impl Display for KrillaError {
@@ -109,6 +111,11 @@ impl Display for KrillaError {
                 )?;
                 write_location(f, *location)
             }
+            KrillaError::StandardFont(font) => write!(
+                f,
+                "krilla doesn't support the standard font {} in PDF 2.0",
+                font.base_font()
+            ),
         }
     }
 }

@@ -5,7 +5,7 @@
 <<
   /Type /Pages
   /Count 1
-  /Kids [7 0 R]
+  /Kids [10 0 R]
 >>
 endobj
 
@@ -13,7 +13,8 @@ endobj
 <<
   /ProcSet [/PDF /Text /ImageC /ImageB]
   /Font <<
-    /f0 6 0 R
+    /f0 7 0 R
+    /f1 6 0 R
   >>
 >>
 endobj
@@ -28,7 +29,7 @@ endobj
 <<
   /ProcSet [/PDF /Text /ImageC /ImageB]
   /XObject <<
-    /x0 12 0 R
+    /x0 17 0 R
   >>
 >>
 endobj
@@ -55,43 +56,77 @@ endobj
   /Resources 4 0 R
   /Name /TwitterColorEmojiSVGinOT
   /FontBBox [0 -402.84998 2048 1645.15]
-  /ToUnicode 10 0 R
+  /ToUnicode 12 0 R
   /FontMatrix [0.00048828125 0 0 0.00048828125 0 0]
   /FirstChar 0
-  /LastChar 1
-  /Widths [0 2048]
+  /LastChar 0
+  /Widths [2048]
   /FontDescriptor 5 0 R
   /CharProcs <<
-    /g0 8 0 R
-    /g1 9 0 R
+    /g0 11 0 R
   >>
   /Encoding <<
     /Type /Encoding
-    /Differences [0 /g0 /g1]
+    /Differences [0 /g0]
   >>
 >>
 endobj
 
 7 0 obj
 <<
-  /Type /Page
-  /Resources 2 0 R
-  /MediaBox [0 0 200 200]
-  /Parent 1 0 R
-  /Contents 11 0 R
+  /Type /Font
+  /Subtype /Type0
+  /BaseFont /QKIKYQ+TwitterColorEmojiSVGinOT
+  /Encoding /Identity-H
+  /DescendantFonts [8 0 R]
+  /ToUnicode 14 0 R
 >>
 endobj
 
 8 0 obj
 <<
-  /Length 6
+  /Type /Font
+  /Subtype /CIDFontType2
+  /BaseFont /QKIKYQ+TwitterColorEmojiSVGinOT
+  /CIDSystemInfo <<
+    /Registry (Adobe)
+    /Ordering (Identity)
+    /Supplement 0
+  >>
+  /FontDescriptor 9 0 R
+  /DW 0
+  /CIDToGIDMap /Identity
+  /W []
 >>
-stream
-0 0 d0
-endstream
 endobj
 
 9 0 obj
+<<
+  /Type /FontDescriptor
+  /FontName /QKIKYQ+TwitterColorEmojiSVGinOT
+  /Flags 131076
+  /FontBBox [28.808594 -100.09766 972.16797 958.9844]
+  /ItalicAngle 0
+  /Ascent 799.8047
+  /Descent -200.19531
+  /CapHeight 0
+  /StemV 95.4
+  /CIDSet 13 0 R
+  /FontFile2 15 0 R
+>>
+endobj
+
+10 0 obj
+<<
+  /Type /Page
+  /Resources 2 0 R
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 16 0 R
+>>
+endobj
+
+11 0 obj
 <<
   /Length 16
 >>
@@ -101,9 +136,9 @@ stream
 endstream
 endobj
 
-10 0 obj
+12 0 obj
 <<
-  /Length 629
+  /Length 617
   /Type /CMap
   /WMode 0
 >>
@@ -130,9 +165,8 @@ end def
 1 begincodespacerange
 <00> <FF>
 endcodespacerange
-2 beginbfchar
-<00> <0048>
-<01> <D83DDE04>
+1 beginbfchar
+<00> <D83DDE04>
 endbfchar
 endcmap
 CMapName currentdict /CMap defineresource pop
@@ -143,9 +177,78 @@ end
 endstream
 endobj
 
-11 0 obj
+13 0 obj
 <<
-  /Length 80
+  /Length 18
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C6B000000810081
+endstream
+endobj
+
+14 0 obj
+<<
+  /Length 581
+  /Type /CMap
+  /WMode 0
+>>
+stream
+%!PS-Adobe-3.0 Resource-CMap
+%%DocumentNeededResources: procset CIDInit
+%%IncludeResource: procset CIDInit
+%%BeginResource: CMap Custom
+%%Title: (Custom Adobe Identity 0)
+%%Version: 1
+%%EndComments
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo 3 dict dup begin
+    /Registry (Adobe) def
+    /Ordering (Identity) def
+    /Supplement 0 def
+end def
+/CMapName /Custom def
+/CMapVersion 1 def
+/CMapType 0 def
+/WMode 0 def
+1 begincodespacerange
+<0000> <FFFF>
+endcodespacerange
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+%%EndResource
+%%EOF
+endstream
+endobj
+
+15 0 obj
+<<
+  /Length 813
+  /Filter [/ASCIIHexDecode /FlateDecode]
+>>
+stream
+789C9D524D2F4341143DF35A1ED5683776220DD244A24D3FA805123482950491B0C04B
+3F55BFD256B4BBC6DA829D850DEBFE003B8948BAED3FB0B5B0B0B1AEF3E64D54A541CC
+E4CE9C7BEFB967EE4C0602C000EAB001A96C2D096B5C984B3A61C4BDE3978BCA8FA419
+70FBF459E227DA643A57A92AFE0BCD9E2DC40CE5BF9A7ECEA81685E67011BFD13C7923
+97983A5A5E07841BD09CC542B9D2CE8067DA46CD3CCC5E68D713D99143D7C23B8606A4
+D873FDB665ED7757986F87F5A6DE905D6BEA34D6E88D7618F7165F6F4AA5AF437421E1
+70E2417A9A8C98B1A54F868E7DBE86B00F12DFD02C2CE0A567610DC37854D88603B414
+B62322FC0AF7614CC415EE47409C238A028AA8A18463A4904685370E21400B11AD306E
+204EB42A19319CA0CC8A3C23514E1F197B5C67E0678DE717B51D9C315EE14C9031CDC8
+069562ACEDA5E6F8C6B7D4B3B492EC274794617E8BD9144E993198F95B8D07DBD8C51A
+511E9BACF12088B0BC6B8CC8CFB5406EA7F7A0DCE7FEA91E5437F2CB57F859B3A3D8D1
+EB56B3591FA29D42123DC60719387560
+endstream
+endobj
+
+16 0 obj
+<<
+  /Length 121
 >>
 stream
 q
@@ -155,13 +258,17 @@ BT
 0 Tr
 /f0 32 Tf
 1 0 0 -1 0 100 Tm
-[(\000\001)] TJ
+(\000\000) Tj
+0 Tr
+/f1 32 Tf
+1 0 0 -1 0 100 Tm
+(\000) Tj
 ET
 Q
 endstream
 endobj
 
-12 0 obj
+17 0 obj
 <<
   /Length 1331
   /Type /XObject
@@ -227,7 +334,7 @@ Q
 endstream
 endobj
 
-13 0 obj
+18 0 obj
 <<
   /Type /Catalog
   /Pages 1 0 R
@@ -235,27 +342,32 @@ endobj
 endobj
 
 xref
-0 14
+0 19
 0000000000 65535 f
 0000000016 00000 n
-0000000080 00000 n
-0000000172 00000 n
-0000000234 00000 n
-0000000330 00000 n
-0000000609 00000 n
-0000001018 00000 n
-0000001134 00000 n
-0000001192 00000 n
-0000001261 00000 n
-0000001970 00000 n
-0000002104 00000 n
-0000003580 00000 n
+0000000081 00000 n
+0000000187 00000 n
+0000000249 00000 n
+0000000345 00000 n
+0000000624 00000 n
+0000001014 00000 n
+0000001184 00000 n
+0000001445 00000 n
+0000001730 00000 n
+0000001847 00000 n
+0000001917 00000 n
+0000002614 00000 n
+0000002727 00000 n
+0000003388 00000 n
+0000004297 00000 n
+0000004473 00000 n
+0000005949 00000 n
 trailer
 <<
-  /Size 14
-  /Root 13 0 R
-  /ID [(8V3xuxOhm/uqCYBoQOjtAg==) (8V3xuxOhm/uqCYBoQOjtAg==)]
+  /Size 19
+  /Root 18 0 R
+  /ID [(fhT8/SseeeaNCqeKPgeFcA==) (fhT8/SseeeaNCqeKPgeFcA==)]
 >>
 startxref
-3635
+6004
 %%EOF

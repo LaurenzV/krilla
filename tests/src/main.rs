@@ -870,7 +870,7 @@ pub(crate) fn svg_impl(name: &str, renderer: Backend, ignore_renderer: bool) {
     .unwrap();
 
     let size = krilla::geom::Size::from_wh(tree.size().width(), tree.size().height()).unwrap();
-    let mut page = d.start_page_with(PageSettings::new(size));
+    let mut page = d.start_page_with(PageSettings::from_wh(size.width(), size.height()).unwrap());
     let mut surface = page.surface();
     surface.draw_svg(
         &tree,

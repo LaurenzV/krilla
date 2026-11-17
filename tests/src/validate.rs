@@ -1,4 +1,4 @@
-use krilla::action::{LinkAction, ResetFormAction};
+use krilla::action::{ActionFieldFilter, LinkAction, ResetFormAction};
 use krilla::annotation::{Annotation, LinkAnnotation, Target};
 use krilla::color::{rgb, separation};
 use krilla::configure::validate::VersionedFeature;
@@ -307,7 +307,7 @@ fn reset_form_action_document_impl(document: &mut Document) {
                 Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
                 button_appearance.clone(),
             )
-            .with_action_mouse_press(ResetFormAction::All.into()),
+            .with_action_mouse_press(ResetFormAction::new(ActionFieldFilter::All).into()),
     )
     .with_location(Some(annot_loc));
     page.add_widget_annotation(&mut button, annot);
@@ -830,6 +830,42 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
 
     let outline = Outline::new();
     document.set_outline(outline);
+}
+
+#[snapshot(document, settings_15)]
+fn validate_pdf_ua1_transparency_group(document: &mut Document) {
+    let mut page = document.start_page();
+    let mut surface = page.surface();
+
+    let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
+
+    surface.push_opacity(NormalizedF32::new(0.5).unwrap());
+    let id = surface.start_tagged(ContentTag::Span(SpanTag::empty()));
+    surface.draw_text(
+        Point::from_xy(0.0, 100.0),
+        font,
+        20.0,
+        "This is some text",
+        false,
+        TextDirection::Auto,
+    );
+    surface.end_tagged();
+    surface.pop();
+
+    surface.finish();
+    page.finish();
+
+    let mut par = TagGroup::new(Tag::P);
+    par.push(id);
+    let mut tag_tree = TagTree::new();
+    tag_tree.push(par);
+    document.set_tag_tree(tag_tree);
+
+    let metadata = Metadata::new()
+        .language("en".to_string())
+        .title("a nice title".to_string());
+    document.set_metadata(metadata);
+    document.set_outline(Outline::new());
 }
 
 #[test]
