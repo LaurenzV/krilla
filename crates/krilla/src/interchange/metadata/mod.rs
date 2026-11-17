@@ -340,6 +340,7 @@ impl Metadata {
 
         let mut written = HashSet::new();
         for property in &self.custom_xmp_properties {
+            check_name(&property.name)?;
             let uri = property.namespace.uri();
             if let Some(schema) = managed_schema(uri, &property.name) {
                 return Err(XmpError::ManagedProperty(format!(
@@ -725,9 +726,43 @@ fn known_xmp_namespace(uri: &str) -> Option<XmpNamespace<'static>> {
 }
 
 fn is_reserved_xmp_prefix(prefix: &str) -> bool {
-    XmpNamespace::PREDEFINED
+    matches!(prefix, "xml" | "xmlns")
+        || XmpNamespace::PREDEFINED
+            .iter()
+            .any(|ns| ns.prefix() == prefix)
+}
+
+/// Checks that `name` is an `NCName`, i.e. an XML name without a colon.
+fn check_name(name: &str) -> Result<(), XmpError> {
+    fn is_start_char(c: char) -> bool {
+        matches!(c,
+            'A'..='Z' | '_' | 'a'..='z'
+            | '\u{C0}'..='\u{D6}' | '\u{D8}'..='\u{F6}' | '\u{F8}'..='\u{2FF}'
+            | '\u{370}'..='\u{37D}' | '\u{37F}'..='\u{1FFF}' | '\u{200C}'..='\u{200D}'
+            | '\u{2070}'..='\u{218F}' | '\u{2C00}'..='\u{2FEF}' | '\u{3001}'..='\u{D7FF}'
+            | '\u{F900}'..='\u{FDCF}' | '\u{FDF0}'..='\u{FFFD}' | '\u{10000}'..='\u{EFFFF}'
+        )
+    }
+
+    fn is_char(c: char) -> bool {
+        is_start_char(c)
+            || matches!(c,
+                '-' | '.' | '0'..='9' | '\u{B7}' | '\u{300}'..='\u{36F}' | '\u{203F}'..='\u{2040}'
+            )
+    }
+
+    let mut chars = name.chars();
+    if chars.next().is_some_and(is_start_char) && chars.all(is_char) {
+        Ok(())
+    } else {
+        Err(XmpError::InvalidName(name.to_string()))
+    }
+}
+
+fn check_description_names(descriptions: &[PropertyDescription]) -> Result<(), XmpError> {
+    descriptions
         .iter()
-        .any(|ns| ns.prefix() == prefix)
+        .try_for_each(|desc| check_name(&desc.name))
 }
 
 /// Schemas describing the properties krilla writes itself, either from the
@@ -1350,6 +1385,7 @@ impl<'a> Namespaces<'a> {
             return Ok(());
         }
 
+        check_name(ns.prefix())?;
         if is_reserved_xmp_prefix(ns.prefix()) {
             return Err(XmpError::ReservedPrefix(ns.prefix().to_string()));
         }
@@ -1367,9 +1403,12 @@ impl<'a> Namespaces<'a> {
 
     fn register_schema(&mut self, schema: &'a Schema) -> Result<(), XmpError> {
         self.register(&schema.namespace)?;
+        check_description_names(&schema.properties)?;
         for desc in &schema.properties {
             for ty in struct_types(&desc.value_type) {
                 self.register(&ty.namespace)?;
+                check_name(&ty.name)?;
+                check_description_names(&ty.fields)?;
             }
         }
 
@@ -1463,6 +1502,7 @@ impl<'a> ValueWriter<'a, '_> {
                 None => None,
             };
 
+            check_name(&field.name)?;
             let namespace = self.namespace(&field.namespace)?;
             if !written.insert((field.namespace.uri(), field.name.as_str())) {
                 return Err(XmpError::DuplicateProperty(format!(
@@ -1589,7 +1629,7 @@ pub(crate) fn build_xmp_namespace(ns: &Namespace) -> XmpNamespace<'_> {
         XmpNamespace::Custom(Box::new(CustomNamespace::new(
             ns.prefix(),
             ns.prefix(),
-            ns.uri(),
+            ns.escaped_uri(),
         )))
     })
 }
@@ -1705,6 +1745,24 @@ mod tests {
         PDF_A1_PREDEFINED_PROPERTIES, PDF_A2_A3_ADDITIONAL_PROPERTIES,
     };
 
+    #[test]
+    fn relax_ng_prefixes_dont_collide_with_custom_prefixes() {
+        let rng = Metadata::new()
+            .custom_xmp_property(
+                Namespace::new("ui", "http://example.com/ui#").property("label", "Label"),
+            )
+            .custom_xmp_property(
+                Namespace::new("rng", "http://example.com/rng#").property("grammar", "Grammar"),
+            )
+            .relax_ng_schema();
+
+        assert!(rng.contains(r#"<grammar xmlns="http://relaxng.org/ns/structure/1.0""#));
+        assert!(rng.contains(r#"xmlns:ui="http://example.com/ui#""#));
+        assert!(rng.contains(r#"xmlns:rng="http://example.com/rng#""#));
+        assert!(rng.contains(r#"xmlns:ui1="http://ns.iso.org/iso-16684-2/xmp-schema-ui-info/1.0""#));
+        assert!(rng.contains("<ui1:label"));
+        assert!(!rng.contains("xmpmeta"));
+    }
     #[test]
     fn predefined_property_lists_are_sorted() {
         for list in [

@@ -566,6 +566,61 @@ fn metadata_custom_xmp_duplicate_property() {
 }
 
 #[test]
+fn metadata_custom_xmp_invalid_name() {
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(cc_namespace().property("has space", "value")),
+        XmpError::InvalidName("has space".to_string()),
+    );
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(
+            Namespace::new("1ex", "http://example.com/xmp#").property("name", "value"),
+        ),
+        XmpError::InvalidName("1ex".to_string()),
+    );
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(
+            Namespace::new("xml", "http://example.com/xmp#").property("name", "value"),
+        ),
+        XmpError::ReservedPrefix("xml".to_string()),
+    );
+
+    let ex = Namespace::new("ex", "http://example.com/xmp/address#");
+    let with_struct = |ty: StructType| {
+        Metadata::new().custom_xmp_schema(
+            Schema::new(ex.clone()).property(PropertyDescription::new("address", ty, "An address")),
+        )
+    };
+    assert_xmp_error(
+        with_struct(StructType::new(ex.clone(), "Postal Address", "")),
+        XmpError::InvalidName("Postal Address".to_string()),
+    );
+    assert_xmp_error(
+        with_struct(
+            StructType::new(ex.clone(), "Address", "").field(text_description("zip:code", "")),
+        ),
+        XmpError::InvalidName("zip:code".to_string()),
+    );
+    assert_xmp_error(
+        Metadata::new().custom_xmp_property(ex.property(
+            "address",
+            Value::Struct(vec![ex.property("-street", "Main Street 1")]),
+        )),
+        XmpError::InvalidName("-street".to_string()),
+    );
+}
+
+#[test]
+fn metadata_custom_xmp_escaped_namespace_uri() {
+    let mut document = Document::new();
+    document.set_metadata(Metadata::new().custom_xmp_property(
+        Namespace::new("ex", "http://example.com/xmp?a=1&b=\"2\"#").property("name", "value"),
+    ));
+    let pdf = document.finish().unwrap();
+    let expected = b"xmlns:ex=\"http://example.com/xmp?a=1&amp;b=&quot;2&quot;#\"";
+    assert!(pdf.windows(expected.len()).any(|w| w == expected));
+}
+
+#[test]
 fn metadata_custom_xmp_managed_property() {
     let dc = Namespace::new("dc", "http://purl.org/dc/elements/1.1/");
     assert_xmp_error(

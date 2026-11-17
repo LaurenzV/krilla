@@ -40,18 +40,21 @@ pub(crate) fn relax_ng_schema(
         struct_types: Vec::new(),
         language_alternative: false,
         any: !undescribed.is_empty(),
+        ui: ui_prefix(&namespaces),
     };
 
     grammar.w.write_declaration();
-    grammar.w.start_element("rng:grammar");
+    grammar.w.start_element("grammar");
     grammar
         .w
-        .write_attribute("xmlns:rng", "http://relaxng.org/ns/structure/1.0");
+        .write_attribute("xmlns", "http://relaxng.org/ns/structure/1.0");
     grammar
         .w
         .write_attribute("xmlns:rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-    grammar.w.write_attribute("xmlns:x", "adobe:ns:meta/");
-    grammar.w.write_attribute("xmlns:ui", UI_NAMESPACE);
+    let ui = grammar.ui.clone();
+    grammar
+        .w
+        .write_attribute(&format!("xmlns:{ui}"), UI_NAMESPACE);
     for (prefix, uri) in &namespaces {
         grammar
             .w
@@ -67,25 +70,19 @@ pub(crate) fn relax_ng_schema(
         .filter(|(ns, _)| !schemas.iter().any(|s| s.namespace.uri() == ns.uri()))
         .collect();
 
-    grammar.element("rng:start", |g| {
-        g.element("rng:element", |g| {
-            g.w.write_attribute("name", "x:xmpmeta");
-            g.element("rng:zeroOrMore", |g| g.any_attribute());
-            g.element("rng:element", |g| {
-                g.w.write_attribute("name", "rdf:RDF");
-                g.element("rng:element", |g| {
-                    g.w.write_attribute("name", "rdf:Description");
-                    g.element("rng:attribute", |g| {
-                        g.w.write_attribute("name", "rdf:about")
-                    });
-                    g.interleave(schemas.len() + orphans.len(), |g| {
-                        for schema in schemas {
-                            g.reference(&schema_define(&schema.namespace));
-                        }
-                        for (ns, name) in &orphans {
-                            g.any_property(&prefix(ns), name);
-                        }
-                    });
+    grammar.element("start", |g| {
+        g.element("element", |g| {
+            g.w.write_attribute("name", "rdf:RDF");
+            g.element("element", |g| {
+                g.w.write_attribute("name", "rdf:Description");
+                g.element("attribute", |g| g.w.write_attribute("name", "rdf:about"));
+                g.interleave(schemas.len() + orphans.len(), |g| {
+                    for schema in schemas {
+                        g.reference(&schema_define(&schema.namespace));
+                    }
+                    for (ns, name) in &orphans {
+                        g.any_property(&prefix(ns), name);
+                    }
                 });
             });
         });
@@ -109,6 +106,7 @@ struct Grammar<'a> {
     struct_types: Vec<&'a StructType>,
     language_alternative: bool,
     any: bool,
+    ui: String,
 }
 
 impl<'a> Grammar<'a> {
@@ -119,7 +117,7 @@ impl<'a> Grammar<'a> {
     }
 
     fn define(&mut self, name: &str, f: impl FnOnce(&mut Self)) {
-        self.element("rng:define", |g| {
+        self.element("define", |g| {
             g.w.write_attribute("name", &escape(name));
             g.w.write_attribute("combine", "choice");
             f(g);
@@ -127,35 +125,35 @@ impl<'a> Grammar<'a> {
     }
 
     fn reference(&mut self, name: &str) {
-        self.element("rng:ref", |g| g.w.write_attribute("name", &escape(name)));
+        self.element("ref", |g| g.w.write_attribute("name", &escape(name)));
     }
 
-    /// An `rng:interleave` of the `len` patterns written by `f`, or
-    /// `rng:empty` if there are none.
+    /// An `interleave` of the `len` patterns written by `f`, or
+    /// `empty` if there are none.
     fn interleave(&mut self, len: usize, f: impl FnOnce(&mut Self)) {
         if len == 0 {
-            self.element("rng:empty", |_| {});
+            self.element("empty", |_| {});
         } else {
-            self.element("rng:interleave", f);
+            self.element("interleave", f);
         }
     }
 
     fn optional(&mut self, optional: bool, f: impl FnOnce(&mut Self)) {
         if optional {
-            self.element("rng:optional", f);
+            self.element("optional", f);
         } else {
             f(self);
         }
     }
 
     fn any_attribute(&mut self) {
-        self.element("rng:attribute", |g| g.element("rng:anyName", |_| {}));
+        self.element("attribute", |g| g.element("anyName", |_| {}));
     }
 
     fn any_property(&mut self, prefix: &str, name: &str) {
         self.any = true;
         self.optional(true, |g| {
-            g.element("rng:element", |g| {
+            g.element("element", |g| {
                 g.w.write_attribute("name", &escape(&format!("{prefix}:{name}")));
                 g.reference("Any");
             });
@@ -163,12 +161,12 @@ impl<'a> Grammar<'a> {
     }
 
     fn ui_info(&mut self, label: &str, description: Option<&str>) {
-        self.element("ui:label", |g| {
+        self.element(&format!("{}:label", self.ui), |g| {
             g.w.write_attribute("xml:lang", "x-default");
             g.w.write_attribute("value", &escape(label));
         });
         if let Some(description) = description {
-            self.element("ui:description", |g| {
+            self.element(&format!("{}:description", self.ui), |g| {
                 g.w.write_attribute("xml:lang", "x-default");
                 g.w.write_attribute("value", &escape(description));
             });
@@ -179,7 +177,7 @@ impl<'a> Grammar<'a> {
         let prefix = prefix(&schema.namespace);
 
         self.define(&schema_define(&schema.namespace), |g| {
-            g.element("ui:schema", |g| {
+            g.element(&format!("{}:schema", g.ui), |g| {
                 let label = schema.name.as_deref().unwrap_or(&prefix);
                 g.ui_info(label, schema.description.as_deref());
             });
@@ -197,10 +195,10 @@ impl<'a> Grammar<'a> {
 
         for desc in &schema.properties {
             self.define(&format!("{prefix}.{}", desc.name), |g| {
-                g.element("rng:element", |g| {
+                g.element("element", |g| {
                     g.w.write_attribute("name", &escape(&format!("{prefix}:{}", desc.name)));
                     g.value_type(&desc.value_type);
-                    g.element("ui:property", |g| {
+                    g.element(&format!("{}:property", g.ui), |g| {
                         g.ui_info(&desc.name, Some(&desc.description))
                     });
                 });
@@ -216,9 +214,9 @@ impl<'a> Grammar<'a> {
                 }
                 self.reference(&format!("ISO16684-1.Types.QValue.{}", ty.as_str()));
             }
-            ValueType::ClosedChoice(_, values) => self.element("rng:choice", |g| {
+            ValueType::ClosedChoice(_, values) => self.element("choice", |g| {
                 for value in values {
-                    g.element("rng:value", |g| g.w.write_text(&escape(value)));
+                    g.element("value", |g| g.w.write_text(&escape(value)));
                 }
             }),
             ValueType::OrderedArray(item) => self.array("rdf:Seq", item),
@@ -232,7 +230,7 @@ impl<'a> Grammar<'a> {
                 Some(ty) => self.struct_type(ty),
                 None => {
                     self.any = true;
-                    self.element("rng:element", |g| {
+                    self.element("element", |g| {
                         g.w.write_attribute("name", "rdf:Description");
                         g.reference("Any");
                     });
@@ -243,10 +241,10 @@ impl<'a> Grammar<'a> {
     }
 
     fn array(&mut self, kind: &str, item: &'a ValueType) {
-        self.element("rng:element", |g| {
+        self.element("element", |g| {
             g.w.write_attribute("name", kind);
-            g.element("rng:zeroOrMore", |g| {
-                g.element("rng:element", |g| {
+            g.element("zeroOrMore", |g| {
+                g.element("element", |g| {
                     g.w.write_attribute("name", "rdf:li");
                     g.value_type(item);
                 });
@@ -266,18 +264,18 @@ impl<'a> Grammar<'a> {
     /// The base type `name`, or the same value in an `rdf:Description` with
     /// qualifiers.
     fn qualified(&mut self, name: &str) {
-        self.element("rng:choice", |g| {
+        self.element("choice", |g| {
             g.reference(name);
-            g.element("rng:element", |g| {
+            g.element("element", |g| {
                 g.w.write_attribute("name", "rdf:Description");
-                g.element("rng:element", |g| {
+                g.element("element", |g| {
                     g.w.write_attribute("name", "rdf:value");
                     g.reference(name);
                 });
-                g.element("rng:zeroOrMore", |g| {
-                    g.element("rng:element", |g| {
-                        g.element("rng:anyName", |_| {});
-                        g.element("rng:text", |_| {});
+                g.element("zeroOrMore", |g| {
+                    g.element("element", |g| {
+                        g.element("anyName", |_| {});
+                        g.element("text", |_| {});
                     });
                 });
             });
@@ -294,12 +292,12 @@ impl<'a> Grammar<'a> {
 
             self.define(&format!("{name}.QValue"), |g| g.qualified(&base));
             self.define(&base, |g| {
-                g.element("rng:element", |g| {
+                g.element("element", |g| {
                     g.w.write_attribute("name", "rdf:Description");
                     g.interleave(ty.fields.len(), |g| {
                         for field in &ty.fields {
                             g.optional(!field.required, |g| {
-                                g.element("rng:element", |g| {
+                                g.element("element", |g| {
                                     g.w.write_attribute(
                                         "name",
                                         &escape(&format!("{prefix}:{}", field.name)),
@@ -320,16 +318,16 @@ impl<'a> Grammar<'a> {
                 g.qualified(&base)
             });
             self.define(&base, |g| match simple_type_data(ty) {
-                Some((data_type, pattern)) => g.element("rng:data", |g| {
+                Some((data_type, pattern)) => g.element("data", |g| {
                     g.w.write_attribute("type", data_type);
                     if let Some(pattern) = pattern {
-                        g.element("rng:param", |g| {
+                        g.element("param", |g| {
                             g.w.write_attribute("name", "pattern");
                             g.w.write_text(pattern);
                         });
                     }
                 }),
-                None => g.element("rng:text", |_| {}),
+                None => g.element("text", |_| {}),
             });
         }
 
@@ -341,12 +339,12 @@ impl<'a> Grammar<'a> {
 
         if self.any {
             self.define("Any", |g| {
-                g.element("rng:zeroOrMore", |g| {
-                    g.element("rng:choice", |g| {
+                g.element("zeroOrMore", |g| {
+                    g.element("choice", |g| {
                         g.any_attribute();
-                        g.element("rng:text", |_| {});
-                        g.element("rng:element", |g| {
-                            g.element("rng:anyName", |_| {});
+                        g.element("text", |_| {});
+                        g.element("element", |g| {
+                            g.element("anyName", |_| {});
                             g.reference("Any");
                         });
                     });
@@ -358,26 +356,36 @@ impl<'a> Grammar<'a> {
     }
 
     fn array_of_language_tagged_text(&mut self) {
-        self.element("rng:element", |g| {
+        self.element("element", |g| {
             g.w.write_attribute("name", "rdf:Alt");
-            g.element("rng:zeroOrMore", |g| {
-                g.element("rng:element", |g| {
+            g.element("zeroOrMore", |g| {
+                g.element("element", |g| {
                     g.w.write_attribute("name", "rdf:li");
-                    g.element("rng:attribute", |g| {
+                    g.element("attribute", |g| {
                         g.w.write_attribute("name", "xml:lang");
-                        g.element("rng:data", |g| {
+                        g.element("data", |g| {
                             g.w.write_attribute("type", "string");
-                            g.element("rng:param", |g| {
+                            g.element("param", |g| {
                                 g.w.write_attribute("name", "pattern");
                                 g.w.write_text("x-default|([a-zA-Z]+(-[a-zA-Z0-9]+)*)");
                             });
                         });
                     });
-                    g.element("rng:text", |_| {});
+                    g.element("text", |_| {});
                 });
             });
         });
     }
+}
+
+fn ui_prefix(namespaces: &[(String, &str)]) -> String {
+    (0..)
+        .map(|i| match i {
+            0 => "ui".to_string(),
+            i => format!("ui{i}"),
+        })
+        .find(|ui| namespaces.iter().all(|(prefix, _)| prefix != ui))
+        .unwrap()
 }
 
 fn prefix(ns: &Namespace) -> String {

@@ -50,15 +50,27 @@ use super::DateTime;
 pub struct Namespace {
     prefix: Arc<str>,
     uri: Arc<str>,
+    escaped_uri: Arc<str>,
 }
 
 impl Namespace {
     /// Create a new namespace with the given prefix (e.g. `"fx"`) and URI
     /// (e.g. `"urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#"`).
     pub fn new(prefix: impl Into<Arc<str>>, uri: impl Into<Arc<str>>) -> Self {
+        let uri = uri.into();
+        let escaped_uri = if uri.contains(['&', '<', '"']) {
+            uri.replace('&', "&amp;")
+                .replace('<', "&lt;")
+                .replace('"', "&quot;")
+                .into()
+        } else {
+            uri.clone()
+        };
+
         Self {
             prefix: prefix.into(),
-            uri: uri.into(),
+            uri,
+            escaped_uri,
         }
     }
 
@@ -70,6 +82,10 @@ impl Namespace {
     /// The URI of the namespace.
     pub fn uri(&self) -> &str {
         &self.uri
+    }
+
+    pub(crate) fn escaped_uri(&self) -> &str {
+        &self.escaped_uri
     }
 
     /// Create a property in this namespace.
@@ -513,8 +529,13 @@ pub enum XmpError {
     /// prefix.
     ConflictingPrefix(String),
     /// A custom namespace used a prefix reserved by a predefined XMP schema
-    /// (e.g. `dc`, `xmp`, `pdf`). Contains the prefix.
+    /// (e.g. `dc`, `xmp`, `pdf`) or by XML (`xml`, `xmlns`). Contains the
+    /// prefix.
     ReservedPrefix(String),
+    /// A prefix, or the name of a property, structure field or structure
+    /// type, isn't a valid XML name without a colon (an `NCName`). Contains
+    /// the name.
+    InvalidName(String),
     /// More than one schema was attached for the same namespace. Contains
     /// the namespace URI.
     DuplicateSchema(String),
@@ -555,6 +576,9 @@ impl std::fmt::Display for XmpError {
                     f,
                     "the prefix {prefix} is reserved by a predefined XMP schema"
                 )
+            }
+            XmpError::InvalidName(name) => {
+                write!(f, "{name:?} is not a valid XML name")
             }
             XmpError::DuplicateSchema(uri) => {
                 write!(f, "the namespace {uri} was described by multiple schemas")
