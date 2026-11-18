@@ -741,6 +741,8 @@ impl SerializeContext {
                 let mut oi = chunk.indirect(oi_ref).start::<OutputIntent>();
                 let icc_profile = self.serialize_settings.pdf_version().rgb_icc();
 
+                // NOTE: when support for CMYK or custom RBG output intents is added, revisit
+                // `ContentBuilder::get_color_space`.
                 oi.dest_output_profile(
                     self.register_cacheable(chunk_container, icc_profile.clone()),
                 )

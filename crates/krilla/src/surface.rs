@@ -264,6 +264,7 @@ impl<'a> Surface<'a> {
     /// Panics if a tagged/marked section has already been started (either via this function or via
     /// [`Surface::start_tagged`]).
     pub fn start_variable_text(&mut self) {
+        self.bd.get_mut().active_variable_text = true;
         self.bd.get_mut().start_marked_content(Name(b"Tx"));
     }
 
@@ -273,6 +274,7 @@ impl<'a> Surface<'a> {
     /// Panics if no variable text marked section has been started.
     pub fn end_variable_text(&mut self) {
         self.bd.get_mut().end_marked_content();
+        self.bd.get_mut().active_variable_text = false;
     }
 
     fn outline_glyphs(
