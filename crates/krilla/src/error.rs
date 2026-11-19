@@ -61,7 +61,10 @@ pub enum KrillaError {
 impl Display for KrillaError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            KrillaError::Font(_, message) => write!(f, "failed to embed font: {message}"),
+            KrillaError::Font(font, message) => match font.postscript_name() {
+                Some(name) => write!(f, "failed to embed font {name}: {message}"),
+                None => write!(f, "failed to embed font: {message}"),
+            },
             KrillaError::Validation(errors) => {
                 let count = errors.len();
                 write!(
