@@ -217,11 +217,14 @@ impl ContentBuilder {
     pub(crate) fn draw_path(
         &mut self,
         path: &Path,
-        mut fill: Option<&Fill>,
+        fill: Option<&Fill>,
         stroke: Option<&Stroke>,
         sc: &mut SerializeContext,
         chunk_container: &mut ChunkContainer,
     ) {
+        let mut fill = fill.filter(|f| !f.paint.is_empty_gradient());
+        let stroke = stroke.filter(|s| !s.paint.is_empty_gradient());
+
         if fill.is_none() && stroke.is_none() {
             return;
         }
@@ -418,6 +421,9 @@ impl ContentBuilder {
         text: &str,
         font_size: f32,
     ) {
+        let fill = fill.filter(|f| !f.paint.is_empty_gradient());
+        let stroke = stroke.filter(|s| !s.paint.is_empty_gradient());
+
         if fill.is_none() && stroke.is_none() {
             return;
         }
