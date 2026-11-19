@@ -30,7 +30,8 @@ pub(crate) fn metadata_impl(document: &mut Document) {
         .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()])
         .text_direction(TextDirection::LeftToRight)
         .page_layout(PageLayout::TwoColumnRight)
-        .display_doc_title(true);
+        .display_doc_title(true)
+        .trapped(true);
     document.set_metadata(metadata);
 }
 
@@ -72,6 +73,7 @@ fn metadata_custom_fields(document: &mut Document) {
 pub(crate) fn custom_metadata() -> Metadata {
     Metadata::new()
         .title("Standard title".to_string())
+        .trapped(false)
         .custom_field("CustomField".to_string(), "old value".to_string())
         .unwrap()
         .custom_field("CustomField".to_string(), "new value".to_string())
@@ -85,17 +87,5 @@ fn metadata_pdf_20_author(document: &mut Document) {
     let metadata = Metadata::new()
         .authors(vec!["John Doe".to_string(), "Max Mustermann".to_string()])
         .creation_date(datetime());
-    document.set_metadata(metadata);
-}
-
-#[snapshot(document, settings_5)]
-fn metadata_trapped(document: &mut Document) {
-    let metadata = Metadata::new().trapped(false);
-    document.set_metadata(metadata);
-}
-
-#[snapshot(document, settings_19)]
-fn metadata_trapped_pdf_a1(document: &mut Document) {
-    let metadata = Metadata::new().creation_date(datetime()).trapped(true);
     document.set_metadata(metadata);
 }
