@@ -5,6 +5,7 @@
 //! in the document via [`Document::set_metadata`].
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
+use pdf_writer::types::TrappingStatus;
 use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
 use std::{cell::LazyCell, collections::BTreeMap};
 use xmp_writer::{LangId, Timezone, XmpWriter};
@@ -28,6 +29,7 @@ pub struct Metadata {
     pub(crate) text_direction: Option<TextDirection>,
     pub(crate) page_layout: Option<PageLayout>,
     pub(crate) display_doc_title: bool,
+    pub(crate) trapped: Option<bool>,
     pub(crate) custom_fields: BTreeMap<String, String>,
 }
 
@@ -144,6 +146,14 @@ impl Metadata {
         self
     }
 
+    /// Whether the document has been trapped.
+    ///
+    /// If this is not set, the trapping status is unknown.
+    pub fn trapped(mut self, trapped: bool) -> Self {
+        self.trapped = Some(trapped);
+        self
+    }
+
     /// Add a custom field to the document information dictionary.
     ///
     /// If a field with the same name was already added, its value will be
@@ -171,6 +181,7 @@ impl Metadata {
             || self.creator.is_some()
             || self.creation_date.is_some()
             || self.description.is_some()
+            || self.trapped.is_some()
             || !self.custom_fields.is_empty()
     }
 
@@ -239,6 +250,10 @@ impl Metadata {
 
         if let Some(lang) = &self.language {
             xmp.language([LangId(lang)]);
+        }
+
+        if let Some(trapped) = self.trapped {
+            xmp.trapped(trapped);
         }
 
         if let Some(date) = self.creation_date.map(xmp_date) {
@@ -331,6 +346,14 @@ impl Metadata {
 
                 if let Some(producer) = &self.producer {
                     document_info.producer(TextStr(producer));
+                }
+
+                if let Some(trapped) = self.trapped {
+                    document_info.trapped(if trapped {
+                        TrappingStatus::Trapped
+                    } else {
+                        TrappingStatus::NotTrapped
+                    });
                 }
             }
 
