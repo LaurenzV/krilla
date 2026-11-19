@@ -144,11 +144,9 @@ impl Metadata {
         self
     }
 
-    /// Whether the document has been adjusted for misregistration on press
-    /// (trapped). This is the `Trapped` entry of the document information
-    /// dictionary and `pdf:Trapped` in XMP. Print standards such as PDF/X
-    /// require it to be `True` or `False`; if it isn't set, readers assume
-    /// that the status is unknown.
+    /// Whether the document has been trapped.
+    ///
+    /// If this is not set, the trapping status is unknown.
     pub fn trapped(mut self, trapped: bool) -> Self {
         self.trapped = Some(trapped);
         self
