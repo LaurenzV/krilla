@@ -70,7 +70,9 @@ impl Metadata {
     ///
     /// This property is required for some export modes, like for example PDF/A-3a.
     pub fn language(mut self, language: String) -> Self {
-        self.language = Some(language);
+        if !language.is_empty() {
+            self.language = Some(language);
+        }
         self
     }
 
