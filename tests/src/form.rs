@@ -33,8 +33,8 @@ fn forms_push_button(d: &mut Document) {
         Rect::from_xywh(50.0, 0.0, 10.0, 10.0).unwrap(),
         button_appearance,
     );
-    button_widget.set_rollover_appearance(button_hover_appearance);
-    button_widget.set_action_mouse_press(ResetFormAction::new(ActionFieldFilter::All).into());
+    button_widget.set_rollover_appearance(Some(button_hover_appearance));
+    button_widget.set_action_mouse_press(Some(ResetFormAction::new(ActionFieldFilter::All).into()));
     page.add_widget_annotation(&mut button, button_widget.into());
 
     page.finish();
@@ -55,9 +55,9 @@ fn forms_checkbox(d: &mut Document) {
     surface.finish();
 
     let mut checkbox = FormField::checkbox("checkbox1".to_string(), true);
-    checkbox.set_alt_name("A checkbox".to_string());
-    checkbox.set_mapping_name("chx1".to_string());
-    checkbox.set_default_checked(false);
+    checkbox.set_alt_name(Some("A checkbox".to_string()));
+    checkbox.set_mapping_name(Some("chx1".to_string()));
+    checkbox.set_default_checked(Some(false));
 
     let checkbox_widget = checkbox.new_widget(
         Rect::from_xywh(50.0, 0.0, 10.0, 10.0).unwrap(),
@@ -159,9 +159,9 @@ fn forms_text_field(d: &mut Document) {
     surface.finish();
 
     let mut text_field = FormField::text("text_field".to_string());
-    text_field.set_alt_name("A text field".to_string());
-    text_field.set_mapping_name("txt1".to_string());
-    text_field.set_value("Hi.".to_string());
+    text_field.set_alt_name(Some("A text field".to_string()));
+    text_field.set_mapping_name(Some("txt1".to_string()));
+    text_field.set_value(Some("Hi.".to_string()));
     text_field.set_mutliline(true);
     text_field.set_max_length(Some(10));
     text_field.set_spellcheck(false);
@@ -216,9 +216,9 @@ fn forms_combobox(d: &mut Document) {
     surface.finish();
 
     let mut combobox_field = FormField::combobox("combobox_field".to_string());
-    combobox_field.set_alt_name("A combobox field".to_string());
-    combobox_field.set_mapping_name("combo1".to_string());
-    combobox_field.set_value(0);
+    combobox_field.set_alt_name(Some("A combobox field".to_string()));
+    combobox_field.set_mapping_name(Some("combo1".to_string()));
+    combobox_field.set_value(Some(0));
     combobox_field.set_appearance(variable_appearance(paint));
     combobox_field.set_edit(true);
     combobox_field.set_spellcheck(false);
@@ -292,8 +292,8 @@ fn forms_listbox(d: &mut Document) {
     surface.finish();
 
     let mut listbox_field = FormField::listbox("listbox_field".to_string());
-    listbox_field.set_alt_name("A listbox field".to_string());
-    listbox_field.set_mapping_name("list1".to_string());
+    listbox_field.set_alt_name(Some("A listbox field".to_string()));
+    listbox_field.set_mapping_name(Some("list1".to_string()));
     listbox_field.set_value(vec![1, 0]); // unsorted to check if output is sorted
     listbox_field.set_appearance(variable_appearance(paint));
     listbox_field.set_multiple_options(true);
@@ -326,7 +326,7 @@ fn forms_button_actions(d: &mut Document) {
     surface.finish();
 
     let mut checkbox_1 = FormField::checkbox("checkbox1".to_string(), false);
-    checkbox_1.set_default_checked(true);
+    checkbox_1.set_default_checked(Some(true));
     let checkbox_1_widget = checkbox_1.new_widget(
         Rect::from_xywh(20.0, 0.0, 10.0, 10.0).unwrap(),
         off_appearance.clone(),
@@ -334,7 +334,7 @@ fn forms_button_actions(d: &mut Document) {
     );
 
     let mut checkbox_2 = FormField::checkbox("checkbox2".to_string(), false);
-    checkbox_2.set_default_checked(false);
+    checkbox_2.set_default_checked(Some(false));
     let checkbox_2_widget = checkbox_2.new_widget(
         Rect::from_xywh(30.0, 0.0, 10.0, 10.0).unwrap(),
         off_appearance,
@@ -346,60 +346,61 @@ fn forms_button_actions(d: &mut Document) {
         Rect::from_xywh(50.0, 0.0, 10.0, 10.0).unwrap(),
         button_appearance.clone(),
     );
-    reset_button_1_widget.set_action_mouse_press(
+    reset_button_1_widget.set_action_mouse_press(Some(
         ResetFormAction::new(ActionFieldFilter::Include(vec![
             "checkboxes.checkbox1".to_string()
         ]))
         .into(),
-    );
+    ));
 
     let mut reset_button_2 = FormField::push_button("reset2".to_string());
     let mut reset_button_2_widget = reset_button_2.new_widget(
         Rect::from_xywh(60.0, 0.0, 10.0, 10.0).unwrap(),
         button_appearance.clone(),
     );
-    reset_button_2_widget.set_action_mouse_press(
+    reset_button_2_widget.set_action_mouse_press(Some(
         ResetFormAction::new(ActionFieldFilter::Exclude(vec![
             "checkboxes.checkbox1".to_string()
         ]))
         .into(),
-    );
+    ));
 
     let mut submit_button_1 = FormField::push_button("submit1".to_string());
     let mut submit_button_1_widget = submit_button_1.new_widget(
         Rect::from_xywh(50.0, 20.0, 10.0, 10.0).unwrap(),
         button_appearance.clone(),
     );
-    submit_button_1_widget
-        .set_action_mouse_press(SubmitFormAction::new("https://example.com".to_string()).into());
+    submit_button_1_widget.set_action_mouse_press(Some(
+        SubmitFormAction::new("https://example.com".to_string()).into(),
+    ));
 
     let mut submit_button_2 = FormField::push_button("submit2".to_string());
     let mut submit_button_2_widget = submit_button_2.new_widget(
         Rect::from_xywh(60.0, 20.0, 10.0, 10.0).unwrap(),
         button_appearance.clone(),
     );
-    submit_button_2_widget.set_action_mouse_press(
+    submit_button_2_widget.set_action_mouse_press(Some(
         SubmitFormAction::new("https://example.net".to_string())
             .with_fields(ActionFieldFilter::Include(vec![
                 "checkboxes.checkbox1".to_string()
             ]))
             .with_format(SubmissionFormat::UrlEncoded(HttpMethod::Post))
             .into(),
-    );
+    ));
 
     let mut submit_button_3 = FormField::push_button("submit2".to_string());
     let mut submit_button_3_widget = submit_button_3.new_widget(
         Rect::from_xywh(70.0, 20.0, 10.0, 10.0).unwrap(),
         button_appearance.clone(),
     );
-    submit_button_3_widget.set_action_mouse_press(
+    submit_button_3_widget.set_action_mouse_press(Some(
         SubmitFormAction::new("https://example.net".to_string())
             .with_fields(ActionFieldFilter::Exclude(vec![
                 "checkboxes.checkbox1".to_string()
             ]))
             .with_format(SubmissionFormat::Xfdf)
             .into(),
-    );
+    ));
 
     page.add_widget_annotation(&mut checkbox_1, checkbox_1_widget.into());
     page.add_widget_annotation(&mut checkbox_2, checkbox_2_widget.into());
@@ -477,7 +478,7 @@ fn forms_prefer_device_color(d: &mut Document) {
     surface.finish();
 
     let mut text_field = FormField::text("text_field".to_string());
-    text_field.set_value("Hi.".to_string());
+    text_field.set_value(Some("Hi.".to_string()));
     text_field.set_appearance(variable_appearance(paint));
 
     let text_widget =

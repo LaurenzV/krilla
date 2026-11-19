@@ -298,7 +298,7 @@ fn reset_form_action_document_impl(document: &mut Document) {
     let field_loc = loc(1);
     let mut button = FormField::push_button("button".to_string())
         .with_location(Some(field_loc))
-        .with_alt_name("A button".to_string());
+        .with_alt_name(Some("A button".to_string()));
 
     let annot_loc = loc(2);
     let annot = Annotation::from(
@@ -307,7 +307,7 @@ fn reset_form_action_document_impl(document: &mut Document) {
                 Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
                 button_appearance.clone(),
             )
-            .with_action_mouse_press(ResetFormAction::new(ActionFieldFilter::All).into()),
+            .with_action_mouse_press(Some(ResetFormAction::new(ActionFieldFilter::All).into())),
     )
     .with_location(Some(annot_loc));
     page.add_widget_annotation(&mut button, annot);
@@ -357,7 +357,7 @@ fn validate_pdf_a_annotation_has_conditional_appearance() {
     let field_loc = loc(1);
     let mut button = FormField::push_button("button".to_string())
         .with_location(Some(field_loc))
-        .with_alt_name("A button".to_string());
+        .with_alt_name(Some("A button".to_string()));
 
     let annot1_loc = {
         let annot_loc = loc(2);
@@ -367,7 +367,7 @@ fn validate_pdf_a_annotation_has_conditional_appearance() {
                     Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
                     button_appearance_normal.clone(),
                 )
-                .with_rollover_appearance(button_appearance_alt.clone()),
+                .with_rollover_appearance(Some(button_appearance_alt.clone())),
         )
         .with_location(Some(annot_loc));
         page.add_widget_annotation(&mut button, annot);
@@ -382,7 +382,7 @@ fn validate_pdf_a_annotation_has_conditional_appearance() {
                     Rect::from_xywh(0.0, 0.0, 10.0, 10.0).unwrap(),
                     button_appearance_normal,
                 )
-                .with_down_appearance(button_appearance_alt),
+                .with_down_appearance(Some(button_appearance_alt)),
         )
         .with_location(Some(annot_loc));
         page.add_widget_annotation(&mut button, annot);
@@ -732,7 +732,7 @@ fn validate_pdf_ua1_empty_form_field_alt_name() {
     let field_loc = loc(1);
     let mut button = FormField::push_button("button".to_string())
         .with_location(Some(field_loc))
-        .with_alt_name(String::new());
+        .with_alt_name(Some(String::new()));
 
     let annot_loc = loc(2);
     let annot = {
@@ -787,7 +787,7 @@ fn validate_pdf_ua1_full_example(document: &mut Document) {
     surface.finish();
 
     let mut button =
-        FormField::push_button("button".to_string()).with_alt_name("A button".to_string());
+        FormField::push_button("button".to_string()).with_alt_name(Some("A button".to_string()));
 
     let button_annotation = {
         let annotation = Annotation::from(button.new_widget(
