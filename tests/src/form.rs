@@ -316,6 +316,30 @@ fn forms_listbox(d: &mut Document) {
 }
 
 #[snapshot(document)]
+fn forms_signature(d: &mut Document) {
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+
+    let mut surface = page.surface();
+    let appearance = square_stream(surface.stream_builder(), red_fill(1.0));
+    surface.finish();
+
+    let mut signature_field = FormField::signature("signature_field".to_string());
+    signature_field.set_alt_name(Some("A signature field".to_string()));
+    signature_field.set_mapping_name(Some("signature1".to_string()));
+
+    let signature_widget =
+        signature_field.new_widget(Rect::from_xywh(50.0, 0.0, 10.0, 10.0).unwrap(), appearance);
+
+    page.add_widget_annotation(&mut signature_field, signature_widget.into());
+
+    page.finish();
+
+    d.set_field_tree(FieldTree {
+        fields: vec![signature_field.into()],
+    });
+}
+
+#[snapshot(document)]
 fn forms_button_actions(d: &mut Document) {
     let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
 
