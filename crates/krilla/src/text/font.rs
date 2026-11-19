@@ -303,7 +303,10 @@ impl Tag {
 
 impl Debug for Font {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Font {{..}}")
+        f.debug_struct("Font")
+            .field("postscript_name", &self.postscript_name())
+            .field("index", &self.index())
+            .finish_non_exhaustive()
     }
 }
 
