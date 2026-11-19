@@ -53,7 +53,8 @@ syn = { version = "2.0.76", features = ["full", "extra-traits"] }
 tiny-skia = "0.12.0"
 tiny-skia-path = "0.12.0"
 usvg = "0.47.0"
-xmp-writer = "0.3.3"
+xmlwriter = "0.1.0"
+xmp-writer = { git = "https://github.com/typst/xmp-writer", rev = "61b88dd697c21ab66eb4eb4c25e2c6d16ea3c872" }
 yoke = { version = "0.8.0", features = ["derive"] }
 png = "0.18.1"
 zune-jpeg = "0.5.5"

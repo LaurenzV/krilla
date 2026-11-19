@@ -1,0 +1,2012 @@
+//! Setting document metadata.
+//!
+//! PDF allows for the inclusion of metadata in a PDF document. To do so in krilla,
+//! create a [`Metadata`] object, set the data, and then include it
+//! in the document via [`Document::set_metadata`].
+//!
+//! [`Document::set_metadata`]: crate::document::Document::set_metadata
+mod relax_ng;
+pub mod xmp;
+
+use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
+use std::borrow::Cow;
+use std::cell::LazyCell;
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::fmt::Write;
+use std::sync::LazyLock;
+use xmp_writer::{
+    CustomNamespace, LangId, Namespace as XmpNamespace, RdfCollectionType, Timezone, XmpWriter,
+};
+
+use crate::configure::{Archival, Configuration, PdfVersion, ValidationError, Validators};
+use crate::serialize::SerializeContext;
+
+use self::xmp::{
+    Category, Namespace, PredefinedStruct, Property, PropertyDescription, Schema, SimpleType,
+    StructType, Value, ValueType, XmpError,
+};
+
+/// Metadata for a PDF document.
+#[derive(Default, Clone, Debug)]
+pub struct Metadata {
+    pub(crate) title: Option<String>,
+    pub(crate) description: Option<String>,
+    pub(crate) creator: Option<String>,
+    pub(crate) producer: Option<String>,
+    pub(crate) keywords: Option<Vec<String>>,
+    pub(crate) authors: Option<Vec<String>>,
+    pub(crate) document_id: Option<String>,
+    pub(crate) version_id: Option<String>,
+    pub(crate) language: Option<String>,
+    pub(crate) creation_date: Option<DateTime>,
+    pub(crate) text_direction: Option<TextDirection>,
+    pub(crate) page_layout: Option<PageLayout>,
+    pub(crate) display_doc_title: bool,
+    pub(crate) custom_xmp_properties: Vec<Property>,
+    pub(crate) custom_xmp_schemas: Vec<Schema>,
+    pub(crate) custom_fields: BTreeMap<String, String>,
+}
+
+impl Metadata {
+    /// Create new metadata.
+    pub fn new() -> Self {
+        Self {
+            ..Default::default()
+        }
+    }
+
+    /// The title of the document.
+    pub fn title(mut self, title: String) -> Self {
+        if !title.is_empty() {
+            self.title = Some(title);
+        }
+        self
+    }
+
+    /// The description of the document.
+    ///
+    /// This should be a short, human-readable abstract, summary, or description
+    /// of the topic of the document.
+    pub fn description(mut self, description: String) -> Self {
+        if !description.is_empty() {
+            self.description = Some(description);
+        }
+        self
+    }
+
+    /// The keywords that describe the document.
+    pub fn keywords(mut self, keywords: Vec<String>) -> Self {
+        if !keywords.is_empty() {
+            self.keywords = Some(keywords);
+        }
+        self
+    }
+
+    /// The main language of the document, as an RFC 3066 language tag.
+    ///
+    /// This property is required for some export modes, like for example PDF/A-3a.
+    pub fn language(mut self, language: String) -> Self {
+        self.language = Some(language);
+        self
+    }
+
+    /// The creator tool of the document.
+    pub fn creator(mut self, creator: String) -> Self {
+        if !creator.is_empty() {
+            self.creator = Some(creator);
+        }
+        self
+    }
+
+    /// The producer tool of the document.
+    pub fn producer(mut self, producer: String) -> Self {
+        if !producer.is_empty() {
+            self.producer = Some(producer);
+        }
+        self
+    }
+
+    /// The authors of the document.
+    pub fn authors(mut self, authors: Vec<String>) -> Self {
+        if !authors.is_empty() {
+            self.authors = Some(authors);
+        }
+        self
+    }
+
+    /// The creation date of the document.
+    pub fn creation_date(mut self, creation_date: DateTime) -> Self {
+        self.creation_date = Some(creation_date);
+        self
+    }
+
+    /// A document ID.
+    ///
+    /// This attribute will be used as an identifier for identifying
+    /// different versions of the same document.
+    pub fn document_id(mut self, document_id: String) -> Self {
+        self.document_id = Some(document_id);
+        self
+    }
+
+    /// A version ID.
+    ///
+    /// This attribute identifies a specific version of the document.
+    pub fn version_id(mut self, version_id: String) -> Self {
+        self.version_id = Some(version_id);
+        self
+    }
+
+    /// The main text direction of the document.
+    pub fn text_direction(mut self, text_direction: TextDirection) -> Self {
+        self.text_direction = Some(text_direction);
+        self
+    }
+
+    /// How the viewer should lay out the pages.
+    pub fn page_layout(mut self, page_layout: PageLayout) -> Self {
+        self.page_layout = Some(page_layout);
+        self
+    }
+
+    /// Whether the viewer should show the title of the document in its title bar, rather
+    /// than the file name.
+    ///
+    /// Validators that require it set it regardless.
+    pub fn display_doc_title(mut self, display_doc_title: bool) -> Self {
+        self.display_doc_title = display_doc_title;
+        self
+    }
+
+    /// Add a custom XMP property.
+    pub fn custom_xmp_property(mut self, property: Property) -> Self {
+        self.custom_xmp_properties.push(property);
+        self
+    }
+
+    /// Add a schema describing the properties of a custom XMP namespace.
+    pub fn custom_xmp_schema(mut self, schema: Schema) -> Self {
+        self.custom_xmp_schemas.push(schema);
+        self
+    }
+
+    /// Add a custom field to the document information dictionary.
+    ///
+    /// If a field with the same name was already added, its value will be
+    /// replaced. Returns `None` for empty names and names reserved for standard
+    /// document information fields.
+    ///
+    /// **Note**: Custom fields are ignored when exporting to PDF/A-2, PDF/A-3 and
+    /// PDF/A-4. PDF/A-2 and PDF/A-3 readers ignore the document information
+    /// dictionary, and in PDF/A-4 it may only contain `ModDate`.
+    #[must_use]
+    pub fn custom_field(mut self, name: String, value: String) -> Option<Self> {
+        if name.is_empty() || is_standard_document_info_field(&name) {
+            return None;
+        }
+
+        self.custom_fields.insert(name, value);
+        Some(self)
+    }
+
+    pub(crate) fn has_document_info(&self) -> bool {
+        self.title.is_some()
+            || self.producer.is_some()
+            || self.keywords.is_some()
+            || self.authors.is_some()
+            || self.creator.is_some()
+            || self.creation_date.is_some()
+            || self.description.is_some()
+            || !self.custom_fields.is_empty()
+    }
+
+    pub(crate) fn serialize_xmp_metadata<'n>(
+        &'n self,
+        xmp: &mut XmpWriter<'n>,
+        sc: &mut SerializeContext,
+        instance_id: &str,
+    ) -> Result<(), XmpError> {
+        if let Some(title) = &self.title {
+            xmp.title([(None, title.as_str())]);
+        }
+
+        if let Some(description) = &self.description {
+            xmp.description([(None, description.as_str())]);
+        }
+
+        if let Some(keywords) = &self.keywords {
+            let joined = keywords.join(", ");
+            xmp.pdf_keywords(joined.as_str());
+        }
+
+        match &self.authors {
+            Some(authors) if sc.serialize_settings().pdf_version() >= PdfVersion::Pdf20 => {
+                // PDF 2.0+ deprecates the document information dictionary, so
+                // we can use the array here.
+                xmp.creator(authors.iter().map(String::as_str));
+            }
+            Some(authors) => {
+                // Turns out that if the authors are given in both the document
+                // information dictionary and the XMP metadata, Acrobat takes a
+                // little bit of both: The first author from the document
+                // information dictionary and the remaining authors from the XMP
+                // metadata.
+                //
+                // To fix this for Acrobat, we could omit the remaining authors
+                // or all metadata from the document information catalog (it is
+                // optional) and only write XMP. However, not all other tools
+                // (including Apple Preview) read the XMP data. This means we do
+                // want to include all authors in the document information
+                // dictionary.
+                //
+                // Thus, the only alternative is to fold all authors into a
+                // single `<rdf:li>` in the XMP metadata. This is, in fact,
+                // exactly what the PDF/A spec Part 1 section 6.7.3 has to say
+                // about the matter. It's a bit weird to not use the array (and
+                // it makes Acrobat show the author list in quotes), but there's
+                // not much we can do about that.
+                let joined = authors.join(", ");
+                xmp.creator([joined.as_str()]);
+            }
+            None => {}
+        }
+
+        if let Some(creator) = &self.creator {
+            xmp.creator_tool(creator);
+        }
+
+        if let Some(producer) = &self.producer {
+            xmp.producer(producer);
+        }
+
+        if let Some(version_id) = &self.version_id {
+            xmp.version_id(version_id);
+        }
+
+        if let Some(lang) = &self.language {
+            xmp.language([LangId(lang)]);
+        }
+
+        if let Some(date) = self.creation_date.map(xmp_date) {
+            xmp.modify_date(date);
+            xmp.create_date(date);
+
+            if sc
+                .serialize_settings()
+                .validators()
+                .requires_file_provenance_information()
+            {
+                let mut history = xmp.history();
+                let mut saved = history.add_event();
+
+                saved
+                    .action(xmp_writer::ResourceEventAction::Saved)
+                    .when(date);
+
+                if !sc
+                    .serialize_settings()
+                    .validators()
+                    .prohibits_instance_id_in_xmp_metadata()
+                {
+                    saved.instance_id(&format!("{instance_id}_source"));
+                }
+
+                saved.finish();
+
+                let mut converted = history.add_event();
+
+                converted
+                    .action(xmp_writer::ResourceEventAction::Converted)
+                    .when(date);
+
+                if let Some(creator) = &self.creator {
+                    converted.software_agent(creator);
+                }
+
+                if !sc
+                    .serialize_settings()
+                    .validators()
+                    .prohibits_instance_id_in_xmp_metadata()
+                {
+                    converted.instance_id(&format!("{instance_id}_source"));
+                }
+            }
+        } else {
+            sc.register_validation_error(ValidationError::MissingDocumentDate);
+        }
+
+        self.serialize_custom_xmp(xmp, sc)
+    }
+
+    fn serialize_custom_xmp<'n>(
+        &'n self,
+        xmp: &mut XmpWriter<'n>,
+        sc: &mut SerializeContext,
+    ) -> Result<(), XmpError> {
+        let mut namespaces = Namespaces::default();
+        let mut schemas = HashMap::new();
+        for schema in &self.custom_xmp_schemas {
+            namespaces.register_schema(schema)?;
+            if schemas.insert(schema.namespace.uri(), schema).is_some() {
+                return Err(XmpError::DuplicateSchema(
+                    schema.namespace.uri().to_string(),
+                ));
+            }
+        }
+
+        let validators = sc.serialize_settings().validators();
+        let check_descriptions = validators.requires_xmp_metadata_extension_schema();
+        if check_descriptions {
+            check_pdfa_value_types(&self.extension_schemas(validators), sc);
+        }
+        let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
+        let builtin_schemas = validators.extension_schemas();
+
+        let mut written = HashSet::new();
+        for property in &self.custom_xmp_properties {
+            check_name(&property.name)?;
+            let uri = property.namespace.uri();
+            if let Some(prefix) = managed_prefix(uri, &property.name) {
+                return Err(XmpError::ManagedProperty(format!(
+                    "{prefix}:{}",
+                    property.name
+                )));
+            }
+
+            let description = schemas.get(uri).and_then(|s| s.get(&property.name));
+            if check_descriptions
+                && description.is_none()
+                && !is_predefined_pdfa_property(uri, &property.name, xmp_2005)
+                && !builtin_schemas
+                    .iter()
+                    .any(|s| s.namespace.uri() == uri && s.get(&property.name).is_some())
+            {
+                sc.register_validation_error(ValidationError::MissingXmpPropertyDescription {
+                    namespace_uri: uri.to_string(),
+                    property_name: property.name.clone(),
+                });
+            }
+
+            let mut writer = ValueWriter {
+                namespaces: &mut namespaces,
+                property: &property.name,
+            };
+            let namespace = writer.namespace(&property.namespace)?;
+            if !written.insert((uri, property.name.as_str())) {
+                return Err(XmpError::DuplicateProperty(format!(
+                    "{}:{}",
+                    namespace.prefix(),
+                    property.name
+                )));
+            }
+            writer.write_property(
+                xmp.element(&property.name, namespace),
+                &property.value,
+                description.map(|desc| &desc.value_type),
+            )?;
+        }
+
+        for schema in &self.custom_xmp_schemas {
+            check_required(&schema.properties, |name| {
+                written.contains(&(schema.namespace.uri(), name))
+            })?;
+        }
+
+        Ok(())
+    }
+
+    /// A RELAX NG schema describing the XMP metadata of the document.
+    pub(crate) fn relax_ng_schema(&self) -> String {
+        let schemas = merge_schemas(
+            managed_schemas().iter().map(Cow::Borrowed),
+            self.custom_xmp_schemas.iter().map(Cow::Borrowed),
+        );
+        let mut undescribed: Vec<(&Namespace, &str)> = vec![];
+        for property in &self.custom_xmp_properties {
+            let uri = property.namespace.uri();
+            if !schemas
+                .iter()
+                .any(|s| s.namespace.uri() == uri && s.get(&property.name).is_some())
+                && !undescribed
+                    .iter()
+                    .any(|(ns, name)| ns.uri() == uri && *name == property.name)
+            {
+                undescribed.push((&property.namespace, &property.name));
+            }
+        }
+
+        relax_ng::relax_ng_schema(&schemas, &undescribed)
+    }
+
+    /// The attached schemas that need a PDF/A extension schema, without the
+    /// descriptions of predefined properties.
+    pub(crate) fn extension_schemas(&self, validators: Validators) -> Vec<Cow<'_, Schema>> {
+        let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
+        self.custom_xmp_schemas
+            .iter()
+            .filter_map(|schema| {
+                let uri = schema.namespace.uri();
+                let is_predefined = |desc: &PropertyDescription| {
+                    is_predefined_pdfa_property(uri, &desc.name, xmp_2005)
+                };
+                if !schema.properties.iter().any(is_predefined) {
+                    return Some(Cow::Borrowed(schema));
+                }
+
+                let mut schema = schema.clone();
+                schema.properties.retain(|desc| !is_predefined(desc));
+                (!schema.properties.is_empty()).then_some(Cow::Owned(schema))
+            })
+            .collect()
+    }
+
+    pub(crate) fn serialize_document_info(
+        &self,
+        ref_: &mut Ref,
+        pdf: &mut Pdf,
+        config: Configuration,
+    ) {
+        if config.validators().prohibits_info_dict() {
+            return;
+        }
+
+        if self.has_document_info() {
+            let ref_ = ref_.bump();
+            let mut document_info = LazyCell::new(|| pdf.document_info(ref_));
+
+            // ALl of those are deprecated in PDF 2.0 and will only be written
+            // to the XMP metadata.
+            if config.version() < PdfVersion::Pdf20 {
+                if let Some(title) = &self.title {
+                    document_info.title(TextStr(title));
+                }
+
+                if let Some(description) = &self.description {
+                    document_info.subject(TextStr(description));
+                }
+
+                if let Some(keywords) = &self.keywords {
+                    let joined = keywords.join(", ");
+                    document_info.keywords(TextStr(&joined));
+                }
+
+                if let Some(authors) = &self.authors {
+                    let joined = authors.join(", ");
+                    document_info.author(TextStr(&joined));
+                }
+
+                if let Some(creator) = &self.creator {
+                    document_info.creator(TextStr(creator));
+                }
+
+                if let Some(producer) = &self.producer {
+                    document_info.producer(TextStr(producer));
+                }
+            }
+
+            if let Some(date_time) = self.creation_date {
+                document_info.modified_date(pdf_date(date_time));
+                document_info.creation_date(pdf_date(date_time));
+            }
+
+            // See https://github.com/LaurenzV/krilla/pull/419#issuecomment-5142992957.
+            if !matches!(
+                config.validators().archival(),
+                Some(
+                    Archival::A2_A
+                        | Archival::A2_B
+                        | Archival::A2_U
+                        | Archival::A3_A
+                        | Archival::A3_B
+                        | Archival::A3_U
+                )
+            ) {
+                for (name, value) in &self.custom_fields {
+                    document_info.pair(Name(name.as_bytes()), TextStr(value));
+                }
+            }
+        }
+    }
+}
+
+fn is_standard_document_info_field(name: &str) -> bool {
+    matches!(
+        name,
+        "Title"
+            | "Author"
+            | "Subject"
+            | "Keywords"
+            | "Creator"
+            | "Producer"
+            | "CreationDate"
+            | "ModDate"
+            | "Trapped"
+    )
+}
+
+/// A datetime. Invalid values will be clamped.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct DateTime {
+    /// The year (0-9999).
+    pub(crate) year: u16,
+    /// The month (0-11).
+    pub(crate) month: Option<u8>,
+    /// The day (0-31).
+    pub(crate) day: Option<u8>,
+    /// The hour (0-23).
+    pub(crate) hour: Option<u8>,
+    /// The minute (0-59).
+    pub(crate) minute: Option<u8>,
+    /// The second (0-59).
+    pub(crate) second: Option<u8>,
+    /// The hour offset from UTC (-23 through 23).
+    pub(crate) utc_offset_hour: Option<i8>,
+    /// The minute offset from UTC (0-59). Will carry over the sign from
+    /// `utc_offset_hour`.
+    pub(crate) utc_offset_minute: u8,
+}
+
+impl DateTime {
+    /// Create a new, minimal date. The year will be clamped within the range
+    /// 0-9999.
+    #[inline]
+    pub fn new(year: u16) -> Self {
+        Self {
+            year: year.min(9999),
+            month: None,
+            day: None,
+            hour: None,
+            minute: None,
+            second: None,
+            utc_offset_hour: None,
+            utc_offset_minute: 0,
+        }
+    }
+
+    /// Add the month field. It will be clamped within the range 1-12.
+    #[inline]
+    pub fn month(mut self, month: u8) -> Self {
+        self.month = Some(month.clamp(1, 12));
+        self
+    }
+
+    /// Add the day field. It will be clamped within the range 1-31.
+    #[inline]
+    pub fn day(mut self, day: u8) -> Self {
+        self.day = Some(day.clamp(1, 31));
+        self
+    }
+
+    /// Add the hour field. It will be clamped within the range 0-23.
+    #[inline]
+    pub fn hour(mut self, hour: u8) -> Self {
+        self.hour = Some(hour.min(23));
+        self
+    }
+
+    /// Add the minute field. It will be clamped within the range 0-59.
+    #[inline]
+    pub fn minute(mut self, minute: u8) -> Self {
+        self.minute = Some(minute.min(59));
+        self
+    }
+
+    /// Add the second field. It will be clamped within the range 0-59.
+    #[inline]
+    pub fn second(mut self, second: u8) -> Self {
+        self.second = Some(second.min(59));
+        self
+    }
+
+    /// Add the offset from UTC in hours. If not specified, the time will be
+    /// assumed to be local to the viewer's time zone. It will be clamped within
+    /// the range -23-23.
+    #[inline]
+    pub fn utc_offset_hour(mut self, hour: i8) -> Self {
+        self.utc_offset_hour = Some(hour.clamp(-23, 23));
+        self
+    }
+
+    /// Add the offset from UTC in minutes. This will have the same sign as set in
+    /// [`Self::utc_offset_hour`]. It will be clamped within the range 0-59.
+    #[inline]
+    pub fn utc_offset_minute(mut self, minute: u8) -> Self {
+        self.utc_offset_minute = minute.min(59);
+        self
+    }
+}
+
+/// Converts a datetime to a pdf-writer date.
+pub(crate) fn pdf_date(date_time: DateTime) -> pdf_writer::Date {
+    // We always assume a full date with all fields because for some reason
+    // Acrobat doesn't like PDF/A-1 files without everything set.
+    pdf_writer::Date::new(date_time.year)
+        .month(date_time.month.unwrap_or(1))
+        .day(date_time.day.unwrap_or(1))
+        .hour(date_time.hour.unwrap_or(0))
+        .minute(date_time.minute.unwrap_or(0))
+        .second(date_time.second.unwrap_or(0))
+        .utc_offset_hour(date_time.utc_offset_hour.unwrap_or(0))
+        .utc_offset_minute(date_time.utc_offset_minute)
+}
+
+/// Converts a datetime to an xmp-writer datetime.
+fn xmp_date(datetime: DateTime) -> xmp_writer::DateTime {
+    let timezone = match (datetime.utc_offset_hour, datetime.utc_offset_minute) {
+        (Some(h), m) => Some(Timezone::Local {
+            hour: h,
+            minute: m as i8,
+        }),
+        _ => Some(Timezone::Utc),
+    };
+
+    // We always assume a full date with all fields because for some reason
+    // Acrobat doesn't like PDF/A-1 files without everything set.
+    xmp_writer::DateTime {
+        year: datetime.year,
+        month: Some(datetime.month.unwrap_or(1)),
+        day: Some(datetime.day.unwrap_or(1)),
+        hour: Some(datetime.hour.unwrap_or(0)),
+        minute: Some(datetime.minute.unwrap_or(0)),
+        second: Some(datetime.second.unwrap_or(0)),
+        timezone,
+    }
+}
+
+/// Formats a date of a custom property in the closest of the forms allowed by
+/// XMP Specification Part 1, section 8.2.1.2.
+fn custom_xmp_date(date: DateTime) -> String {
+    let mut text = format!("{:04}", date.year);
+    let (Some(month), Some(day)) = (date.month, date.day) else {
+        if let Some(month) = date.month {
+            write!(text, "-{month:02}").unwrap();
+        }
+        return text;
+    };
+
+    write!(text, "-{month:02}-{day:02}").unwrap();
+    let Some(hour) = date.hour else {
+        return text;
+    };
+
+    write!(text, "T{hour:02}:{:02}", date.minute.unwrap_or(0)).unwrap();
+    if let Some(second) = date.second {
+        write!(text, ":{second:02}").unwrap();
+    }
+
+    if let Some(offset_hour) = date.utc_offset_hour {
+        let sign = if offset_hour < 0 { '-' } else { '+' };
+        write!(
+            text,
+            "{sign}{:02}:{:02}",
+            offset_hour.unsigned_abs(),
+            date.utc_offset_minute
+        )
+        .unwrap();
+    }
+
+    text
+}
+
+/// The main text direction of the document.
+#[allow(missing_docs)]
+#[derive(Copy, Clone, Debug)]
+pub enum TextDirection {
+    LeftToRight,
+    RightToLeft,
+}
+
+impl TextDirection {
+    pub(crate) fn to_pdf(self) -> pdf_writer::types::Direction {
+        match self {
+            TextDirection::LeftToRight => pdf_writer::types::Direction::L2R,
+            TextDirection::RightToLeft => pdf_writer::types::Direction::R2L,
+        }
+    }
+}
+
+/// How the viewer should lay out the pages.
+#[derive(Copy, Clone, Debug)]
+pub enum PageLayout {
+    /// Only a single page at a time.
+    SinglePage,
+    /// A single, continuously scrolling column of pages.
+    OneColumn,
+    /// Two continuously scrolling columns of pages, laid out with odd-numbered
+    /// pages on the left.
+    TwoColumnLeft,
+    /// Two continuously scrolling columns of pages, laid out with odd-numbered
+    /// pages on the right (like in a left-bound book).
+    TwoColumnRight,
+    /// Only two pages are visible at a time, laid out with odd-numbered pages
+    /// on the left. PDF 1.5+.
+    TwoPageLeft,
+    /// Only two pages are visible at a time, laid out with odd-numbered pages
+    /// on the right (like in a left-bound book). PDF 1.5+.
+    TwoPageRight,
+}
+
+impl PageLayout {
+    pub(crate) fn to_pdf(self) -> pdf_writer::types::PageLayout {
+        match self {
+            PageLayout::SinglePage => pdf_writer::types::PageLayout::SinglePage,
+            PageLayout::OneColumn => pdf_writer::types::PageLayout::OneColumn,
+            PageLayout::TwoColumnLeft => pdf_writer::types::PageLayout::TwoColumnLeft,
+            PageLayout::TwoColumnRight => pdf_writer::types::PageLayout::TwoColumnRight,
+            PageLayout::TwoPageLeft => pdf_writer::types::PageLayout::TwoPageLeft,
+            PageLayout::TwoPageRight => pdf_writer::types::PageLayout::TwoPageRight,
+        }
+    }
+}
+
+/// Returns the predefined xmp-writer namespace with the given URI, if any.
+///
+/// A user-supplied namespace with the URI of a namespace that xmp-writer
+/// serializes natively must be mapped to the corresponding built-in variant,
+/// since xmp-writer would otherwise declare the same namespace twice.
+fn known_xmp_namespace(uri: &str) -> Option<XmpNamespace<'static>> {
+    XmpNamespace::PREDEFINED
+        .iter()
+        .find(|ns| ns.url() == uri)
+        .cloned()
+}
+
+fn is_reserved_xmp_prefix(prefix: &str) -> bool {
+    matches!(prefix, "xml" | "xmlns")
+        || XmpNamespace::PREDEFINED
+            .iter()
+            .any(|ns| ns.prefix() == prefix)
+}
+
+/// Checks that `name` is an `NCName`, i.e. an XML name without a colon.
+fn check_name(name: &str) -> Result<(), XmpError> {
+    fn is_start_char(c: char) -> bool {
+        matches!(c,
+            'A'..='Z' | '_' | 'a'..='z'
+            | '\u{C0}'..='\u{D6}' | '\u{D8}'..='\u{F6}' | '\u{F8}'..='\u{2FF}'
+            | '\u{370}'..='\u{37D}' | '\u{37F}'..='\u{1FFF}' | '\u{200C}'..='\u{200D}'
+            | '\u{2070}'..='\u{218F}' | '\u{2C00}'..='\u{2FEF}' | '\u{3001}'..='\u{D7FF}'
+            | '\u{F900}'..='\u{FDCF}' | '\u{FDF0}'..='\u{FFFD}' | '\u{10000}'..='\u{EFFFF}'
+        )
+    }
+
+    fn is_char(c: char) -> bool {
+        is_start_char(c)
+            || matches!(c,
+                '-' | '.' | '0'..='9' | '\u{B7}' | '\u{300}'..='\u{36F}' | '\u{203F}'..='\u{2040}'
+            )
+    }
+
+    let mut chars = name.chars();
+    if chars.next().is_some_and(is_start_char) && chars.all(is_char) {
+        Ok(())
+    } else {
+        Err(XmpError::InvalidName(name.to_string()))
+    }
+}
+
+fn check_description_names(descriptions: &[PropertyDescription]) -> Result<(), XmpError> {
+    descriptions
+        .iter()
+        .try_for_each(|desc| check_name(&desc.name))
+}
+
+/// Schemas describing the properties krilla writes itself, either from the
+/// [`Metadata`] or based on the configuration.
+fn managed_schemas() -> &'static [Schema] {
+    static SCHEMAS: LazyLock<Vec<Schema>> = LazyLock::new(|| {
+        use SimpleType::*;
+        let schema = |ns: XmpNamespace, properties: &[(&str, ValueType, &str)]| {
+            properties.iter().fold(
+                Schema::new(Namespace::new(ns.prefix(), ns.url())).name(ns.name()),
+                |schema, (name, value_type, description)| {
+                    schema.property(PropertyDescription::new(
+                        *name,
+                        value_type.clone(),
+                        *description,
+                    ))
+                },
+            )
+        };
+
+        vec![
+            schema(
+                XmpNamespace::DublinCore,
+                &[
+                    (
+                        "title",
+                        ValueType::LanguageAlternative,
+                        "The title of the document",
+                    ),
+                    (
+                        "description",
+                        ValueType::LanguageAlternative,
+                        "A textual description of the content of the document",
+                    ),
+                    (
+                        "creator",
+                        ValueType::ordered_array(ProperName),
+                        "The authors of the document",
+                    ),
+                    (
+                        "language",
+                        ValueType::unordered_array(Locale),
+                        "The languages used in the document",
+                    ),
+                    ("format", MimeType.into(), "The file format of the document"),
+                ],
+            ),
+            schema(
+                XmpNamespace::Xmp,
+                &[
+                    (
+                        "CreatorTool",
+                        AgentName.into(),
+                        "The name of the first known tool used to create the document",
+                    ),
+                    (
+                        "CreateDate",
+                        Date.into(),
+                        "The date the document was created",
+                    ),
+                    (
+                        "ModifyDate",
+                        Date.into(),
+                        "The date the document was last modified",
+                    ),
+                ],
+            ),
+            schema(
+                XmpNamespace::XmpMedia,
+                &[
+                    (
+                        "InstanceID",
+                        Uri.into(),
+                        "An identifier for this incarnation of the document",
+                    ),
+                    (
+                        "DocumentID",
+                        Uri.into(),
+                        "The common identifier for all versions of the document",
+                    ),
+                    (
+                        "VersionID",
+                        Text.into(),
+                        "The version identifier of the document",
+                    ),
+                    (
+                        "RenditionClass",
+                        RenditionClass.into(),
+                        "The rendition class of the document",
+                    ),
+                    (
+                        "History",
+                        ValueType::ordered_array(PredefinedStruct::ResourceEvent),
+                        "The high-level actions that resulted in this document",
+                    ),
+                ],
+            ),
+            schema(
+                XmpNamespace::XmpPaged,
+                &[(
+                    "NPages",
+                    Integer.into(),
+                    "The number of pages in the document",
+                )],
+            ),
+            schema(
+                XmpNamespace::AdobePdf,
+                &[
+                    (
+                        "Keywords",
+                        Text.into(),
+                        "Keywords associated with the document",
+                    ),
+                    ("PDFVersion", Text.into(), "The PDF version of the document"),
+                    (
+                        "Producer",
+                        AgentName.into(),
+                        "The name of the tool that created the PDF",
+                    ),
+                ],
+            ),
+            schema(
+                XmpNamespace::PdfAId,
+                &[
+                    (
+                        "part",
+                        Integer.into(),
+                        "The part of ISO 19005 the document conforms to",
+                    ),
+                    (
+                        "rev",
+                        Integer.into(),
+                        "The year of the revision of the part",
+                    ),
+                    (
+                        "conformance",
+                        Text.into(),
+                        "The conformance level of the part",
+                    ),
+                    ("amd", Text.into(), "The amendment identifier"),
+                    ("corr", Text.into(), "The corrigendum identifier"),
+                ],
+            ),
+            schema(
+                XmpNamespace::PdfUAId,
+                &[
+                    (
+                        "part",
+                        Integer.into(),
+                        "The part of ISO 14289 the document conforms to",
+                    ),
+                    (
+                        "rev",
+                        Integer.into(),
+                        "The year of the revision of the part",
+                    ),
+                    ("amd", Text.into(), "The amendment identifier"),
+                    ("corr", Text.into(), "The corrigendum identifier"),
+                ],
+            ),
+        ]
+    });
+
+    &SCHEMAS
+}
+
+/// The prefix of the managed property `name` in `uri`, if it is one.
+fn managed_prefix(uri: &str, name: &str) -> Option<&'static str> {
+    const PDFA_EXTENSION_NAMESPACES: [XmpNamespace; 5] = [
+        XmpNamespace::PdfAExtension,
+        XmpNamespace::PdfASchema,
+        XmpNamespace::PdfAProperty,
+        XmpNamespace::PdfAType,
+        XmpNamespace::PdfAField,
+    ];
+
+    managed_schemas()
+        .iter()
+        .find(|schema| schema.namespace.uri() == uri && schema.get(name).is_some())
+        .map(|schema| schema.namespace.prefix())
+        .or_else(|| {
+            PDFA_EXTENSION_NAMESPACES
+                .iter()
+                .find(|ns| ns.url() == uri)
+                .map(|ns| ns.prefix())
+        })
+}
+
+/// Merges the `user` schemas into the `builtin` schemas of the same namespace.
+fn merge_schemas<'a>(
+    builtin: impl IntoIterator<Item = Cow<'a, Schema>>,
+    user: impl IntoIterator<Item = Cow<'a, Schema>>,
+) -> Vec<Cow<'a, Schema>> {
+    let mut schemas: Vec<_> = builtin.into_iter().collect();
+    for schema in user {
+        let uri = schema.namespace.uri();
+        match schemas.iter_mut().find(|s| s.namespace.uri() == uri) {
+            Some(existing) => {
+                let new: Vec<_> = schema
+                    .properties
+                    .iter()
+                    .filter(|desc| existing.get(&desc.name).is_none())
+                    .cloned()
+                    .collect();
+                existing.to_mut().properties.extend(new);
+            }
+            None => schemas.push(schema),
+        }
+    }
+
+    schemas
+}
+
+/// The properties PDF/A-1 predefines: those of the schemas in the XMP
+/// Specification, January 2004, plus the PDF/A identification schema of
+/// ISO 19005-1.
+///
+/// Sorted by namespace URI and property name.
+static PDF_A1_PREDEFINED_PROPERTIES: &[(&str, &[&str])] = &[
+    (
+        "http://ns.adobe.com/exif/1.0/",
+        &[
+            "ApertureValue",
+            "BrightnessValue",
+            "CFAPattern",
+            "ColorSpace",
+            "ComponentsConfiguration",
+            "CompressedBitsPerPixel",
+            "Contrast",
+            "CustomRendered",
+            "DateTimeDigitized",
+            "DateTimeOriginal",
+            "DeviceSettingDescription",
+            "DigitalZoomRatio",
+            "ExifVersion",
+            "ExposureBiasValue",
+            "ExposureIndex",
+            "ExposureMode",
+            "ExposureProgram",
+            "ExposureTime",
+            "FNumber",
+            "FileSource",
+            "Flash",
+            "FlashEnergy",
+            "FlashpixVersion",
+            "FocalLength",
+            "FocalLengthIn35mmFilm",
+            "FocalPlaneResolutionUnit",
+            "FocalPlaneXResolution",
+            "FocalPlaneYResolution",
+            "GPSAltitude",
+            "GPSAltitudeRef",
+            "GPSAreaInformation",
+            "GPSDOP",
+            "GPSDestBearing",
+            "GPSDestBearingRef",
+            "GPSDestDistance",
+            "GPSDestDistanceRef",
+            "GPSDestLatitude",
+            "GPSDestLongitude",
+            "GPSDifferential",
+            "GPSImgDirection",
+            "GPSImgDirectionRef",
+            "GPSLatitude",
+            "GPSLongitude",
+            "GPSMapDatum",
+            "GPSMeasureMode",
+            "GPSProcessingMethod",
+            "GPSSatellites",
+            "GPSSpeed",
+            "GPSSpeedRef",
+            "GPSStatus",
+            "GPSTimeStamp",
+            "GPSTrack",
+            "GPSTrackRef",
+            "GPSVersionID",
+            "GainControl",
+            "ISOSpeedRatings",
+            "ImageUniqueID",
+            "LightSource",
+            "MakerNote",
+            "MaxApertureValue",
+            "MeteringMode",
+            "OECF",
+            "PixelXDimension",
+            "PixelYDimension",
+            "RelatedSoundFile",
+            "Saturation",
+            "SceneCaptureType",
+            "SceneType",
+            "SensingMethod",
+            "Sharpness",
+            "ShutterSpeedValue",
+            "SpatialFrequencyResponse",
+            "SpectralSensitivity",
+            "SubjectArea",
+            "SubjectDistance",
+            "SubjectDistanceRange",
+            "SubjectLocation",
+            "UserComment",
+            "WhiteBalance",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/pdf/1.3/",
+        &["Keywords", "PDFVersion", "Producer"],
+    ),
+    (
+        "http://ns.adobe.com/photoshop/1.0/",
+        &[
+            "AuthorsPosition",
+            "CaptionWriter",
+            "Category",
+            "City",
+            "Country",
+            "Credit",
+            "DateCreated",
+            "Headline",
+            "Instructions",
+            "Source",
+            "State",
+            "SupplementalCategories",
+            "TransmissionReference",
+            "Urgency",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/tiff/1.0/",
+        &[
+            "Artist",
+            "BitsPerSample",
+            "Compression",
+            "Copyright",
+            "DateTime",
+            "ImageDescription",
+            "ImageLength",
+            "ImageWidth",
+            "Make",
+            "Model",
+            "Orientation",
+            "PhotometricInterpretation",
+            "PlanarConfiguration",
+            "PrimaryChromaticities",
+            "ReferenceBlackWhite",
+            "ResolutionUnit",
+            "SamplesPerPixel",
+            "Software",
+            "TransferFunction",
+            "WhitePoint",
+            "XResolution",
+            "YCbCrCoefficients",
+            "YCbCrPositioning",
+            "YCbCrSubSampling",
+            "YResolution",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/xap/1.0/",
+        &[
+            "Advisory",
+            "BaseURL",
+            "CreateDate",
+            "CreatorTool",
+            "Identifier",
+            "MetadataDate",
+            "ModifyDate",
+            "Nickname",
+            "Thumbnails",
+        ],
+    ),
+    ("http://ns.adobe.com/xap/1.0/bj/", &["JobRef"]),
+    (
+        "http://ns.adobe.com/xap/1.0/mm/",
+        &[
+            "DerivedFrom",
+            "DocumentID",
+            "History",
+            "LastURL",
+            "ManageTo",
+            "ManageUI",
+            "ManagedFrom",
+            "Manager",
+            "ManagerVariant",
+            "RenditionClass",
+            "RenditionOf",
+            "RenditionParams",
+            "SaveID",
+            "VersionID",
+            "Versions",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/xap/1.0/rights/",
+        &[
+            "Certificate",
+            "Marked",
+            "Owner",
+            "UsageTerms",
+            "WebStatement",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/xap/1.0/t/pg/",
+        &["MaxPageSize", "NPages"],
+    ),
+    (
+        "http://purl.org/dc/elements/1.1/",
+        &[
+            "contributor",
+            "coverage",
+            "creator",
+            "date",
+            "description",
+            "format",
+            "identifier",
+            "language",
+            "publisher",
+            "relation",
+            "rights",
+            "source",
+            "subject",
+            "title",
+            "type",
+        ],
+    ),
+    (
+        "http://www.aiim.org/pdfa/ns/id/",
+        &["amd", "conformance", "part"],
+    ),
+];
+
+/// The properties PDF/A-2 and PDF/A-3 predefine in addition to
+/// [`PDF_A1_PREDEFINED_PROPERTIES`]: those the XMP Specification, September
+/// 2005, added to the January 2004 edition, plus `pdfaid:corr` of ISO 19005-2.
+///
+/// Sorted by namespace URI and property name.
+static PDF_A2_A3_ADDITIONAL_PROPERTIES: &[(&str, &[&str])] = &[
+    (
+        "http://ns.adobe.com/camera-raw-settings/1.0/",
+        &[
+            "AutoBrightness",
+            "AutoContrast",
+            "AutoExposure",
+            "AutoShadows",
+            "BlueHue",
+            "BlueSaturation",
+            "Brightness",
+            "CameraProfile",
+            "ChromaticAberrationB",
+            "ChromaticAberrationR",
+            "ColorNoiseReduction",
+            "Contrast",
+            "CropAngle",
+            "CropBottom",
+            "CropHeight",
+            "CropLeft",
+            "CropRight",
+            "CropTop",
+            "CropUnits",
+            "CropWidth",
+            "Exposure",
+            "GreenHue",
+            "GreenSaturation",
+            "HasCrop",
+            "HasSettings",
+            "LuminanceSmoothing",
+            "RawFileName",
+            "RedHue",
+            "RedSaturation",
+            "Saturation",
+            "ShadowTint",
+            "Shadows",
+            "Sharpness",
+            "Temperature",
+            "Tint",
+            "ToneCurve",
+            "ToneCurveName",
+            "Version",
+            "VignetteAmount",
+            "VignetteMidpoint",
+            "WhiteBalance",
+        ],
+    ),
+    (
+        "http://ns.adobe.com/exif/1.0/aux/",
+        &["Lens", "SerialNumber"],
+    ),
+    ("http://ns.adobe.com/xap/1.0/", &["Label", "Rating"]),
+    ("http://ns.adobe.com/xap/1.0/mm/", &["InstanceID"]),
+    (
+        "http://ns.adobe.com/xap/1.0/t/pg/",
+        &["Colorants", "Fonts", "PlateNames"],
+    ),
+    (
+        "http://ns.adobe.com/xmp/1.0/DynamicMedia/",
+        &[
+            "absPeakAudioFilePath",
+            "album",
+            "altTapeName",
+            "altTimecode",
+            "artist",
+            "audioChannelType",
+            "audioCompressor",
+            "audioModDate",
+            "audioSampleRate",
+            "audioSampleType",
+            "beatSpliceParams",
+            "composer",
+            "contributedMedia",
+            "copyright",
+            "duration",
+            "engineer",
+            "fileDataRate",
+            "genre",
+            "instrument",
+            "introTime",
+            "key",
+            "logComment",
+            "loop",
+            "markers",
+            "metadataModDate",
+            "numberOfBeats",
+            "outCue",
+            "projectRef",
+            "pullDown",
+            "relativePeakAudioFilePath",
+            "relativeTimestamp",
+            "releaseDate",
+            "resampleParams",
+            "scaleType",
+            "scene",
+            "shotDate",
+            "shotLocation",
+            "shotName",
+            "speakerPlacement",
+            "startTimecode",
+            "stretchMode",
+            "tapeName",
+            "tempo",
+            "timeScaleParams",
+            "timeSignature",
+            "trackNumber",
+            "videoAlphaMode",
+            "videoAlphaPremultipleColor",
+            "videoAlphaUnityIsTransparent",
+            "videoColorSpace",
+            "videoCompressor",
+            "videoFieldOrder",
+            "videoFrameRate",
+            "videoFrameSize",
+            "videoModDate",
+            "videoPixelAspectRatio",
+            "videoPixelDepth",
+        ],
+    ),
+    ("http://www.aiim.org/pdfa/ns/id/", &["corr"]),
+];
+
+/// The properties of [`PDF_A1_PREDEFINED_PROPERTIES`] that the XMP
+/// Specification, September 2005, no longer contains.
+///
+/// Sorted by namespace URI and property name.
+static PDF_A1_ONLY_PROPERTIES: &[(&str, &[&str])] =
+    &[("http://ns.adobe.com/exif/1.0/", &["MakerNote"])];
+
+/// Whether PDF/A exempts the property `name` in `uri` from an extension
+/// schema description. `xmp_2005` selects the PDF/A-2/-3 rules over the
+/// PDF/A-1 rules; see [`Validators::uses_xmp_2005_predefined_schemas`].
+fn is_predefined_pdfa_property(uri: &str, name: &str, xmp_2005: bool) -> bool {
+    let pdf_a1 = contains_property(PDF_A1_PREDEFINED_PROPERTIES, uri, name);
+    if xmp_2005 {
+        (pdf_a1 && !contains_property(PDF_A1_ONLY_PROPERTIES, uri, name))
+            || contains_property(PDF_A2_A3_ADDITIONAL_PROPERTIES, uri, name)
+    } else {
+        pdf_a1
+    }
+}
+
+fn contains_property(properties: &[(&str, &[&str])], uri: &str, name: &str) -> bool {
+    properties
+        .binary_search_by_key(&uri, |(uri, _)| uri)
+        .is_ok_and(|i| properties[i].1.binary_search(&name).is_ok())
+}
+
+#[derive(Default)]
+struct Namespaces<'a> {
+    by_uri: HashMap<&'a str, &'a str>,
+    by_prefix: HashMap<&'a str, &'a str>,
+}
+
+impl<'a> Namespaces<'a> {
+    fn register(&mut self, ns: &'a Namespace) -> Result<(), XmpError> {
+        // Known schemas are always serialized under their canonical
+        // prefix, so the user-supplied prefix can't conflict.
+        if known_xmp_namespace(ns.uri()).is_some() {
+            return Ok(());
+        }
+
+        check_name(ns.prefix())?;
+        if is_reserved_xmp_prefix(ns.prefix()) {
+            return Err(XmpError::ReservedPrefix(ns.prefix().to_string()));
+        }
+
+        if *self.by_uri.entry(ns.uri()).or_insert(ns.prefix()) != ns.prefix() {
+            return Err(XmpError::ConflictingNamespace(ns.uri().to_string()));
+        }
+
+        if *self.by_prefix.entry(ns.prefix()).or_insert(ns.uri()) != ns.uri() {
+            return Err(XmpError::ConflictingPrefix(ns.prefix().to_string()));
+        }
+
+        Ok(())
+    }
+
+    fn register_schema(&mut self, schema: &'a Schema) -> Result<(), XmpError> {
+        self.register(&schema.namespace)?;
+        check_description_names(&schema.properties)?;
+        for desc in &schema.properties {
+            for ty in struct_types(&desc.value_type) {
+                self.register(&ty.namespace)?;
+                check_name(&ty.name)?;
+                check_description_names(&ty.fields)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+struct ValueWriter<'a, 'b> {
+    namespaces: &'b mut Namespaces<'a>,
+    property: &'a str,
+}
+
+impl<'a> ValueWriter<'a, '_> {
+    fn namespace(&mut self, ns: &'a Namespace) -> Result<XmpNamespace<'a>, XmpError> {
+        self.namespaces.register(ns)?;
+        Ok(build_xmp_namespace(ns))
+    }
+
+    fn write_property(
+        &mut self,
+        element: xmp_writer::Element<'_, 'a>,
+        value: &'a Value,
+        value_type: Option<&'a ValueType>,
+    ) -> Result<(), XmpError> {
+        if value_type.is_some_and(|ty| !matches_value_type(value, ty)) {
+            return Err(XmpError::InvalidValue(self.property.to_string()));
+        }
+
+        let item_type = value_type.and_then(|ty| match ty {
+            ValueType::OrderedArray(item)
+            | ValueType::UnorderedArray(item)
+            | ValueType::AlternativeArray(item) => Some(&**item),
+            _ => None,
+        });
+
+        match value {
+            Value::Text(s) => element.value(s.as_str()),
+            Value::Bool(b) => element.value(*b),
+            Value::Integer(i) => element.value(*i),
+            Value::Real(r) if r.is_finite() => element.value(*r),
+            Value::Rational(n, d) if *d != 0 => element.value(format!("{n}/{d}").as_str()),
+            Value::Real(_) | Value::Rational(..) => {
+                return Err(XmpError::InvalidNumber(self.property.to_string()))
+            }
+            Value::Date(d) => element.value(custom_xmp_date(*d).as_str()),
+            Value::OrderedArray(items) => {
+                self.write_array(element.array(RdfCollectionType::Seq), items, item_type)?
+            }
+            Value::UnorderedArray(items) => {
+                self.write_array(element.array(RdfCollectionType::Bag), items, item_type)?
+            }
+            Value::AlternativeArray(items) => {
+                self.write_array(element.array(RdfCollectionType::Alt), items, item_type)?
+            }
+            Value::LanguageAlternative(items) => {
+                element.language_alternative(
+                    items
+                        .iter()
+                        .map(|(lang, text)| (lang.as_deref().map(LangId), text.as_str())),
+                );
+            }
+            Value::Struct(fields) => {
+                let struct_type = match value_type {
+                    Some(ValueType::Struct(ty)) => Some(&**ty),
+                    Some(ValueType::PredefinedStruct(ty)) => predefined_struct_type(*ty),
+                    _ => None,
+                };
+                self.write_struct(element.obj(), fields, struct_type)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn write_struct(
+        &mut self,
+        mut s: xmp_writer::Struct<'_, 'a>,
+        fields: &'a [Property],
+        struct_type: Option<&'a StructType>,
+    ) -> Result<(), XmpError> {
+        let mut written = HashSet::new();
+        for field in fields {
+            let field_type = match struct_type {
+                Some(ty) => {
+                    let desc = ty
+                        .fields
+                        .iter()
+                        .find(|desc| {
+                            desc.name == field.name && field.namespace.uri() == ty.namespace.uri()
+                        })
+                        .ok_or_else(|| XmpError::InvalidValue(self.property.to_string()))?;
+                    Some(&desc.value_type)
+                }
+                None => None,
+            };
+
+            check_name(&field.name)?;
+            let namespace = self.namespace(&field.namespace)?;
+            if !written.insert((field.namespace.uri(), field.name.as_str())) {
+                return Err(XmpError::DuplicateProperty(format!(
+                    "{}:{}",
+                    namespace.prefix(),
+                    field.name
+                )));
+            }
+            let element = s.element(field.name.as_str(), namespace);
+            self.write_property(element, &field.value, field_type)?;
+        }
+
+        if let Some(ty) = struct_type {
+            check_required(&ty.fields, |name| {
+                fields
+                    .iter()
+                    .any(|field| field.name == name && field.namespace.uri() == ty.namespace.uri())
+            })?;
+        }
+
+        Ok(())
+    }
+
+    fn write_array(
+        &mut self,
+        mut array: xmp_writer::Array<'_, 'a>,
+        items: &'a [Value],
+        item_type: Option<&'a ValueType>,
+    ) -> Result<(), XmpError> {
+        for item in items {
+            self.write_property(array.element(), item, item_type)?;
+        }
+
+        Ok(())
+    }
+}
+
+fn check_required<'a>(
+    descriptions: &'a [PropertyDescription],
+    mut is_present: impl FnMut(&'a str) -> bool,
+) -> Result<(), XmpError> {
+    match descriptions
+        .iter()
+        .find(|desc| desc.required && !is_present(&desc.name))
+    {
+        Some(desc) => Err(XmpError::MissingProperty(desc.name.clone())),
+        None => Ok(()),
+    }
+}
+
+/// Whether the outermost shape of `value` matches `value_type`.
+fn matches_value_type(value: &Value, value_type: &ValueType) -> bool {
+    match (value_type, value) {
+        (ValueType::Simple(ty) | ValueType::OpenChoice(ty, _), _) => {
+            matches_simple_type(value, *ty)
+        }
+        (ValueType::ClosedChoice(ty, choices), _) => {
+            matches_simple_type(value, *ty)
+                && simple_value_text(value).is_some_and(|text| choices.contains(&text))
+        }
+        (ValueType::OrderedArray(_), Value::OrderedArray(_))
+        | (ValueType::UnorderedArray(_), Value::UnorderedArray(_))
+        | (ValueType::AlternativeArray(_), Value::AlternativeArray(_))
+        | (ValueType::LanguageAlternative, Value::LanguageAlternative(_))
+        | (ValueType::PredefinedStruct(_) | ValueType::Struct(_), Value::Struct(_)) => true,
+        _ => false,
+    }
+}
+
+fn matches_simple_type(value: &Value, ty: SimpleType) -> bool {
+    match (ty, value) {
+        (SimpleType::Boolean, Value::Bool(_))
+        | (SimpleType::Integer, Value::Integer(_))
+        | (SimpleType::Real, Value::Real(_) | Value::Integer(_))
+        | (SimpleType::Rational, Value::Rational(..))
+        | (SimpleType::Date, Value::Date(_)) => true,
+        (
+            SimpleType::Boolean
+            | SimpleType::Integer
+            | SimpleType::Real
+            | SimpleType::Rational
+            | SimpleType::Date,
+            _,
+        ) => false,
+        (_, value) => matches!(value, Value::Text(_)),
+    }
+}
+
+/// The serialized form of a simple value, as compared against the values of a
+/// closed choice.
+fn simple_value_text(value: &Value) -> Option<String> {
+    match value {
+        Value::Text(s) => Some(s.clone()),
+        Value::Bool(b) => Some(if *b { "True" } else { "False" }.to_string()),
+        Value::Integer(i) => Some(i.to_string()),
+        Value::Real(r) => Some(r.to_string()),
+        _ => None,
+    }
+}
+
+/// The fields of the predefined structure types, as listed in TechNote 0008,
+/// chapter 3. Returns `None` for types whose fields aren't known.
+pub(crate) fn predefined_struct_type(ty: PredefinedStruct) -> Option<&'static StructType> {
+    use std::sync::LazyLock;
+
+    fn struct_type(
+        prefix: &str,
+        uri: &str,
+        name: &str,
+        fields: &[(&str, ValueType)],
+    ) -> StructType {
+        fields.iter().fold(
+            StructType::new(Namespace::new(prefix, uri), name, ""),
+            |ty, (name, value_type)| {
+                ty.field(PropertyDescription::new(*name, value_type.clone(), ""))
+            },
+        )
+    }
+
+    static TYPES: LazyLock<[StructType; 6]> = LazyLock::new(|| {
+        use SimpleType::*;
+        let open = |ty| ValueType::OpenChoice(ty, vec![]);
+        [
+            struct_type(
+                "stDim",
+                "http://ns.adobe.com/xap/1.0/sType/Dimensions#",
+                "Dimensions",
+                &[("w", Real.into()), ("h", Real.into()), ("unit", open(Text))],
+            ),
+            struct_type(
+                "xmpGImg",
+                "http://ns.adobe.com/xap/1.0/g/img/",
+                "Thumbnail",
+                &[
+                    ("height", Integer.into()),
+                    ("width", Integer.into()),
+                    ("format", open(Text)),
+                    ("image", Text.into()),
+                ],
+            ),
+            struct_type(
+                "stEvt",
+                "http://ns.adobe.com/xap/1.0/sType/ResourceEvent#",
+                "ResourceEvent",
+                &[
+                    ("action", open(Text)),
+                    ("instanceID", Uri.into()),
+                    ("parameters", Text.into()),
+                    ("softwareAgent", AgentName.into()),
+                    ("when", Date.into()),
+                ],
+            ),
+            struct_type(
+                "stRef",
+                "http://ns.adobe.com/xap/1.0/sType/ResourceRef#",
+                "ResourceRef",
+                &[
+                    ("instanceID", Uri.into()),
+                    ("documentID", Uri.into()),
+                    ("versionID", Text.into()),
+                    ("renditionClass", RenditionClass.into()),
+                    ("renditionParams", Text.into()),
+                    ("manager", AgentName.into()),
+                    ("managerVariant", Text.into()),
+                    ("manageTo", Uri.into()),
+                    ("manageUI", Uri.into()),
+                ],
+            ),
+            struct_type(
+                "stVer",
+                "http://ns.adobe.com/xap/1.0/sType/Version#",
+                "Version",
+                &[
+                    ("comments", Text.into()),
+                    ("event", PredefinedStruct::ResourceEvent.into()),
+                    ("modifyDate", Date.into()),
+                    ("modifier", ProperName.into()),
+                    ("version", Text.into()),
+                ],
+            ),
+            struct_type(
+                "stJob",
+                "http://ns.adobe.com/xap/1.0/sType/Job#",
+                "Job",
+                &[
+                    ("name", Text.into()),
+                    ("id", Text.into()),
+                    ("url", Url.into()),
+                ],
+            ),
+        ]
+    });
+
+    let index = match ty {
+        PredefinedStruct::Dimensions => 0,
+        PredefinedStruct::Thumbnail => 1,
+        PredefinedStruct::ResourceEvent => 2,
+        PredefinedStruct::ResourceRef => 3,
+        PredefinedStruct::Version => 4,
+        PredefinedStruct::Job => 5,
+        PredefinedStruct::Colorant | PredefinedStruct::Font => return None,
+    };
+
+    Some(&TYPES[index])
+}
+
+/// The user-defined structure types used by `value_type`, including those
+/// nested in other structure types.
+fn struct_types(value_type: &ValueType) -> Vec<&StructType> {
+    fn visit<'a>(value_type: &'a ValueType, types: &mut Vec<&'a StructType>) {
+        match value_type {
+            ValueType::OrderedArray(item)
+            | ValueType::UnorderedArray(item)
+            | ValueType::AlternativeArray(item) => visit(item, types),
+            ValueType::Struct(ty) if !types.contains(&&**ty) => {
+                types.push(ty);
+                for field in &ty.fields {
+                    visit(&field.value_type, types);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut types = Vec::new();
+    visit(value_type, &mut types);
+    types
+}
+
+pub(crate) fn build_xmp_namespace(ns: &Namespace) -> XmpNamespace<'_> {
+    known_xmp_namespace(ns.uri()).unwrap_or_else(|| {
+        XmpNamespace::Custom(Box::new(CustomNamespace::new(
+            ns.prefix(),
+            ns.prefix(),
+            ns.escaped_uri(),
+        )))
+    })
+}
+
+/// Registers a validation error for each property and structure field in
+/// `schemas` whose value type PDF/A extension schemas can't express.
+fn check_pdfa_value_types(schemas: &[Cow<Schema>], sc: &mut SerializeContext) {
+    fn is_expressible(value_type: &ValueType) -> bool {
+        match value_type {
+            ValueType::OrderedArray(item)
+            | ValueType::UnorderedArray(item)
+            | ValueType::AlternativeArray(item) => !matches!(
+                **item,
+                ValueType::OrderedArray(_)
+                    | ValueType::UnorderedArray(_)
+                    | ValueType::AlternativeArray(_)
+                    | ValueType::LanguageAlternative
+            ),
+            _ => true,
+        }
+    }
+
+    let mut check = |namespace: &Namespace, descriptions: &[PropertyDescription]| {
+        for desc in descriptions {
+            if !is_expressible(&desc.value_type) {
+                sc.register_validation_error(ValidationError::UnsupportedXmpValueType {
+                    namespace_uri: namespace.uri().to_string(),
+                    property_name: desc.name.clone(),
+                });
+            }
+        }
+    };
+
+    for schema in schemas {
+        check(&schema.namespace, &schema.properties);
+        for desc in &schema.properties {
+            for ty in struct_types(&desc.value_type) {
+                check(&ty.namespace, &ty.fields);
+            }
+        }
+    }
+}
+
+/// The value of `pdfaProperty:valueType` describing `value_type`.
+///
+/// The property is an "Open Choice of Text" (TechNote 0009, Section 4.4).
+fn pdfa_value_type(value_type: &ValueType) -> Cow<'_, str> {
+    match value_type {
+        ValueType::Simple(ty) => ty.as_str().into(),
+        ValueType::LanguageAlternative => "Lang Alt".into(),
+        ValueType::OpenChoice(ty, _) => format!("Open Choice of {}", ty.as_str()).into(),
+        ValueType::ClosedChoice(ty, _) => format!("Closed Choice of {}", ty.as_str()).into(),
+        ValueType::OrderedArray(item) => format!("seq {}", pdfa_value_type(item)).into(),
+        ValueType::UnorderedArray(item) => format!("bag {}", pdfa_value_type(item)).into(),
+        ValueType::AlternativeArray(item) => format!("alt {}", pdfa_value_type(item)).into(),
+        ValueType::PredefinedStruct(ty) => ty.as_str().into(),
+        ValueType::Struct(ty) => ty.name.as_str().into(),
+    }
+}
+
+/// Writes the PDF/A extension schemas for krilla's own `builtin` schemas and
+/// the `user` schemas, merging schemas of the same namespace.
+pub(crate) fn write_extension_schemas(
+    writer: &mut xmp_writer::pdfa::PdfAExtSchemasWriter,
+    builtin: Vec<Schema>,
+    user: Vec<Cow<Schema>>,
+) {
+    for schema in merge_schemas(builtin.into_iter().map(Cow::Owned), user) {
+        write_extension_schema(writer, &schema);
+    }
+}
+
+fn write_extension_schema(writer: &mut xmp_writer::pdfa::PdfAExtSchemasWriter, schema: &Schema) {
+    let xmp_namespace = build_xmp_namespace(&schema.namespace);
+    // A namespace xmp-writer knows natively is serialized under its canonical
+    // prefix, not the user-supplied one.
+    let prefix = xmp_namespace.prefix();
+
+    let mut schema_writer = writer.add_schema();
+    let schema_name = schema
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("{prefix} schema"));
+    schema_writer
+        .element("schema", XmpNamespace::PdfASchema)
+        .value(schema_name.as_str());
+    schema_writer
+        .element("namespaceURI", XmpNamespace::PdfASchema)
+        .value(schema.namespace.uri());
+    schema_writer
+        .element("prefix", XmpNamespace::PdfASchema)
+        .value(prefix);
+
+    if !schema.properties.is_empty() {
+        let mut properties = schema_writer.properties();
+        for desc in &schema.properties {
+            properties
+                .add_property()
+                .category(desc.category == Category::Internal)
+                .description(desc.description.as_str())
+                .name(desc.name.as_str())
+                .value_type(&pdfa_value_type(&desc.value_type));
+        }
+    }
+
+    let mut types = Vec::new();
+    for desc in &schema.properties {
+        for ty in struct_types(&desc.value_type) {
+            if !types.contains(&ty) {
+                types.push(ty);
+            }
+        }
+    }
+
+    if !types.is_empty() {
+        let mut value_types = schema_writer.value_types();
+        for ty in types {
+            let mut type_writer = value_types.add_value_type();
+            type_writer
+                .name(ty.name.as_str())
+                .namespace_uri(ty.namespace.uri())
+                .prefix(build_xmp_namespace(&ty.namespace).prefix())
+                .description(ty.description.as_str());
+            write_fields(&mut type_writer, &ty.fields);
+        }
+    }
+}
+
+fn write_fields(
+    type_writer: &mut xmp_writer::pdfa::PdfAExtTypeWriter,
+    fields: &[PropertyDescription],
+) {
+    let mut fields_writer = type_writer.fields();
+    for field in fields {
+        fields_writer
+            .add_field()
+            .name(field.name.as_str())
+            .value_type(&pdfa_value_type(&field.value_type))
+            .description(field.description.as_str());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::borrow::Cow;
+
+    use xmp_writer::XmpWriter;
+
+    use super::xmp::{Namespace, PropertyDescription, Schema, SimpleType};
+    use super::{
+        custom_xmp_date, write_extension_schemas, DateTime, Metadata, PDF_A1_ONLY_PROPERTIES,
+        PDF_A1_PREDEFINED_PROPERTIES, PDF_A2_A3_ADDITIONAL_PROPERTIES,
+    };
+
+    #[test]
+    fn custom_dates_keep_their_precision() {
+        let date = DateTime::new(2024);
+        assert_eq!(custom_xmp_date(date), "2024");
+        assert_eq!(custom_xmp_date(date.day(3)), "2024");
+        assert_eq!(custom_xmp_date(date.month(5)), "2024-05");
+        assert_eq!(custom_xmp_date(date.month(5).hour(10)), "2024-05");
+
+        let day = date.month(5).day(3);
+        assert_eq!(custom_xmp_date(day), "2024-05-03");
+        assert_eq!(custom_xmp_date(day.utc_offset_hour(2)), "2024-05-03");
+        assert_eq!(custom_xmp_date(day.hour(10)), "2024-05-03T10:00");
+        assert_eq!(
+            custom_xmp_date(day.hour(10).minute(30).second(15)),
+            "2024-05-03T10:30:15"
+        );
+        assert_eq!(
+            custom_xmp_date(day.hour(10).minute(30).utc_offset_hour(2)),
+            "2024-05-03T10:30+02:00"
+        );
+        assert_eq!(
+            custom_xmp_date(day.hour(10).utc_offset_hour(-3).utc_offset_minute(30)),
+            "2024-05-03T10:00-03:30"
+        );
+        assert_eq!(
+            custom_xmp_date(day.hour(10).utc_offset_hour(0)),
+            "2024-05-03T10:00+00:00"
+        );
+    }
+    #[test]
+    fn relax_ng_prefixes_dont_collide_with_custom_prefixes() {
+        let rng = Metadata::new()
+            .custom_xmp_property(
+                Namespace::new("ui", "http://example.com/ui#").property("label", "Label"),
+            )
+            .custom_xmp_property(
+                Namespace::new("rng", "http://example.com/rng#").property("grammar", "Grammar"),
+            )
+            .relax_ng_schema();
+
+        assert!(rng.contains(r#"<grammar xmlns="http://relaxng.org/ns/structure/1.0""#));
+        assert!(rng.contains(r#"xmlns:ui="http://example.com/ui#""#));
+        assert!(rng.contains(r#"xmlns:rng="http://example.com/rng#""#));
+        assert!(rng.contains(r#"xmlns:ui1="http://ns.iso.org/iso-16684-2/xmp-schema-ui-info/1.0""#));
+        assert!(rng.contains("<ui1:label"));
+        assert!(!rng.contains("xmpmeta"));
+    }
+    #[test]
+    fn predefined_property_lists_are_sorted() {
+        for list in [
+            PDF_A1_PREDEFINED_PROPERTIES,
+            PDF_A2_A3_ADDITIONAL_PROPERTIES,
+            PDF_A1_ONLY_PROPERTIES,
+        ] {
+            assert!(list.is_sorted_by_key(|(uri, _)| uri));
+            assert!(list.iter().all(|(_, names)| names.is_sorted()));
+        }
+    }
+
+    #[test]
+    fn extension_schemas_of_same_namespace_are_merged() {
+        let ns = Namespace::new("pdfuaid", "http://www.aiim.org/pdfua/ns/id/");
+        let builtin = Schema::new(ns.clone()).property(PropertyDescription::new(
+            "part",
+            SimpleType::Integer,
+            "Part",
+        ));
+        let user = Schema::new(ns)
+            .property(PropertyDescription::new(
+                "part",
+                SimpleType::Integer,
+                "Part",
+            ))
+            .property(PropertyDescription::new(
+                "custom",
+                SimpleType::Text,
+                "Custom",
+            ));
+
+        let mut xmp = XmpWriter::new();
+        write_extension_schemas(
+            &mut xmp.extension_schemas(),
+            vec![builtin],
+            vec![Cow::Borrowed(&user)],
+        );
+        let xmp = xmp.finish(None);
+
+        assert_eq!(xmp.matches("<pdfaSchema:namespaceURI>").count(), 1);
+        assert_eq!(xmp.matches("<pdfaProperty:name>part<").count(), 1);
+        assert_eq!(xmp.matches("<pdfaProperty:name>custom<").count(), 1);
+    }
+
+    #[test]
+    fn custom_field_returns_none_for_ignored_names() {
+        assert!(Metadata::new()
+            .custom_field(String::new(), "value".to_string())
+            .is_none());
+        assert!(Metadata::new()
+            .custom_field("Title".to_string(), "value".to_string())
+            .is_none());
+
+        let metadata = Metadata::new()
+            .custom_field("CustomField".to_string(), "value".to_string())
+            .unwrap();
+        assert_eq!(
+            metadata
+                .custom_fields
+                .get("CustomField")
+                .map(String::as_str),
+            Some("value")
+        );
+    }
+}

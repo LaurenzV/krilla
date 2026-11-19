@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 use xmp_writer::{RenditionClass, XmpWriter};
 
 use crate::configure::{PdfVersion, ValidationError};
-use crate::error::KrillaResult;
+use crate::error::{KrillaError, KrillaResult};
 use crate::interchange::metadata::Metadata;
 use crate::metadata::PageLayout;
 use crate::serialize::SerializeContext;
@@ -18,6 +18,7 @@ pub(crate) struct ChunkContainer {
     pub(crate) streams: StreamChunks,
     pub(crate) mixed: MixedChunks,
     pub(crate) metadata: Option<Metadata>,
+    pub(crate) xmp_schema: Option<Ref>,
     pub(crate) non_stream: NonStreamChunks,
 }
 
@@ -76,6 +77,7 @@ impl ChunkContainer {
                 embedded_pdfs: vec![],
             },
             metadata: None,
+            xmp_schema: None,
             non_stream: NonStreamChunks {
                 page_tree: None,
                 outline: None,
@@ -180,12 +182,19 @@ impl ChunkContainer {
 
         let mut xmp = XmpWriter::new();
         if let Some(metadata) = &self.metadata {
-            metadata.serialize_xmp_metadata(&mut xmp, sc, &instance_id);
+            metadata
+                .serialize_xmp_metadata(&mut xmp, sc, &instance_id)
+                .map_err(KrillaError::Xmp)?;
         }
 
         let settings = sc.serialize_settings();
         let validators = settings.validators();
-        validators.write_xmp(&mut xmp);
+        let extension_schemas = self
+            .metadata
+            .as_ref()
+            .map(|m| m.extension_schemas(validators))
+            .unwrap_or_default();
+        validators.write_xmp(&mut xmp, extension_schemas);
 
         xmp.num_pages(sc.page_infos().len() as u32);
         xmp.format("application/pdf");
@@ -205,9 +214,17 @@ impl ChunkContainer {
         let meta_ref = if sc.serialize_settings().xmp_metadata {
             let meta_ref = remapped_ref.bump();
             let xmp_buf = xmp.finish(None);
-            pdf.stream(meta_ref, xmp_buf.as_bytes())
+            let mut stream = pdf.stream(meta_ref, xmp_buf.as_bytes());
+            stream
                 .pair(Name(b"Type"), Name(b"Metadata"))
                 .pair(Name(b"Subtype"), Name(b"XML"));
+            if let Some(schema_ref) = self.xmp_schema {
+                stream
+                    .insert(Name(b"AF"))
+                    .array()
+                    .item(remapper[&schema_ref]);
+            }
+            stream.finish();
             Some(meta_ref)
         } else {
             None
