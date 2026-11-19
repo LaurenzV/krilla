@@ -332,13 +332,13 @@ pub struct WidgetAnnotation<T> {
 impl<T> WidgetAnnotation<T> {
     /// Set the action to trigger when the mouse button is pressed
     /// inside the annotation's area.
-    pub fn set_action_mouse_press(&mut self, action: Action) {
-        self.action = Some(action);
+    pub fn set_action_mouse_press(&mut self, action: Option<Action>) {
+        self.action = action;
     }
 
     /// Set the action to trigger when the mouse button is pressed
     /// inside the annotation's area.
-    pub fn with_action_mouse_press(mut self, action: Action) -> Self {
+    pub fn with_action_mouse_press(mut self, action: Option<Action>) -> Self {
         self.set_action_mouse_press(action);
         self
     }
@@ -361,26 +361,26 @@ impl WidgetAnnotation<SimpleAppearanceStream> {
 
     /// Set the appearance of the annotation when the mouse
     /// is hovering over the annotation's area.
-    pub fn set_rollover_appearance(&mut self, appearance: Stream) {
-        self.appearance.rollover = Some(appearance);
+    pub fn set_rollover_appearance(&mut self, appearance: Option<Stream>) {
+        self.appearance.rollover = appearance;
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is hovering over the annotation's area.
-    pub fn with_rollover_appearance(mut self, appearance: Stream) -> Self {
+    pub fn with_rollover_appearance(mut self, appearance: Option<Stream>) -> Self {
         self.set_rollover_appearance(appearance);
         self
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is pressed or is being held down over the annotation's area.
-    pub fn set_down_appearance(&mut self, appearance: Stream) {
-        self.appearance.down = Some(appearance);
+    pub fn set_down_appearance(&mut self, appearance: Option<Stream>) {
+        self.appearance.down = appearance;
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is pressed or is being held down over the annotation's area.
-    pub fn with_down_appearance(mut self, appearance: Stream) -> Self {
+    pub fn with_down_appearance(mut self, appearance: Option<Stream>) -> Self {
         self.set_down_appearance(appearance);
         self
     }
@@ -406,26 +406,26 @@ impl WidgetAnnotation<NamedAppearanceStream> {
 
     /// Set the appearance of the annotation when the mouse
     /// is hovering over the annotation's area.
-    pub fn set_rollover_appearance(&mut self, appearance: Stream) {
-        self.appearance.appearance.rollover = Some(appearance);
+    pub fn set_rollover_appearance(&mut self, appearance: Option<Stream>) {
+        self.appearance.appearance.rollover = appearance;
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is hovering over the annotation's area.
-    pub fn with_rollover_appearance(mut self, appearance: Stream) -> Self {
+    pub fn with_rollover_appearance(mut self, appearance: Option<Stream>) -> Self {
         self.set_rollover_appearance(appearance);
         self
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is pressed or is being held down over the annotation's area.
-    pub fn set_down_appearance(&mut self, appearance: Stream) {
-        self.appearance.appearance.down = Some(appearance);
+    pub fn set_down_appearance(&mut self, appearance: Option<Stream>) {
+        self.appearance.appearance.down = appearance;
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is pressed or is being held down over the annotation's area.
-    pub fn with_down_appearance(mut self, appearance: Stream) -> Self {
+    pub fn with_down_appearance(mut self, appearance: Option<Stream>) -> Self {
         self.set_down_appearance(appearance);
         self
     }
@@ -470,14 +470,14 @@ impl WidgetAnnotation<DualStateAppearanceStream> {
     /// Set the appearance of the annotation when the mouse
     /// is hovering over the annotation's area and the annotation is
     /// in the 'off' state.
-    pub fn set_off_rollover_appearance(&mut self, appearance: Stream) {
-        self.appearance.off.appearance.rollover = Some(appearance);
+    pub fn set_off_rollover_appearance(&mut self, appearance: Option<Stream>) {
+        self.appearance.off.appearance.rollover = appearance;
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is hovering over the annotation's area and the annotation is
     /// in the 'off' state.
-    pub fn with_off_rollover_appearance(mut self, appearance: Stream) -> Self {
+    pub fn with_off_rollover_appearance(mut self, appearance: Option<Stream>) -> Self {
         self.set_off_rollover_appearance(appearance);
         self
     }
@@ -485,14 +485,14 @@ impl WidgetAnnotation<DualStateAppearanceStream> {
     /// Set the appearance of the annotation when the mouse
     /// is hovering over the annotation's area and the annotation is
     /// in the 'on' state.
-    pub fn set_on_rollover_appearance(&mut self, appearance: Stream) {
-        self.appearance.on.appearance.rollover = Some(appearance);
+    pub fn set_on_rollover_appearance(&mut self, appearance: Option<Stream>) {
+        self.appearance.on.appearance.rollover = appearance;
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is hovering over the annotation's area and the annotation is
     /// in the 'on' state.
-    pub fn with_on_rollover_appearance(mut self, appearance: Stream) -> Self {
+    pub fn with_on_rollover_appearance(mut self, appearance: Option<Stream>) -> Self {
         self.set_on_rollover_appearance(appearance);
         self
     }
@@ -500,14 +500,14 @@ impl WidgetAnnotation<DualStateAppearanceStream> {
     /// Set the appearance of the annotation when the mouse
     /// is pressed or is being held down over the annotation's area
     /// and the annotation is in the 'off' state.
-    pub fn set_off_down_appearance(&mut self, appearance: Stream) {
-        self.appearance.off.appearance.down = Some(appearance);
+    pub fn set_off_down_appearance(&mut self, appearance: Option<Stream>) {
+        self.appearance.off.appearance.down = appearance;
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is pressed or is being held down over the annotation's area
     /// and the annotation is in the 'off' state.
-    pub fn with_off_down_appearance(mut self, appearance: Stream) -> Self {
+    pub fn with_off_down_appearance(mut self, appearance: Option<Stream>) -> Self {
         self.set_off_down_appearance(appearance);
         self
     }
@@ -515,14 +515,14 @@ impl WidgetAnnotation<DualStateAppearanceStream> {
     /// Set the appearance of the annotation when the mouse
     /// is pressed or is being held down over the annotation's area
     /// and the annotation is in the 'on' state.
-    pub fn set_on_down_appearance(&mut self, appearance: Stream) {
-        self.appearance.on.appearance.down = Some(appearance);
+    pub fn set_on_down_appearance(&mut self, appearance: Option<Stream>) {
+        self.appearance.on.appearance.down = appearance;
     }
 
     /// Set the appearance of the annotation when the mouse
     /// is pressed or is being held down over the annotation's area
     /// and the annotation is in the 'on' state.
-    pub fn with_on_down_appearance(mut self, appearance: Stream) -> Self {
+    pub fn with_on_down_appearance(mut self, appearance: Option<Stream>) -> Self {
         self.set_on_down_appearance(appearance);
         self
     }

@@ -290,8 +290,8 @@ impl<T> FormField<T> {
     ///
     /// Note that the alt name might be required in some cases, for example
     /// when exporting to PDF/UA.
-    pub fn set_alt_name(&mut self, alt_name: String) {
-        self.alt_name = Some(alt_name);
+    pub fn set_alt_name(&mut self, alt_name: Option<String>) {
+        self.alt_name = alt_name;
     }
 
     /// Set the alternative name of the field.
@@ -300,20 +300,20 @@ impl<T> FormField<T> {
     ///
     /// Note that the alt name might be required in some cases, for example
     /// when exporting to PDF/UA.
-    pub fn with_alt_name(mut self, alt_name: String) -> Self {
+    pub fn with_alt_name(mut self, alt_name: Option<String>) -> Self {
         self.set_alt_name(alt_name);
         self
     }
 
     /// Set the mapping name of the field.
     /// This is used during submission/export.
-    pub fn set_mapping_name(&mut self, mapping_name: String) {
-        self.mapping_name = Some(mapping_name);
+    pub fn set_mapping_name(&mut self, mapping_name: Option<String>) {
+        self.mapping_name = mapping_name;
     }
 
     /// Set the mapping name of the field.
     /// This is used during submission/export.
-    pub fn with_mapping_name(mut self, mapping_name: String) -> Self {
+    pub fn with_mapping_name(mut self, mapping_name: Option<String>) -> Self {
         self.set_mapping_name(mapping_name);
         self
     }
@@ -404,12 +404,12 @@ impl FormField<kind::Checkbox> {
     }
 
     /// Set whether the checkbox is checked by default.
-    pub fn set_default_checked(&mut self, checked: bool) {
-        self.kind.default_checked = Some(checked);
+    pub fn set_default_checked(&mut self, checked: Option<bool>) {
+        self.kind.default_checked = checked;
     }
 
     /// Set whether the checkbox is checked by default.
-    pub fn with_default_checked(mut self, checked: bool) -> Self {
+    pub fn with_default_checked(mut self, checked: Option<bool>) -> Self {
         self.set_default_checked(checked);
         self
     }
@@ -619,25 +619,25 @@ impl FormField<kind::Text> {
     /// Set the value of the text field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_value(&mut self, value: String) {
-        self.kind.value = Some(value);
+    pub fn set_value(&mut self, value: Option<String>) {
+        self.kind.value = value;
     }
 
     /// Set the value of the text field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_value(mut self, value: String) -> Self {
+    pub fn with_value(mut self, value: Option<String>) -> Self {
         self.set_value(value);
         self
     }
 
     /// Set the default value of the text field.
-    pub fn set_default_value(&mut self, value: String) {
-        self.kind.default_value = Some(value);
+    pub fn set_default_value(&mut self, value: Option<String>) {
+        self.kind.default_value = value;
     }
 
     /// Set the default value of the text field.
-    pub fn with_default_value(mut self, value: String) -> Self {
+    pub fn with_default_value(mut self, value: Option<String>) -> Self {
         self.set_default_value(value);
         self
     }
@@ -858,15 +858,15 @@ impl FormField<kind::ComboBox> {
     /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_value(&mut self, value: usize) {
-        self.kind.value = Some(value);
+    pub fn set_value(&mut self, value: Option<usize>) {
+        self.kind.value = value;
     }
 
     /// Set the value (index of selected [option](`Self::set_options`))
     /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_value(mut self, value: usize) -> Self {
+    pub fn with_value(mut self, value: Option<usize>) -> Self {
         self.set_value(value);
         self
     }
@@ -875,15 +875,15 @@ impl FormField<kind::ComboBox> {
     /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_default_value(&mut self, value: usize) {
-        self.kind.default_value = Some(value);
+    pub fn set_default_value(&mut self, value: Option<usize>) {
+        self.kind.default_value = value;
     }
 
     /// Set the default value (index of selected [option](`Self::set_options`))
     /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_default_value(mut self, value: usize) -> Self {
+    pub fn with_default_value(mut self, value: Option<usize>) -> Self {
         self.set_default_value(value);
         self
     }

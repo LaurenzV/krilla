@@ -37,19 +37,19 @@ fn main() {
     // Create a checkbox.
     let mut checkbox = FormField::checkbox("checkbox".to_string(), false);
     // Set an alternative name, for accessibility purposes.
-    checkbox.set_alt_name("A checkbox".to_string());
+    checkbox.set_alt_name(Some("A checkbox".to_string()));
 
     // Create a radio group.
     let mut radio_group = FormField::radio("radio".to_string(), None);
     // Set an alternative name, for accessibility purposes.
-    radio_group.set_alt_name("A radio group".to_string());
+    radio_group.set_alt_name(Some("A radio group".to_string()));
     // Disallow toggling the radio group back to off.
     radio_group.set_allow_toggling_off(false);
 
     // Create a text field.
     let mut text_field = FormField::text("text".to_string());
     // Set an alternative name, for accessibility purposes.
-    text_field.set_alt_name("A text field".to_string());
+    text_field.set_alt_name(Some("A text field".to_string()));
     // Set the appearance PDF processors should use when filling out this text field.
     text_field.set_appearance(VariableAppearance {
         font: FormFont::Standard(StandardFont::TimesRoman),
@@ -60,12 +60,14 @@ fn main() {
     // Tell PDF processors to center the text when filling out this text field.
     text_field.set_text_alignment(TextAlignment::Center);
     // Pre-fill this field with the given value.
-    text_field.set_value("testing".to_string());
+    text_field.set_value(Some("testing".to_string()));
 
     // Create a combobox field.
     let mut combobox_field = FormField::combobox("combobox".to_string());
     // Set an alternative name, for accessibility purposes.
-    combobox_field.set_alt_name("A combobox field with 3 colors as options".to_string());
+    combobox_field.set_alt_name(Some(
+        "A combobox field with 3 colors as options".to_string(),
+    ));
     // Set the available options of this field, along with their display names
     combobox_field.set_options(vec![
         ChoiceOption::new("red".into(), Some("Red".into())),
@@ -84,7 +86,7 @@ fn main() {
     // Create a listbox field.
     let mut listbox_field = FormField::listbox("listbox".to_string());
     // Set an alternative name, for accessibility purposes.
-    listbox_field.set_alt_name("A listbox field with 3 colors as options".to_string());
+    listbox_field.set_alt_name(Some("A listbox field with 3 colors as options".to_string()));
     // Set the available options of this field, along with their display names
     listbox_field.set_options(vec![
         ChoiceOption::new("red".into(), Some("Red".into())),
@@ -103,7 +105,7 @@ fn main() {
     // Create a button that will reset the form when clicked.
     let mut reset_button = FormField::push_button("reset-button".to_string());
     // Set an alternative name, for accessibility purposes.
-    reset_button.set_alt_name("Reset button".to_string());
+    reset_button.set_alt_name(Some("Reset button".to_string()));
 
     // Add a new page with dimensions 200x200.
     let mut page = document.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
@@ -394,12 +396,12 @@ fn main() {
     );
     // Set an on click action (reset all fields except for button itself).
     // Some PDF readers erase the button's appearance if it is reset, making it invisible.
-    reset_button_widget.set_action_mouse_press(
+    reset_button_widget.set_action_mouse_press(Some(
         ResetFormAction::new(ActionFieldFilter::Exclude(vec![
             "actions.reset-button".into()
         ]))
         .into(),
-    );
+    ));
 
     // Finish the surface.
     surface.finish();
