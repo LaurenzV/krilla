@@ -4,11 +4,11 @@ use std::path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use fontdb::Database;
 use krilla::geom::Size;
 use krilla::page::PageSettings;
 use krilla::Document;
-use krilla_svg::{SurfaceExt, SvgSettings};
+use krilla_svg::usvg::fontdb::Database;
+use krilla_svg::{usvg, SurfaceExt, SvgSettings};
 
 fn main() {
     // Load an SVG.
