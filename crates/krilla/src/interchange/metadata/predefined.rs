@@ -76,12 +76,12 @@ pub(super) fn managed_schemas() -> &'static [Schema] {
                 &[
                     (
                         "InstanceID",
-                        Uri.into(),
+                        Guid.into(),
                         "An identifier for this incarnation of the document",
                     ),
                     (
                         "DocumentID",
-                        Uri.into(),
+                        Guid.into(),
                         "The common identifier for all versions of the document",
                     ),
                     (
@@ -614,7 +614,7 @@ pub(super) fn predefined_struct_type(ty: PredefinedStruct) -> Option<&'static St
                 "ResourceEvent",
                 &[
                     ("action", open(Text)),
-                    ("instanceID", Uri.into()),
+                    ("instanceID", Guid.into()),
                     ("parameters", Text.into()),
                     ("softwareAgent", AgentName.into()),
                     ("when", Date.into()),
@@ -625,8 +625,8 @@ pub(super) fn predefined_struct_type(ty: PredefinedStruct) -> Option<&'static St
                 "http://ns.adobe.com/xap/1.0/sType/ResourceRef#",
                 "ResourceRef",
                 &[
-                    ("instanceID", Uri.into()),
-                    ("documentID", Uri.into()),
+                    ("instanceID", Guid.into()),
+                    ("documentID", Guid.into()),
                     ("versionID", Text.into()),
                     ("renditionClass", RenditionClass.into()),
                     ("renditionParams", Text.into()),
