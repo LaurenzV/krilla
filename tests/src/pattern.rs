@@ -88,14 +88,18 @@ mod shading {
         }
     }
 
-    #[visreg(all, settings_2)]
+    #[visreg(all, settings_2, width = 160, height = 160)]
     fn pattern_linear_gradient_with_opacity_icc(surface: &mut Surface) {
+        surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
         surface.set_fill(Some(Fill {
             paint: linear_gradient_with_opacity().into(),
             opacity: NormalizedF32::ONE,
             rule: Default::default(),
         }));
         surface.draw_path(&rect_to_path(20.0, 20.0, 180.0, 180.0));
+
+        surface.pop();
     }
 
     #[snapshot(settings_2)]
