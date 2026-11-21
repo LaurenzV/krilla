@@ -6,8 +6,9 @@ use std::borrow::Cow;
 
 use xmlwriter::{Indent, Options, XmlWriter};
 
+use super::custom::build_xmp_namespace;
+use super::predefined::predefined_struct_type;
 use super::xmp::{Namespace, Schema, SimpleType, StructType, ValueType};
-use super::{build_xmp_namespace, predefined_struct_type};
 
 const UI_NAMESPACE: &str = "http://ns.iso.org/iso-16684-2/xmp-schema-ui-info/1.0";
 
