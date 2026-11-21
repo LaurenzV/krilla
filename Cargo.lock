@@ -2551,7 +2551,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 [[package]]
 name = "xmp-writer"
 version = "0.3.3"
-source = "git+https://github.com/typst/xmp-writer?rev=61b88dd697c21ab66eb4eb4c25e2c6d16ea3c872#61b88dd697c21ab66eb4eb4c25e2c6d16ea3c872"
+source = "git+https://github.com/typst/xmp-writer?rev=9498ae2b2ab874c11c22edb9e393470584e419c8#9498ae2b2ab874c11c22edb9e393470584e419c8"
 
 [[package]]
 name = "yansi"
