@@ -653,7 +653,7 @@ impl PageLayout {
 
 #[cfg(test)]
 mod tests {
-    use super::xmp::Namespace;
+    use super::xmp::{Namespace, PropertyDescription, Schema, SimpleType, Value};
     use super::Metadata;
 
     #[test]
@@ -685,6 +685,23 @@ mod tests {
             .relax_ng_schema();
 
         assert!(rng.contains(r#"<element name="pdf:Trapped">"#));
+    }
+
+    #[test]
+    fn relax_ng_expects_uris_as_resources() {
+        let ns = Namespace::new("ex", "http://example.com/ex#");
+        let rng = Metadata::new()
+            .custom_xmp_schema(Schema::new(ns.clone()).property(PropertyDescription::new(
+                "policy",
+                SimpleType::Uri,
+                "Policy",
+            )))
+            .custom_xmp_property(ns.property("policy", Value::uri("https://example.com/")))
+            .relax_ng_schema();
+
+        assert!(rng.contains(
+            r#"<define name="ISO16684-1.Types.Base.URI" combine="choice"><attribute name="rdf:resource"><text/></attribute></define>"#
+        ));
     }
 
     #[test]

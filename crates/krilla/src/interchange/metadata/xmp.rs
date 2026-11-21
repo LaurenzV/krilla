@@ -438,12 +438,14 @@ impl Property {
 ///
 /// The variants mirror the value shapes supported by XMP/RDF: simple
 /// values, the three array kinds (`rdf:Seq`, `rdf:Bag`, `rdf:Alt`), language
-/// alternatives, and structs. Derived types like URIs or agent names are
-/// written as [`Value::Text`].
+/// alternatives, and structs. URIs and URLs are written as [`Value::Uri`],
+/// other derived types like agent names as [`Value::Text`].
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     /// A text value.
     Text(String),
+    /// A URI or URL, written as an `rdf:resource` attribute.
+    Uri(String),
     /// A boolean value.
     Bool(bool),
     /// An integer value.
@@ -474,6 +476,11 @@ impl Value {
     /// Convenience constructor for a [`Value::Text`].
     pub fn text(value: impl Into<String>) -> Self {
         Self::Text(value.into())
+    }
+
+    /// Convenience constructor for a [`Value::Uri`].
+    pub fn uri(value: impl Into<String>) -> Self {
+        Self::Uri(value.into())
     }
 }
 

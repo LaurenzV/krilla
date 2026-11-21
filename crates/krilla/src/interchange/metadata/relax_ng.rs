@@ -145,6 +145,15 @@ impl<'a> Grammar<'a> {
         }
     }
 
+    /// An `rdf:resource` attribute, the serialization of URI values (XMP
+    /// Specification Part 1, section 7.5).
+    fn resource(&mut self, f: impl FnOnce(&mut Self)) {
+        self.element("attribute", |g| {
+            g.w.write_attribute("name", "rdf:resource");
+            f(g);
+        });
+    }
+
     fn any_attribute(&mut self) {
         self.element("attribute", |g| g.element("anyName", |_| {}));
     }
@@ -213,11 +222,20 @@ impl<'a> Grammar<'a> {
                 }
                 self.reference(&format!("ISO16684-1.Types.QValue.{}", ty.as_str()));
             }
-            ValueType::ClosedChoice(_, values) => self.element("choice", |g| {
-                for value in values {
-                    g.element("value", |g| g.w.write_text(&escape(value)));
+            ValueType::ClosedChoice(ty, values) => {
+                let choice = |g: &mut Self| {
+                    g.element("choice", |g| {
+                        for value in values {
+                            g.element("value", |g| g.w.write_text(&escape(value)));
+                        }
+                    })
+                };
+                if is_uri(*ty) {
+                    self.resource(choice);
+                } else {
+                    choice(self);
                 }
-            }),
+            }
             ValueType::OrderedArray(item) => self.array("rdf:Seq", item),
             ValueType::UnorderedArray(item) => self.array("rdf:Bag", item),
             ValueType::AlternativeArray(item) => self.array("rdf:Alt", item),
@@ -326,6 +344,7 @@ impl<'a> Grammar<'a> {
                         });
                     }
                 }),
+                None if is_uri(ty) => g.resource(|g| g.element("text", |_| {})),
                 None => g.element("text", |_| {}),
             });
         }
@@ -423,6 +442,10 @@ fn schema_define(ns: &Namespace) -> String {
 
 fn struct_define(ty: &StructType) -> String {
     format!("{}.Types.{}", prefix(&ty.namespace), ty.name)
+}
+
+fn is_uri(ty: SimpleType) -> bool {
+    matches!(ty, SimpleType::Uri | SimpleType::Url)
 }
 
 /// The XML Schema datatype and pattern of a simple type, or `None` for

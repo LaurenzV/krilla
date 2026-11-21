@@ -283,6 +283,7 @@ impl<'a> ValueWriter<'a, '_> {
 
         match value {
             Value::Text(s) => element.value(s.as_str()),
+            Value::Uri(s) => element.uri(s.as_str()),
             Value::Bool(b) => element.value(*b),
             Value::Integer(i) => element.value(*i),
             Value::Real(r) if r.is_finite() => element.value(*r),
@@ -418,13 +419,16 @@ fn matches_simple_type(value: &Value, ty: SimpleType) -> bool {
         | (SimpleType::Integer, Value::Integer(_))
         | (SimpleType::Real, Value::Real(_) | Value::Integer(_))
         | (SimpleType::Rational, Value::Rational(..))
-        | (SimpleType::Date, Value::Date(_)) => true,
+        | (SimpleType::Date, Value::Date(_))
+        | (SimpleType::Uri | SimpleType::Url, Value::Uri(_)) => true,
         (
             SimpleType::Boolean
             | SimpleType::Integer
             | SimpleType::Real
             | SimpleType::Rational
-            | SimpleType::Date,
+            | SimpleType::Date
+            | SimpleType::Uri
+            | SimpleType::Url,
             _,
         ) => false,
         (_, value) => matches!(value, Value::Text(_)),
@@ -435,7 +439,7 @@ fn matches_simple_type(value: &Value, ty: SimpleType) -> bool {
 /// closed choice.
 fn simple_value_text(value: &Value) -> Option<String> {
     match value {
-        Value::Text(s) => Some(s.clone()),
+        Value::Text(s) | Value::Uri(s) => Some(s.clone()),
         Value::Bool(b) => Some(if *b { "True" } else { "False" }.to_string()),
         Value::Integer(i) => Some(i.to_string()),
         Value::Real(r) => Some(r.to_string()),

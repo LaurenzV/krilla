@@ -152,7 +152,10 @@ fn metadata_custom_xmp_basic(document: &mut Document) {
 
     let metadata = Metadata::new()
         .creation_date(datetime())
-        .custom_xmp_property(cc.property("license", "https://creativecommons.org/licenses/by/4.0/"))
+        .custom_xmp_property(cc.property(
+            "license",
+            Value::uri("https://creativecommons.org/licenses/by/4.0/"),
+        ))
         .custom_xmp_property(cc.property(
             "attributionName",
             Value::LanguageAlternative(vec![
@@ -343,7 +346,7 @@ fn metadata_custom_xmp_no_schema_outside_pdf_a() {
     let tdm = Namespace::new("tdm", "http://www.w3.org/ns/tdmrep/");
     let metadata = Metadata::new()
         .custom_xmp_property(tdm.property("reservation", 1))
-        .custom_xmp_property(tdm.property("policy", "https://example.com/policy.json"));
+        .custom_xmp_property(tdm.property("policy", Value::uri("https://example.com/policy.json")));
     document.set_metadata(metadata);
 
     assert!(document.finish().is_ok());
@@ -481,7 +484,9 @@ fn metadata_custom_xmp_valid_against_schema() {
         Metadata::new()
             .custom_xmp_schema(schema)
             .custom_xmp_property(tdm.property("reservation", 1))
-            .custom_xmp_property(tdm.property("policy", "https://example.com/policy.json")),
+            .custom_xmp_property(
+                tdm.property("policy", Value::uri("https://example.com/policy.json")),
+            ),
     );
 
     assert!(document.finish().is_ok());
@@ -498,9 +503,16 @@ fn metadata_custom_xmp_invalid_value() {
     );
     assert_xmp_error(
         Metadata::new()
-            .custom_xmp_schema(schema)
+            .custom_xmp_schema(schema.clone())
             .custom_xmp_property(tdm.property("reservation", 1))
             .custom_xmp_property(tdm.property("policy", true)),
+        XmpError::InvalidValue("policy".to_string()),
+    );
+    assert_xmp_error(
+        Metadata::new()
+            .custom_xmp_schema(schema)
+            .custom_xmp_property(tdm.property("reservation", 1))
+            .custom_xmp_property(tdm.property("policy", "https://example.com/policy.json")),
         XmpError::InvalidValue("policy".to_string()),
     );
 }
@@ -511,7 +523,9 @@ fn metadata_custom_xmp_missing_required_property() {
     assert_xmp_error(
         Metadata::new()
             .custom_xmp_schema(schema)
-            .custom_xmp_property(tdm.property("policy", "https://example.com/policy.json")),
+            .custom_xmp_property(
+                tdm.property("policy", Value::uri("https://example.com/policy.json")),
+            ),
         XmpError::MissingProperty("reservation".to_string()),
     );
 }
