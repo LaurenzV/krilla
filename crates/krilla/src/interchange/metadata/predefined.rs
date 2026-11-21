@@ -123,6 +123,11 @@ pub(super) fn managed_schemas() -> &'static [Schema] {
                         AgentName.into(),
                         "The name of the tool that created the PDF",
                     ),
+                    (
+                        "Trapped",
+                        Boolean.into(),
+                        "Whether the document has been trapped",
+                    ),
                 ],
             ),
             schema(

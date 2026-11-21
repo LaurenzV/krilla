@@ -674,6 +674,19 @@ mod tests {
         assert!(rng.contains("<ui1:label"));
         assert!(!rng.contains("xmpmeta"));
     }
+
+    #[test]
+    fn relax_ng_describes_trapped() {
+        let rng = Metadata::new()
+            .trapped(true)
+            .custom_xmp_property(
+                Namespace::new("ex", "http://example.com/ex#").property("kind", "private"),
+            )
+            .relax_ng_schema();
+
+        assert!(rng.contains(r#"<element name="pdf:Trapped">"#));
+    }
+
     #[test]
     fn custom_field_returns_none_for_ignored_names() {
         assert!(Metadata::new()
