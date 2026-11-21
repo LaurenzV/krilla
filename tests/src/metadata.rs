@@ -493,6 +493,74 @@ fn metadata_custom_xmp_valid_against_schema() {
 }
 
 #[test]
+fn metadata_custom_xmp_invalid_language_tag() {
+    let ex = Namespace::new("ex", "http://example.com/xmp#");
+    let title = |lang: &str| {
+        Metadata::new().custom_xmp_property(ex.property(
+            "title",
+            Value::LanguageAlternative(vec![
+                (None, "Title".to_string()),
+                (Some(lang.to_string()), "Title".to_string()),
+            ]),
+        ))
+    };
+
+    for lang in ["", "en_US", "en\" bad=\"1", "en<"] {
+        assert_xmp_error(title(lang), XmpError::InvalidValue("title".to_string()));
+    }
+
+    let mut document = Document::new();
+    document.set_metadata(title("de-AT"));
+    assert!(document.finish().is_ok());
+}
+
+#[test]
+fn metadata_custom_xmp_locale_and_mime_type() {
+    let ex = Namespace::new("ex", "http://example.com/xmp#");
+    let schema = Schema::new(ex.clone())
+        .property(PropertyDescription::new(
+            "locale",
+            SimpleType::Locale,
+            "Locale",
+        ))
+        .property(PropertyDescription::new(
+            "format",
+            SimpleType::MimeType,
+            "Format",
+        ));
+    let metadata = |name: &str, value: &str| {
+        Metadata::new()
+            .custom_xmp_schema(schema.clone())
+            .custom_xmp_property(ex.property(name, value))
+    };
+
+    for (name, value) in [
+        ("locale", "en_US"),
+        ("locale", "en-"),
+        ("format", "font/woff"),
+        ("format", "text"),
+        ("format", "text/x..y"),
+    ] {
+        assert_xmp_error(
+            metadata(name, value),
+            XmpError::InvalidValue(name.to_string()),
+        );
+    }
+
+    for (name, value) in [
+        ("locale", "en"),
+        ("locale", "de-AT-1996"),
+        ("format", "text/xml"),
+        ("format", "application/vnd.ms-excel"),
+        ("format", "image/svg+xml"),
+    ] {
+        let mut document = Document::new();
+        document.set_metadata(metadata(name, value));
+        assert!(document.finish().is_ok(), "{name}: {value}");
+    }
+}
+
+#[test]
 fn metadata_custom_xmp_invalid_value() {
     let (tdm, schema) = tdm_schema();
     assert_xmp_error(

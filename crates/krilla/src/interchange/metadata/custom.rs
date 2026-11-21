@@ -302,6 +302,13 @@ impl<'a> ValueWriter<'a, '_> {
                 self.write_array(element.array(RdfCollectionType::Alt), items, item_type)?
             }
             Value::LanguageAlternative(items) => {
+                if !items
+                    .iter()
+                    .flat_map(|(lang, _)| lang)
+                    .all(|lang| is_locale(lang))
+                {
+                    return Err(XmpError::InvalidValue(self.property.to_string()));
+                }
                 element.language_alternative(
                     items
                         .iter()
@@ -431,8 +438,42 @@ fn matches_simple_type(value: &Value, ty: SimpleType) -> bool {
             | SimpleType::Url,
             _,
         ) => false,
+        (SimpleType::Locale, Value::Text(s)) => is_locale(s),
+        (SimpleType::MimeType, Value::Text(s)) => is_mime_type(s),
         (_, value) => matches!(value, Value::Text(_)),
     }
+}
+
+/// Whether `s` matches `[a-zA-Z]+(-[a-zA-Z0-9]+)*`, the pattern the RELAX NG
+/// schema uses for locales.
+fn is_locale(s: &str) -> bool {
+    let mut subtags = s.split('-');
+    subtags.next().is_some_and(|primary| {
+        !primary.is_empty() && primary.bytes().all(|b| b.is_ascii_alphabetic())
+    }) && subtags
+        .all(|subtag| !subtag.is_empty() && subtag.bytes().all(|b| b.is_ascii_alphanumeric()))
+}
+
+/// Whether `s` matches the pattern the RELAX NG schema uses for MIME types.
+fn is_mime_type(s: &str) -> bool {
+    const TYPES: [&str; 9] = [
+        "application",
+        "audio",
+        "example",
+        "image",
+        "message",
+        "model",
+        "multipart",
+        "text",
+        "video",
+    ];
+
+    s.split_once('/').is_some_and(|(ty, subtype)| {
+        TYPES.contains(&ty)
+            && subtype
+                .split(['+', '-', '.'])
+                .all(|part| !part.is_empty() && part.bytes().all(|b| b.is_ascii_alphanumeric()))
+    })
 }
 
 /// The serialized form of a simple value, as compared against the values of a
