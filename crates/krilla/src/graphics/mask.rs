@@ -81,9 +81,6 @@ impl Mask {
             stream: shading_stream,
             mask_type: MaskType::Luminosity,
             custom_bbox: Some(bbox),
-            // The opacities are encoded as luma colors, so the group must use the same
-            // color space. Otherwise, viewers that compute the luminosity colorimetrically
-            // from an ICC-based RGB group apply the sRGB transfer curve to the opacities.
             group_color_space: GroupColorSpace::Luma,
         })
     }
