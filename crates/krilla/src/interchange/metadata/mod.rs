@@ -1,17 +1,30 @@
 //! Setting document metadata.
 //!
 //! PDF allows for the inclusion of metadata in a PDF document. To do so in krilla,
-//! you can simply create a [`Metadata`] object, set the data, and then include it
+//! create a [`Metadata`] object, set the data, and then include it
 //! in the document via [`Document::set_metadata`].
 //!
 //! [`Document::set_metadata`]: crate::document::Document::set_metadata
+mod custom;
+mod extension_schema;
+mod predefined;
+mod relax_ng;
+pub mod xmp;
+
 use pdf_writer::types::TrappingStatus;
 use pdf_writer::{Finish, Name, Pdf, Ref, TextStr};
-use std::{cell::LazyCell, collections::BTreeMap};
+use std::borrow::Cow;
+use std::cell::LazyCell;
+use std::collections::BTreeMap;
 use xmp_writer::{LangId, Timezone, XmpWriter};
 
-use crate::configure::{Archival, Configuration, PdfVersion, ValidationError};
+use crate::configure::{Archival, Configuration, PdfVersion, ValidationError, Validators};
 use crate::serialize::SerializeContext;
+
+use self::custom::merge_schemas;
+pub(crate) use self::extension_schema::write_extension_schemas;
+use self::predefined::{is_predefined_pdfa_property, managed_schemas};
+use self::xmp::{Namespace, Property, PropertyDescription, Schema, XmpError};
 
 /// Metadata for a PDF document.
 #[derive(Default, Clone, Debug)]
@@ -30,6 +43,8 @@ pub struct Metadata {
     pub(crate) page_layout: Option<PageLayout>,
     pub(crate) display_doc_title: bool,
     pub(crate) trapped: Option<bool>,
+    pub(crate) custom_xmp_properties: Vec<Property>,
+    pub(crate) custom_xmp_schemas: Vec<Schema>,
     pub(crate) custom_fields: BTreeMap<String, String>,
 }
 
@@ -154,15 +169,27 @@ impl Metadata {
         self
     }
 
+    /// Add a custom XMP property.
+    pub fn custom_xmp_property(mut self, property: Property) -> Self {
+        self.custom_xmp_properties.push(property);
+        self
+    }
+
+    /// Add a schema describing the properties of a custom XMP namespace.
+    pub fn custom_xmp_schema(mut self, schema: Schema) -> Self {
+        self.custom_xmp_schemas.push(schema);
+        self
+    }
+
     /// Add a custom field to the document information dictionary.
     ///
     /// If a field with the same name was already added, its value will be
     /// replaced. Returns `None` for empty names and names reserved for standard
     /// document information fields.
     ///
-    /// **WARNING**: Custom fields will currently be ignored when exporting to
-    /// PDF/A-2 and PDF/A-3 and PDF/A-4. This is a temporary limitation that will be lifted
-    /// in the future.
+    /// **Note**: Custom fields are ignored when exporting to PDF/A-2, PDF/A-3 and
+    /// PDF/A-4. PDF/A-2 and PDF/A-3 readers ignore the document information
+    /// dictionary, and in PDF/A-4 it may only contain `ModDate`.
     #[must_use]
     pub fn custom_field(mut self, name: String, value: String) -> Option<Self> {
         if name.is_empty() || is_standard_document_info_field(&name) {
@@ -185,12 +212,12 @@ impl Metadata {
             || !self.custom_fields.is_empty()
     }
 
-    pub(crate) fn serialize_xmp_metadata(
-        &self,
-        xmp: &mut XmpWriter,
+    pub(crate) fn serialize_xmp_metadata<'n>(
+        &'n self,
+        xmp: &mut XmpWriter<'n>,
         sc: &mut SerializeContext,
         instance_id: &str,
-    ) {
+    ) -> Result<(), XmpError> {
         if let Some(title) = &self.title {
             xmp.title([(None, title.as_str())]);
         }
@@ -303,6 +330,53 @@ impl Metadata {
         } else {
             sc.register_validation_error(ValidationError::MissingDocumentDate);
         }
+
+        self.serialize_custom_xmp(xmp, sc)
+    }
+
+    /// A RELAX NG schema describing the XMP metadata of the document.
+    pub(crate) fn relax_ng_schema(&self) -> String {
+        let schemas = merge_schemas(
+            managed_schemas().iter().map(Cow::Borrowed),
+            self.custom_xmp_schemas.iter().map(Cow::Borrowed),
+        );
+        let mut undescribed: Vec<(&Namespace, &str)> = vec![];
+        for property in &self.custom_xmp_properties {
+            let uri = property.namespace.uri();
+            if !schemas
+                .iter()
+                .any(|s| s.namespace.uri() == uri && s.get(&property.name).is_some())
+                && !undescribed
+                    .iter()
+                    .any(|(ns, name)| ns.uri() == uri && *name == property.name)
+            {
+                undescribed.push((&property.namespace, &property.name));
+            }
+        }
+
+        relax_ng::relax_ng_schema(&schemas, &undescribed)
+    }
+
+    /// The attached schemas that need a PDF/A extension schema, without the
+    /// descriptions of predefined properties.
+    pub(crate) fn extension_schemas(&self, validators: Validators) -> Vec<Cow<'_, Schema>> {
+        let xmp_2005 = validators.uses_xmp_2005_predefined_schemas();
+        self.custom_xmp_schemas
+            .iter()
+            .filter_map(|schema| {
+                let uri = schema.namespace.uri();
+                let is_predefined = |desc: &PropertyDescription| {
+                    is_predefined_pdfa_property(uri, &desc.name, xmp_2005)
+                };
+                if !schema.properties.iter().any(is_predefined) {
+                    return Some(Cow::Borrowed(schema));
+                }
+
+                let mut schema = schema.clone();
+                schema.properties.retain(|desc| !is_predefined(desc));
+                (!schema.properties.is_empty()).then_some(Cow::Owned(schema))
+            })
+            .collect()
     }
 
     pub(crate) fn serialize_document_info(
@@ -362,7 +436,6 @@ impl Metadata {
                 document_info.creation_date(pdf_date(date_time));
             }
 
-            // This is temporary until custom fields can be written to XMP.
             // See https://github.com/LaurenzV/krilla/pull/419#issuecomment-5142992957.
             if !matches!(
                 config.validators().archival(),
@@ -580,7 +653,56 @@ impl PageLayout {
 
 #[cfg(test)]
 mod tests {
+    use super::xmp::{Namespace, PropertyDescription, Schema, SimpleType, Value};
     use super::Metadata;
+
+    #[test]
+    fn relax_ng_prefixes_dont_collide_with_custom_prefixes() {
+        let rng = Metadata::new()
+            .custom_xmp_property(
+                Namespace::new("ui", "http://example.com/ui#").property("label", "Label"),
+            )
+            .custom_xmp_property(
+                Namespace::new("rng", "http://example.com/rng#").property("grammar", "Grammar"),
+            )
+            .relax_ng_schema();
+
+        assert!(rng.contains(r#"<grammar xmlns="http://relaxng.org/ns/structure/1.0""#));
+        assert!(rng.contains(r#"xmlns:ui="http://example.com/ui#""#));
+        assert!(rng.contains(r#"xmlns:rng="http://example.com/rng#""#));
+        assert!(rng.contains(r#"xmlns:ui1="http://ns.iso.org/iso-16684-2/xmp-schema-ui-info/1.0""#));
+        assert!(rng.contains("<ui1:label"));
+        assert!(!rng.contains("xmpmeta"));
+    }
+
+    #[test]
+    fn relax_ng_describes_trapped() {
+        let rng = Metadata::new()
+            .trapped(true)
+            .custom_xmp_property(
+                Namespace::new("ex", "http://example.com/ex#").property("kind", "private"),
+            )
+            .relax_ng_schema();
+
+        assert!(rng.contains(r#"<element name="pdf:Trapped">"#));
+    }
+
+    #[test]
+    fn relax_ng_expects_uris_as_resources() {
+        let ns = Namespace::new("ex", "http://example.com/ex#");
+        let rng = Metadata::new()
+            .custom_xmp_schema(Schema::new(ns.clone()).property(PropertyDescription::new(
+                "policy",
+                SimpleType::Uri,
+                "Policy",
+            )))
+            .custom_xmp_property(ns.property("policy", Value::uri("https://example.com/")))
+            .relax_ng_schema();
+
+        assert!(rng.contains(
+            r#"<define name="ISO16684-1.Types.Base.URI" combine="choice"><attribute name="rdf:resource"><text/></attribute></define>"#
+        ));
+    }
 
     #[test]
     fn custom_field_returns_none_for_ignored_names() {
