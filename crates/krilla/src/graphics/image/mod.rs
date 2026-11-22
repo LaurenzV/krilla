@@ -876,14 +876,14 @@ fn deflate_image_channels<const COLOR_BYTES: usize, const ALPHA_BYTES: usize>(
             .buffer
             .resize(batch.len() / pixel_bytes * COLOR_BYTES, 0);
         let pixels = batch.chunks_exact(pixel_bytes);
-        let color_chunks = colors.buffer.chunks_exact_mut(COLOR_BYTES);
+        let color_chunks = colors.buffer.as_chunks_mut::<COLOR_BYTES>().0.iter_mut();
         if let Some(alphas) = &mut alphas {
             alphas
                 .buffer
                 .resize(batch.len() / pixel_bytes * ALPHA_BYTES, 0);
             for ((pixel, color), alpha) in pixels
                 .zip(color_chunks)
-                .zip(alphas.buffer.chunks_exact_mut(ALPHA_BYTES))
+                .zip(alphas.buffer.as_chunks_mut::<ALPHA_BYTES>().0)
             {
                 color.copy_from_slice(&pixel[..COLOR_BYTES]);
                 alpha.copy_from_slice(&pixel[COLOR_BYTES..]);
