@@ -6,8 +6,6 @@
 //! that are supported are "link annotations", which allow you associate a certain region of
 //! the page with a link, and "widget annotations", which are part of interactive forms.
 
-use core::f32;
-
 use pdf_writer::types::{AnnotationFlags, HighlightEffect};
 use pdf_writer::{Finish, Name, Ref, TextStr};
 
