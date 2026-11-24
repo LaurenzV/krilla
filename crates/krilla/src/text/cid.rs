@@ -379,7 +379,13 @@ impl CIDFont {
             let mut cmap = UnicodeCmap::new(CMAP_NAME, SYSTEM_INFO);
 
             // For the .notdef glyph, it's fine if no mapping exists, since it is included
-            // even if it was not referenced in the text.
+            // even if it was not referenced in the text. But if the text did reference it,
+            // for example for a character that the font lacks, keep that text, so that the
+            // character can still be extracted.
+            if let Some(entry) = self.cmap_entries.get(&0) {
+                write_cmap_entry(&self.font, Some(entry), sc, &mut cmap, 0);
+            }
+
             for g in 1..self.glyph_remapper.num_gids() {
                 let entry = self.cmap_entries.get(&g);
                 write_cmap_entry(&self.font, entry, sc, &mut cmap, g);

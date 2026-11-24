@@ -7,7 +7,7 @@ use krilla::{Data, Document};
 use krilla_macros::{snapshot, visreg};
 
 use crate::{
-    blue_fill, blue_stroke, red_fill, red_stroke, stops_with_3_solid_1, CANTARELL_VAR,
+    blue_fill, blue_stroke, red_fill, red_stroke, settings_1, stops_with_3_solid_1, CANTARELL_VAR,
     LATIN_MODERN_ROMAN, LIBERTINUS_SERIF, NOTO_COLOR_EMOJI_COLR, NOTO_SANS, NOTO_SANS_ARABIC,
     NOTO_SANS_CJK, NOTO_SANS_DEVANAGARI, NOTO_SANS_VAR, TWITTER_COLOR_EMOJI,
 };
@@ -414,6 +414,32 @@ fn text_mixed_ttf_ebdt_font(surface: &mut Surface) {
         false,
         TextDirection::Auto,
     );
+}
+
+// The .notdef glyph of a character that the font lacks keeps that character in the
+// ToUnicode CMap, for TrueType and CFF fonts alike.
+#[test]
+fn text_notdef_glyph_keeps_its_text() {
+    for font_data in [NOTO_SANS.clone(), LATIN_MODERN_ROMAN.clone()] {
+        let mut document = Document::new_with(settings_1());
+        let mut page = document.start_page();
+        let mut surface = page.surface();
+
+        surface.draw_text(
+            Point::from_xy(0.0, 50.0),
+            Font::new(font_data, 0).unwrap(),
+            16.0,
+            "a你",
+            false,
+            TextDirection::Auto,
+        );
+
+        surface.finish();
+        page.finish();
+        let pdf = document.finish().unwrap();
+        let entry = b"<0000> <4F60>";
+        assert!(pdf.windows(entry.len()).any(|window| window == entry));
+    }
 }
 
 // See https://github.com/typst/typst/pull/5420#issuecomment-2768899483.
