@@ -1,10 +1,10 @@
 use crate::text::Font;
 use crate::text::{GlyphId, KrillaGlyph};
-use harfrust::{Direction, ShapeOptions, UnicodeBuffer};
+use harfrust::{Buffer, Direction, ShapeOptions, ShaperFont};
 
 /// Naively shape some text with a single font.
 pub(crate) fn naive_shape(text: &str, font: Font, direction: TextDirection) -> Vec<KrillaGlyph> {
-    let mut buffer = UnicodeBuffer::new();
+    let mut buffer = Buffer::new();
     buffer.push_str(text);
     buffer.guess_segment_properties();
 
@@ -18,14 +18,17 @@ pub(crate) fn naive_shape(text: &str, font: Font, direction: TextDirection) -> V
 
     let dir = buffer.direction();
 
-    let output = font.shaper().shape(buffer, ShapeOptions::default());
+    let shaper_font = ShaperFont::new(font.shaping_font());
+    if harfrust::shape(&shaper_font, &mut buffer, ShapeOptions::new()).is_err() {
+        return vec![];
+    }
 
-    let positions = output.glyph_positions();
-    let infos = output.glyph_infos();
+    let positions = buffer.glyph_positions();
+    let infos = buffer.glyph_infos();
 
     let mut glyphs = vec![];
 
-    for i in 0..output.len() {
+    for i in 0..buffer.len() {
         let pos = positions[i];
         let start_info = infos[i];
 
