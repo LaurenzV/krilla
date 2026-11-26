@@ -186,6 +186,9 @@ pub(crate) struct ResourceDictionaryBuilder {
     /// `/DA` property might be shadowed by a different font in the resources dictionary of the
     /// XObject, resulting in the incorrect font being used.
     pub(crate) prefix: &'static str,
+    // Whether this resource dictionary is optional and it should not be written
+    // at all if its resource entries are empty.
+    pub(crate) optional: bool,
 }
 
 impl ResourceDictionaryBuilder {
@@ -202,7 +205,13 @@ impl ResourceDictionaryBuilder {
             shadings: ResourceMapper::new(),
             fonts: ResourceMapper::new(),
             prefix,
+            optional: false,
         }
+    }
+
+    pub(crate) fn with_optional(mut self, optional: bool) -> Self {
+        self.optional = optional;
+        self
     }
 
     pub(crate) fn register_resource<T>(&mut self, obj: T) -> String
@@ -222,6 +231,7 @@ impl ResourceDictionaryBuilder {
             shadings: self.shadings.into_resource_list(),
             fonts: self.fonts.into_resource_list(),
             prefix: self.prefix,
+            optional: self.optional,
         }
     }
 }
@@ -236,6 +246,7 @@ pub(crate) struct ResourceDictionary {
     pub(crate) fonts: ResourceList<Font>,
 
     pub(crate) prefix: &'static str,
+    pub(crate) optional: bool,
 }
 
 impl Default for ResourceDictionary {
@@ -248,6 +259,7 @@ impl Default for ResourceDictionary {
             shadings: ResourceList::empty(),
             fonts: ResourceList::empty(),
             prefix: "",
+            optional: false,
         }
     }
 }
@@ -270,6 +282,12 @@ impl ResourceDictionary {
             || self.x_objects.len() > 0
             || self.shadings.len() > 0
             || self.fonts.len() > 0;
+
+        if self.optional && !has_resource_entries {
+            // This resource dictionary is empty and nothing should be written at all,
+            // even proc sets.
+            return;
+        }
 
         if !write_proc_sets && !has_resource_entries {
             // `Resources` dictionary is mandatory (or rather, it's mandatory if
