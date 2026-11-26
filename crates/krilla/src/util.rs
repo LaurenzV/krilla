@@ -269,4 +269,6 @@ pub(crate) mod test_utils {
         NOTO_COLOR_EMOJI_COLR,
         FONT_PATH.join("NotoColorEmoji.COLR.subset.ttf")
     );
+    lazy_font!(NOTO_SANS_VAR, FONT_PATH.join("NotoSans_variable.ttf"));
+    lazy_font!(CANTARELL_VAR, FONT_PATH.join("Cantarell-VF.otf"));
 }

@@ -27,6 +27,10 @@ use crate::util::{stable_hash128, SliceExt};
 
 const SUBSET_TAG_LEN: usize = 6;
 pub(crate) const IDENTITY_H: &str = "Identity-H";
+/// The maximum length of a PostScript name in a base font name, which also holds the
+/// subset tag, a plus sign, and a hyphen and `Identity-H` for CFF fonts, and must not be
+/// longer than 127 bytes.
+pub(crate) const MAX_POSTSCRIPT_NAME_LEN: usize = 127 - (SUBSET_TAG_LEN + 1 + 1 + IDENTITY_H.len());
 pub(crate) const CMAP_NAME: Name = Name(b"Custom");
 pub(crate) const SYSTEM_INFO: SystemInfo = SystemInfo {
     registry: Str(b"Adobe"),
@@ -423,11 +427,8 @@ pub(crate) fn subset_tag<T: Hash>(data: &T) -> String {
 }
 
 pub(crate) fn base_font_name<T: Hash>(font: &Font, data: &T) -> String {
-    const REST_LEN: usize = SUBSET_TAG_LEN + 1 + 1 + IDENTITY_H.len();
-
     let postscript_name = font.postscript_name().unwrap_or("unknown");
-    let max_len = 127 - REST_LEN;
-    let trimmed = &postscript_name[..postscript_name.len().min(max_len)];
+    let trimmed = &postscript_name[..postscript_name.len().min(MAX_POSTSCRIPT_NAME_LEN)];
     let subset_tag = subset_tag(&data);
 
     format!("{subset_tag}+{trimmed}")
