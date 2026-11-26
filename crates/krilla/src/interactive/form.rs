@@ -290,8 +290,8 @@ impl<T> FormField<T> {
     ///
     /// Note that the alt name might be required in some cases, for example
     /// when exporting to PDF/UA.
-    pub fn set_alt_name(&mut self, alt_name: String) {
-        self.alt_name = Some(alt_name);
+    pub fn set_alt_name(&mut self, alt_name: Option<String>) {
+        self.alt_name = alt_name;
     }
 
     /// Set the alternative name of the field.
@@ -300,20 +300,20 @@ impl<T> FormField<T> {
     ///
     /// Note that the alt name might be required in some cases, for example
     /// when exporting to PDF/UA.
-    pub fn with_alt_name(mut self, alt_name: String) -> Self {
+    pub fn with_alt_name(mut self, alt_name: Option<String>) -> Self {
         self.set_alt_name(alt_name);
         self
     }
 
     /// Set the mapping name of the field.
     /// This is used during submission/export.
-    pub fn set_mapping_name(&mut self, mapping_name: String) {
-        self.mapping_name = Some(mapping_name);
+    pub fn set_mapping_name(&mut self, mapping_name: Option<String>) {
+        self.mapping_name = mapping_name;
     }
 
     /// Set the mapping name of the field.
     /// This is used during submission/export.
-    pub fn with_mapping_name(mut self, mapping_name: String) -> Self {
+    pub fn with_mapping_name(mut self, mapping_name: Option<String>) -> Self {
         self.set_mapping_name(mapping_name);
         self
     }
@@ -404,12 +404,12 @@ impl FormField<kind::Checkbox> {
     }
 
     /// Set whether the checkbox is checked by default.
-    pub fn set_default_checked(&mut self, checked: bool) {
-        self.kind.default_checked = Some(checked);
+    pub fn set_default_checked(&mut self, checked: Option<bool>) {
+        self.kind.default_checked = checked;
     }
 
     /// Set whether the checkbox is checked by default.
-    pub fn with_default_checked(mut self, checked: bool) -> Self {
+    pub fn with_default_checked(mut self, checked: Option<bool>) -> Self {
         self.set_default_checked(checked);
         self
     }
@@ -619,25 +619,25 @@ impl FormField<kind::Text> {
     /// Set the value of the text field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_value(&mut self, value: String) {
-        self.kind.value = Some(value);
+    pub fn set_value(&mut self, value: Option<String>) {
+        self.kind.value = value;
     }
 
     /// Set the value of the text field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_value(mut self, value: String) -> Self {
+    pub fn with_value(mut self, value: Option<String>) -> Self {
         self.set_value(value);
         self
     }
 
     /// Set the default value of the text field.
-    pub fn set_default_value(&mut self, value: String) {
-        self.kind.default_value = Some(value);
+    pub fn set_default_value(&mut self, value: Option<String>) {
+        self.kind.default_value = value;
     }
 
     /// Set the default value of the text field.
-    pub fn with_default_value(mut self, value: String) -> Self {
+    pub fn with_default_value(mut self, value: Option<String>) -> Self {
         self.set_default_value(value);
         self
     }
@@ -729,32 +729,37 @@ impl FormField<kind::ListBox> {
         self
     }
 
-    /// Set the value (selected options) of the listbox field.
+    /// Set the value (index of selected [options](`Self::set_options`))
+    /// of the listbox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_value(&mut self, value: Vec<String>) {
+    pub fn set_value(&mut self, mut value: Vec<usize>) {
+        value.sort_unstable(); // indexes must be sorted in the `/I` entry
         self.kind.value = value;
     }
 
-    /// Set the value (selected options) of the listbox field.
+    /// Set the value (index of selected [options](`Self::set_options`))
+    /// of the listbox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_value(mut self, value: Vec<String>) -> Self {
+    pub fn with_value(mut self, value: Vec<usize>) -> Self {
         self.set_value(value);
         self
     }
 
-    /// Set the default value (selected options) of the listbox field.
+    /// Set the default value (index of selected [options](`Self::set_options`))
+    /// of the listbox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_default_value(&mut self, value: Vec<String>) {
+    pub fn set_default_value(&mut self, value: Vec<usize>) {
         self.kind.default_value = value;
     }
 
-    /// Set the default value (selected options) of the listbox field.
+    /// Set the default value (index of selected [options](`Self::set_options`))
+    /// of the listbox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_default_value(mut self, value: Vec<String>) -> Self {
+    pub fn with_default_value(mut self, value: Vec<usize>) -> Self {
         self.set_default_value(value);
         self
     }
@@ -849,32 +854,36 @@ impl FormField<kind::ComboBox> {
         self
     }
 
-    /// Set the value (selected option) of the combobox field.
+    /// Set the value (index of selected [option](`Self::set_options`))
+    /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_value(&mut self, value: String) {
-        self.kind.value = Some(value);
+    pub fn set_value(&mut self, value: Option<usize>) {
+        self.kind.value = value;
     }
 
-    /// Set the value (selected option) of the combobox field.
+    /// Set the value (index of selected [option](`Self::set_options`))
+    /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_value(mut self, value: String) -> Self {
+    pub fn with_value(mut self, value: Option<usize>) -> Self {
         self.set_value(value);
         self
     }
 
-    /// Set the default value (selected option) of the combobox field.
+    /// Set the default value (index of selected [option](`Self::set_options`))
+    /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn set_default_value(&mut self, value: String) {
-        self.kind.default_value = Some(value);
+    pub fn set_default_value(&mut self, value: Option<usize>) {
+        self.kind.default_value = value;
     }
 
-    /// Set the default value (selected option) of the combobox field.
+    /// Set the default value (index of selected [option](`Self::set_options`))
+    /// of the combobox field.
     /// Keep in mind the caller has the responsibility of creating and
     /// applying the corresponding appearance stream.
-    pub fn with_default_value(mut self, value: String) -> Self {
+    pub fn with_default_value(mut self, value: Option<usize>) -> Self {
         self.set_default_value(value);
         self
     }
@@ -1106,23 +1115,35 @@ pub mod kind {
     #[derive(Debug, Clone, Default)]
     pub struct ListBox {
         pub(super) variable_text: VariableText,
-        pub(super) value: Vec<String>,
-        pub(super) default_value: Vec<String>,
+        pub(super) value: Vec<usize>,
+        pub(super) default_value: Vec<usize>,
         pub(super) options: Vec<ChoiceOption>,
+    }
+
+    impl ListBox {
+        fn get_option_value<'a>(&'a self, index: usize) -> TextStr<'a> {
+            self.options
+                .get(index)
+                .map(|option| TextStr(&option.value))
+                .expect("listbox value index is greater than options length")
+        }
     }
 
     impl SerializableField for ListBox {
         fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
             field.field_type(pdf_writer::types::FieldType::Choice);
+            field.choice_indices(self.value.iter().map(|i| *i as i32));
+
+            let mut value = self.value.iter().map(|i| self.get_option_value(*i));
             match self.value.len() {
-                0 => field.choice_value(None),
-                1 => field.choice_value(Some(TextStr(&self.value[0]))),
-                _ => field.choice_values(self.value.iter().map(|s| TextStr(s))),
+                0 | 1 => field.choice_value(value.next()),
+                _ => field.choice_values(value),
             };
+
+            let mut default_value = self.default_value.iter().map(|i| self.get_option_value(*i));
             match self.default_value.len() {
-                0 => field.choice_default_value(None),
-                1 => field.choice_default_value(Some(TextStr(&self.default_value[0]))),
-                _ => field.choice_default_values(self.default_value.iter().map(|s| TextStr(s))),
+                0 | 1 => field.choice_default_value(default_value.next()),
+                _ => field.choice_default_values(default_value),
             };
 
             let mut options = field.choice_options();
@@ -1140,16 +1161,33 @@ pub mod kind {
     #[derive(Debug, Clone, Default)]
     pub struct ComboBox {
         pub(super) variable_text: VariableText,
-        pub(super) value: Option<String>,
-        pub(super) default_value: Option<String>,
+        pub(super) value: Option<usize>,
+        pub(super) default_value: Option<usize>,
         pub(super) options: Vec<ChoiceOption>,
+    }
+
+    impl ComboBox {
+        fn get_option_value<'a>(&'a self, index: usize) -> TextStr<'a> {
+            self.options
+                .get(index)
+                .map(|option| TextStr(&option.value))
+                .expect("combobox value index is greater than options length")
+        }
     }
 
     impl SerializableField for ComboBox {
         fn serialize_field<'a>(&self, field: &mut pdf_writer::writers::Field<'a>) {
             field.field_type(pdf_writer::types::FieldType::Choice);
-            field.choice_value(self.value.as_deref().map(TextStr));
-            field.choice_default_value(self.default_value.as_deref().map(TextStr));
+
+            if let Some(i) = self.value {
+                field.choice_indices([i as i32]);
+            }
+
+            let value = self.value.map(|i| self.get_option_value(i));
+            field.choice_value(value);
+
+            let default_value = self.default_value.map(|i| self.get_option_value(i));
+            field.choice_default_value(default_value);
 
             let mut options = field.choice_options();
             for opt in &self.options {
@@ -1266,14 +1304,16 @@ pub mod variable_text {
             if let Some(paint) = &self.paint {
                 match &paint.0 {
                     InnerPaint::Color(color) => {
-                        let color_space = color.color_space(sc);
+                        let color = color.to_regular();
+                        // Most readers only support device color spaces in the `/DA` field.
+                        let color_space = color.color_space_prefer_device(sc);
                         let content_color_space = ContentColorSpace::from_color_space(
                             sc,
                             chunk_container,
                             rd_builder,
-                            color_space,
+                            color_space.into(),
                         );
-                        set_solid_fill(&mut content, content_color_space, color);
+                        set_solid_fill(&mut content, content_color_space, &color.into());
                     }
                     _ => {
                         panic!("Only solid colors are supported on variable text");
@@ -1304,6 +1344,9 @@ pub mod variable_text {
         Embedded(Font),
         */
         /// One of the 14 standard type 1 PDF fonts.
+        ///
+        /// krilla doesn't support them in PDF 2.0 yet; see
+        /// [`KrillaError::StandardFont`](crate::error::KrillaError::StandardFont).
         Standard(StandardFont),
     }
 

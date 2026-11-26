@@ -1,16 +1,23 @@
 use krilla::color::rgb;
-use krilla::mask::MaskType;
+use krilla::mask::{Mask, MaskType};
 use krilla::num::NormalizedF32;
 use krilla::page::Page;
 use krilla::paint::Fill;
 use krilla::surface::Surface;
 use krilla_macros::{snapshot, visreg};
 
-use crate::{basic_mask, green_fill, rect_to_path};
+use crate::{basic_mask, green_fill, rect_to_path, red_fill};
 
 fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Color) {
-    let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
-    let mask = basic_mask(surface, mask_type);
+    let path = rect_to_path(0.0, 0.0, 160.0, 160.0);
+
+    let mut stream_builder = surface.stream_builder();
+    let mut sub_surface = stream_builder.surface();
+    sub_surface.set_fill(Some(red_fill(0.2)));
+    sub_surface.draw_path(&path);
+    sub_surface.finish();
+    let mask = Mask::new(stream_builder.finish(), mask_type);
+
     surface.push_mask(mask);
     surface.set_fill(Some(Fill {
         paint: color.into(),
@@ -21,12 +28,12 @@ fn mask_visreg_impl(mask_type: MaskType, surface: &mut Surface, color: rgb::Colo
     surface.pop();
 }
 
-#[visreg(all)]
+#[visreg(all, width = 160, height = 160)]
 pub fn mask_luminosity(surface: &mut Surface) {
     mask_visreg_impl(MaskType::Luminosity, surface, rgb::Color::new(0, 255, 0));
 }
 
-#[visreg(all)]
+#[visreg(all, width = 160, height = 160)]
 pub fn mask_alpha(surface: &mut Surface) {
     mask_visreg_impl(MaskType::Luminosity, surface, rgb::Color::new(0, 0, 128));
 }

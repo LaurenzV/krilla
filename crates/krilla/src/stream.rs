@@ -37,6 +37,7 @@ use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::content::ContentBuilder;
 use crate::geom::{Rect, Transform};
+use crate::interchange::tagging::XObjectTagIdentifier;
 use crate::resource::{ResourceDictionary, ResourceDictionaryBuilder};
 use crate::serialize::SerializeContext;
 use crate::surface::Surface;
@@ -57,6 +58,7 @@ pub struct Stream {
     pub(crate) validation_errors: Vec<ValidationError>,
     pub(crate) resource_dictionary: ResourceDictionary,
     pub(crate) uses_mask: bool,
+    pub(crate) xobject_identifier: Option<XObjectTagIdentifier>,
 }
 
 impl Stream {
@@ -66,6 +68,7 @@ impl Stream {
         validation_errors: Vec<ValidationError>,
         resource_dictionary: ResourceDictionary,
         uses_mask: bool,
+        xobject_identifier: Option<XObjectTagIdentifier>,
     ) -> Self {
         Self {
             content,
@@ -73,6 +76,7 @@ impl Stream {
             validation_errors,
             resource_dictionary,
             uses_mask,
+            xobject_identifier,
         }
     }
 
@@ -87,6 +91,7 @@ impl Stream {
             validation_errors: vec![],
             resource_dictionary: ResourceDictionaryBuilder::new().finish(),
             uses_mask: false,
+            xobject_identifier: None,
         }
     }
 }
@@ -96,17 +101,21 @@ pub struct StreamBuilder<'a> {
     sc: &'a mut SerializeContext,
     chunk_container: &'a mut ChunkContainer,
     stream: Stream,
+    /// The transform that the stream is assumed to be drawn with, relative to the outermost surface.
+    base_transform: Transform,
 }
 
 impl<'a> StreamBuilder<'a> {
     pub(crate) fn new(
         sc: &'a mut SerializeContext,
         chunk_container: &'a mut ChunkContainer,
+        base_transform: Transform,
     ) -> Self {
         Self {
             sc,
             chunk_container,
             stream: Stream::empty(),
+            base_transform,
         }
     }
 
@@ -137,6 +146,7 @@ impl<'a> StreamBuilder<'a> {
             self.sc,
             self.chunk_container,
             content_builder,
+            self.base_transform,
             None,
             finish_fn,
         )

@@ -5,7 +5,7 @@ use pdf_writer::{Finish, Name, Ref};
 use crate::chunk_container::ChunkContainer;
 use crate::geom::{Rect, Transform};
 use crate::graphics::shading_function::{GradientProperties, ShadingFunction};
-use crate::graphics::xobject::XObject;
+use crate::graphics::xobject::{GroupColorSpace, XObject};
 use crate::resource;
 use crate::resource::Resourceable;
 use crate::serialize::{Cacheable, SerializeContext};
@@ -28,6 +28,7 @@ pub struct Mask {
     /// we want to manually set the bbox of the underlying XObject to match the shape that the
     /// gradient is being applied to.
     custom_bbox: Option<Rect>,
+    group_color_space: GroupColorSpace,
 }
 
 impl Mask {
@@ -38,6 +39,7 @@ impl Mask {
             stream,
             mask_type,
             custom_bbox: None,
+            group_color_space: GroupColorSpace::Rgb,
         }
     }
 
@@ -65,7 +67,8 @@ impl Mask {
         let shading_function = ShadingFunction::new(gradient_properties, true);
 
         let shading_stream = {
-            let mut builder = StreamBuilder::new(serializer_context, chunk_container);
+            let mut builder =
+                StreamBuilder::new(serializer_context, chunk_container, Transform::identity());
             let mut surface = builder.surface();
             surface.push_transform(&shading_transform);
             surface.draw_shading(&shading_function);
@@ -78,6 +81,7 @@ impl Mask {
             stream: shading_stream,
             mask_type: MaskType::Luminosity,
             custom_bbox: Some(bbox),
+            group_color_space: GroupColorSpace::Luma,
         })
     }
 }
@@ -110,7 +114,12 @@ impl Cacheable for Mask {
     ) {
         let x_object = sc.register_cacheable(
             chunk_container,
-            XObject::new(self.stream, false, true, self.custom_bbox),
+            XObject::new(
+                self.stream,
+                false,
+                Some(self.group_color_space),
+                self.custom_bbox,
+            ),
         );
 
         let chunk = &mut chunk_container.non_stream.masks;

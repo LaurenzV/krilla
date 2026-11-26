@@ -25,7 +25,9 @@ use crate::graphics::image::Image;
 use crate::graphics::mask::Mask;
 use crate::graphics::paint::{Fill, FillRule, Stroke};
 use crate::graphics::shading_function::ShadingFunction;
-use crate::interchange::tagging::{ContentTag, Identifier, PageTagIdentifier};
+use crate::interchange::tagging::{
+    ContentTag, Identifier, PageTagIdentifier, XObjectTagIdentifier,
+};
 use crate::num::NormalizedF32;
 use crate::paint::{InnerPaint, Paint};
 #[cfg(feature = "pdf")]
@@ -87,13 +89,14 @@ impl<'a> Surface<'a> {
         sc: &'a mut SerializeContext,
         chunk_container: &'a mut ChunkContainer,
         root_builder: ContentBuilder,
+        base_transform: Transform,
         page_identifier: Option<PageTagIdentifier>,
         finish_fn: Box<dyn FnMut(Stream, i32) + 'a>,
     ) -> Surface<'a> {
         Self {
             sc,
             chunk_container,
-            bd: Builders::new(root_builder),
+            bd: Builders::new(root_builder, base_transform),
             page_identifier,
             fill: None,
             stroke: None,
@@ -104,7 +107,8 @@ impl<'a> Surface<'a> {
 
     /// Return a `StreamBuilder` to allow drawing on a sub-context.
     pub fn stream_builder(&mut self) -> StreamBuilder<'_> {
-        StreamBuilder::new(self.sc, self.chunk_container)
+        let base_transform = self.ctm();
+        StreamBuilder::new(self.sc, self.chunk_container, base_transform)
     }
 
     /// Set the fill that should be used for the next drawing operation.
@@ -180,6 +184,13 @@ impl<'a> Surface<'a> {
     /// Panics if an artifact with a required bbox has none.
     pub fn start_tagged(&mut self, tag: ContentTag) -> Identifier {
         if let Some(id) = &mut self.page_identifier {
+            // Marked content can't be nested, not even across layers. For structure content
+            // items, this is also required by ISO 32000-2, 14.7.5.2, since a form XObject
+            // containing them must not be painted from within one.
+            if self.bd.has_active_marked_content() {
+                panic!("can't start marked content twice");
+            }
+
             match tag {
                 // An artifact is actually not really part of tagged PDF and doesn't have
                 // a marked content identifier, so we need to return a dummy one here. It's just
@@ -216,12 +227,20 @@ impl<'a> Surface<'a> {
                     Identifier::dummy()
                 }
                 ContentTag::Span(_) | ContentTag::Other => {
-                    self.bd.get_mut().start_marked_content_with_properties(
-                        self.sc,
-                        Some(id.mcid),
-                        tag,
-                    );
-                    id.bump().into()
+                    let builder = self.bd.get_mut();
+                    let (mcid, identifier) = match &mut builder.xobject_identifier {
+                        Some(xi) => {
+                            let xi = xi.bump();
+                            (xi.mcid, xi.into())
+                        }
+                        None => {
+                            let pi = id.bump();
+                            (pi.mcid, pi.into())
+                        }
+                    };
+
+                    builder.start_marked_content_with_properties(self.sc, Some(mcid), tag);
+                    identifier
                 }
             }
         } else {
@@ -245,6 +264,7 @@ impl<'a> Surface<'a> {
     /// Panics if a tagged/marked section has already been started (either via this function or via
     /// [`Surface::start_tagged`]).
     pub fn start_variable_text(&mut self) {
+        self.bd.get_mut().active_variable_text = true;
         self.bd.get_mut().start_marked_content(Name(b"Tx"));
     }
 
@@ -254,6 +274,7 @@ impl<'a> Surface<'a> {
     /// Panics if no variable text marked section has been started.
     pub fn end_variable_text(&mut self) {
         self.bd.get_mut().end_marked_content();
+        self.bd.get_mut().active_variable_text = false;
     }
 
     fn outline_glyphs(
@@ -424,9 +445,19 @@ impl<'a> Surface<'a> {
         self.sc.reset_location();
     }
 
-    /// Return the current transformation matrix.
+    /// Return the current transformation matrix, relative to the outermost surface, usually the
+    /// page.
+    ///
+    /// This also accounts for the transforms that the current content stream will be drawn with,
+    /// for example inside of [`Surface::push_mask`], [`Surface::push_opacity`] or
+    /// [`Surface::push_isolated`]. It is useful for determining at which resolution content
+    /// should be rasterized.
+    ///
+    /// Inside of a surface created with [`Surface::stream_builder`], it is assumed that the
+    /// stream will be drawn with the transformation matrix the builder was created at, which
+    /// is not accurate if the stream is drawn somewhere else, for example as a pattern.
     pub fn ctm(&self) -> Transform {
-        self.bd.get().cur_transform()
+        self.bd.ctm()
     }
 
     /// Concatenate a new transform to the current transformation matrix.
@@ -453,9 +484,7 @@ impl<'a> Surface<'a> {
     pub fn push_mask(&mut self, mask: Mask) {
         self.push_instructions
             .push(PushInstruction::Mask(Box::new(mask)));
-        self.bd
-            .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+        self.push_sub_builder();
     }
 
     #[cfg(feature = "pdf")]
@@ -499,30 +528,48 @@ impl<'a> Surface<'a> {
             .push(PushInstruction::Opacity(opacity));
 
         if opacity != NormalizedF32::ONE {
-            self.bd
-                .sub_builders
-                .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+            self.push_sub_builder();
         }
     }
 
     /// Push a new isolated layer.
     pub fn push_isolated(&mut self) {
         self.push_instructions.push(PushInstruction::Isolated);
-        self.bd
-            .sub_builders
-            .push(ContentBuilder::new(Transform::identity(), true, self.sc));
+        self.push_sub_builder();
+    }
+
+    fn pop_sub_builder(&mut self) -> Stream {
+        let builder = self.bd.pop();
+
+        if builder.active_marked_content {
+            panic!("can't pop a layer while marked content inside of it is still active");
+        }
+
+        builder.finish(self.sc)
+    }
+
+    fn push_sub_builder(&mut self) {
+        let mut builder = ContentBuilder::new(Transform::identity(), true, self.sc);
+        // The content of the layer ends up in its own form XObject, whose marked-content
+        // sequences have their own MCIDs and parent tree entry (ISO 32000-2, 14.7.5.4).
+        builder.xobject_identifier = self
+            .page_identifier
+            .map(|pi| XObjectTagIdentifier::new(pi.page_index, self.sc.xobject_tags.new_id()));
+        self.bd.push(builder);
     }
 
     /// Pop the last `push` instruction.
     ///
     /// # Panics
     /// Panics if the there wasn't a corresponding `push` to the `pop`.
+    /// Panics if a tagged section that was started after the corresponding opacity, mask or
+    /// isolated `push` hasn't been ended yet.
     pub fn pop(&mut self) {
         match self.push_instructions.pop().unwrap() {
             PushInstruction::Transform => self.bd.get_mut().restore_graphics_state(),
             PushInstruction::Opacity(o) => {
                 if o != NormalizedF32::ONE {
-                    let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
+                    let stream = self.pop_sub_builder();
                     self.bd
                         .get_mut()
                         .draw_opacified(self.sc, self.chunk_container, o, stream);
@@ -531,13 +578,13 @@ impl<'a> Surface<'a> {
             PushInstruction::ClipPath => self.bd.get_mut().pop_clip_path(),
             PushInstruction::BlendMode => self.bd.get_mut().restore_graphics_state(),
             PushInstruction::Mask(mask) => {
-                let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
+                let stream = self.pop_sub_builder();
                 self.bd
                     .get_mut()
                     .draw_masked(self.sc, self.chunk_container, *mask, stream)
             }
             PushInstruction::Isolated => {
-                let stream = self.bd.sub_builders.pop().unwrap().finish(self.sc);
+                let stream = self.pop_sub_builder();
                 self.bd
                     .get_mut()
                     .draw_isolated(self.sc, self.chunk_container, stream);
@@ -582,11 +629,6 @@ impl<'a> Surface<'a> {
         self.bd
             .get_mut()
             .draw_opacified(self.sc, self.chunk_container, opacity, stream)
-    }
-
-    /// Return the current transformation matrix of the surface.
-    pub fn cur_transform(&self) -> Transform {
-        self.bd.get().cur_transform()
     }
 
     fn context_color(&self) -> rgb::Color {
@@ -654,14 +696,38 @@ impl Drop for Surface<'_> {
 struct Builders {
     pub(crate) root_builder: ContentBuilder,
     pub(crate) sub_builders: Vec<ContentBuilder>,
+    /// The transform that the root builder will be drawn with, relative to the outermost surface.
+    root_base_transform: Transform,
+    /// The transforms that each sub builder will be drawn with, relative to the outermost surface.
+    sub_base_transforms: Vec<Transform>,
 }
 
 impl Builders {
-    fn new(root_builder: ContentBuilder) -> Self {
+    fn new(root_builder: ContentBuilder, root_base_transform: Transform) -> Self {
         Self {
             root_builder,
             sub_builders: vec![],
+            root_base_transform,
+            sub_base_transforms: vec![],
         }
+    }
+
+    /// Push a new sub builder, whose content will be drawn with the current transform.
+    fn push(&mut self, builder: ContentBuilder) {
+        self.sub_base_transforms.push(self.ctm());
+        self.sub_builders.push(builder);
+    }
+
+    fn pop(&mut self) -> ContentBuilder {
+        self.sub_base_transforms.pop();
+        self.sub_builders.pop().unwrap()
+    }
+
+    fn ctm(&self) -> Transform {
+        self.sub_base_transforms
+            .last()
+            .unwrap_or(&self.root_base_transform)
+            .pre_concat(self.get().cur_transform())
     }
 
     fn get_mut(&mut self) -> &mut ContentBuilder {
@@ -672,6 +738,14 @@ impl Builders {
 
     fn get(&self) -> &ContentBuilder {
         self.sub_builders.last().unwrap_or(&self.root_builder)
+    }
+
+    // TODO: This is linear in the number of nested layers. Could be made O(1) by computing
+    // the state of the enclosing builders once when a layer is pushed.
+    fn has_active_marked_content(&self) -> bool {
+        std::iter::once(&self.root_builder)
+            .chain(&self.sub_builders)
+            .any(|b| b.active_marked_content)
     }
 }
 

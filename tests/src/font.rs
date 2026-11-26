@@ -117,7 +117,7 @@ mod colr {
         all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
     }
 
-    #[visreg]
+    #[visreg(width = 187, height = 158)]
     fn font_colr_context_color(surface: &mut Surface) {
         let font_data = COLR_TEST_GLYPHS.clone();
         let font = Font::new(font_data, 0).unwrap();
@@ -131,7 +131,7 @@ mod colr {
         .join(" ");
 
         surface.draw_text(
-            Point::from_xy(0., 30.0),
+            Point::from_xy(2.0, 18.0),
             font.clone(),
             15.0,
             &text,
@@ -141,7 +141,7 @@ mod colr {
 
         surface.set_fill(Some(purple_fill(1.0)));
         surface.draw_text(
-            Point::from_xy(0., 50.0),
+            Point::from_xy(2.0, 38.0),
             font.clone(),
             15.0,
             &text,
@@ -150,7 +150,7 @@ mod colr {
         );
 
         surface.draw_text(
-            Point::from_xy(0., 70.0),
+            Point::from_xy(2.0, 58.0),
             font.clone(),
             15.0,
             &text,
@@ -161,7 +161,7 @@ mod colr {
         surface.set_fill(None);
         surface.set_stroke(Some(Stroke::default()));
         surface.draw_text(
-            Point::from_xy(0., 130.0),
+            Point::from_xy(2.0, 118.0),
             font.clone(),
             15.0,
             &text,
@@ -173,7 +173,7 @@ mod colr {
         // the stroke.
         surface.set_stroke(Some(blue_stroke(1.0)));
         surface.draw_text(
-            Point::from_xy(0., 150.0),
+            Point::from_xy(2.0, 138.0),
             font.clone(),
             15.0,
             &text,
@@ -182,7 +182,7 @@ mod colr {
         );
 
         surface.draw_text(
-            Point::from_xy(0., 170.0),
+            Point::from_xy(2.0, 158.0),
             font.clone(),
             15.0,
             &text,
@@ -293,14 +293,14 @@ mod svg {
         all_glyphs_to_pdf(font_data, None, false, document);
     }
 
-    #[visreg]
+    #[visreg(width = 44, height = 28)]
     fn font_svg_extra(surface: &mut Surface) {
         let font_data = SVG_EXTRA.clone();
         let font = Font::new(font_data, 0).unwrap();
 
         surface.set_fill(Some(purple_fill(1.0)));
         surface.draw_text(
-            Point::from_xy(0., 30.0),
+            Point::from_xy(1.0, 23.0),
             font.clone(),
             30.0,
             "😀",
@@ -310,7 +310,7 @@ mod svg {
 
         surface.set_fill(Some(red_fill(1.0)));
         surface.draw_text(
-            Point::from_xy(30., 30.0),
+            Point::from_xy(31.0, 23.0),
             font.clone(),
             30.0,
             "😀",
@@ -332,11 +332,11 @@ mod cid {
         NOTO_SANS_ARABIC,
     };
 
-    #[visreg(all)]
+    #[visreg(all, width = 171, height = 33)]
     fn font_ttf_simple_text(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS.clone(), 0).unwrap();
         surface.draw_text(
-            Point::from_xy(0.0, 100.0),
+            Point::from_xy(1.0, 29.0),
             font,
             32.0,
             "hello world",
@@ -345,11 +345,11 @@ mod cid {
         );
     }
 
-    #[visreg(all)]
+    #[visreg(all, width = 161, height = 30)]
     fn font_cff_simple_text(surface: &mut Surface) {
         let font = Font::new(LATIN_MODERN_ROMAN.clone(), 0).unwrap();
         surface.draw_text(
-            Point::from_xy(0.0, 100.0),
+            Point::from_xy(3.0, 26.0),
             font,
             32.0,
             "hello world",
@@ -358,11 +358,11 @@ mod cid {
         );
     }
 
-    #[visreg(all)]
+    #[visreg(all, width = 159, height = 43)]
     fn font_arabic_simple_text(surface: &mut Surface) {
         let font = Font::new(NOTO_SANS_ARABIC.clone(), 0).unwrap();
         surface.draw_text(
-            Point::from_xy(0.0, 100.0),
+            Point::from_xy(3.0, 26.0),
             font,
             32.0,
             "مرحبا بالعالم",
@@ -372,7 +372,7 @@ mod cid {
     }
 
     #[cfg(target_os = "macos")]
-    #[visreg]
+    #[visreg(width = 176, height = 78)]
     fn font_ttc(surface: &mut Surface) {
         let font_data: crate::Data = std::fs::read("/System/Library/Fonts/Supplemental/Songti.ttc")
             .unwrap()
@@ -382,7 +382,7 @@ mod cid {
         let font_3 = Font::new(font_data, 6).unwrap();
 
         surface.draw_text(
-            Point::from_xy(0.0, 75.0),
+            Point::from_xy(4.0, 21.0),
             font_1.clone(),
             20.0,
             "这是一段测试文字。",
@@ -390,7 +390,7 @@ mod cid {
             TextDirection::Auto,
         );
         surface.draw_text(
-            Point::from_xy(0.0, 100.0),
+            Point::from_xy(4.0, 46.0),
             font_2.clone(),
             20.0,
             "这是一段测试文字。",
@@ -398,7 +398,7 @@ mod cid {
             TextDirection::Auto,
         );
         surface.draw_text(
-            Point::from_xy(0.0, 125.0),
+            Point::from_xy(4.0, 71.0),
             font_3.clone(),
             20.0,
             "这是一段测试文字。",

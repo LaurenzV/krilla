@@ -1,5 +1,5 @@
 use krilla::color::rgb;
-use krilla::geom::PathBuilder;
+use krilla::geom::{PathBuilder, Transform};
 use krilla::page::Page;
 use krilla::paint::{LineCap, Paint, Stroke};
 use krilla::surface::Surface;
@@ -43,24 +43,34 @@ fn path_with_cmyk(page: &mut Page) {
     surface.draw_path(&path);
 }
 
-#[visreg(all)]
+#[visreg(all, width = 160, height = 160)]
 fn path_with_cmyk(surface: &mut Surface) {
+    surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
     surface.set_fill(Some(cmyk_fill(1.0)));
     surface.draw_path(&path);
+
+    surface.pop();
 }
 
-#[visreg(all, settings_6)]
+#[visreg(all, settings_6, width = 160, height = 160)]
 fn path_with_cmyk_icc(surface: &mut Surface) {
+    surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
     let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
 
     surface.set_fill(Some(cmyk_fill(1.0)));
     surface.draw_path(&path);
+
+    surface.pop();
 }
 
-#[visreg(all, settings_6)]
+#[visreg(all, settings_6, width = 90, height = 70)]
 fn path_line_zero_length_with_stroke(surface: &mut Surface) {
+    surface.push_transform(&Transform::from_translate(-35.0, -35.0));
+
     for (i, line_cap) in [LineCap::Butt, LineCap::Round, LineCap::Square]
         .into_iter()
         .enumerate()
@@ -80,4 +90,6 @@ fn path_line_zero_length_with_stroke(surface: &mut Surface) {
             surface.draw_path(&path);
         }
     }
+
+    surface.pop();
 }

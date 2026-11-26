@@ -20,12 +20,9 @@ pub(crate) fn render(
     let raster_scale = {
         // Find out what dimensions the SVG will actually have in user space units inside of the
         // PDF.
-        // Note that this is not a 100% accurate, because the `cur_transform` method of surface will
-        // only return the transform in the current content stream, so it's not accurate in case we
-        // are currently in a XObject. But it's as good as it gets.
         let actual_bbox = group
             .layer_bounding_box()
-            .transform(surface.cur_transform().to_usvg())?
+            .transform(surface.ctm().to_usvg())?
             .transform(group.transform())?;
         // Calculate the necessary scale in the x/y direction, and take the maximum of that.
         let scale = {

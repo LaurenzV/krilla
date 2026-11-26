@@ -28,7 +28,8 @@ pub struct LinearGradient {
     pub spread_method: SpreadMethod,
     /// The color stops of the linear gradient.
     ///
-    /// Note that all stops need to be in the same color space.
+    /// Note that all stops need to be in the same color space. A gradient
+    /// without stops paints nothing.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
@@ -73,7 +74,8 @@ pub struct RadialGradient {
     pub spread_method: SpreadMethod,
     /// The color stops of the radial gradient.
     ///
-    /// Note that all stops need to be in the same color space.
+    /// Note that all stops need to be in the same color space. A gradient
+    /// without stops paints nothing.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
@@ -115,7 +117,8 @@ pub struct SweepGradient {
     pub spread_method: SpreadMethod,
     /// The color stops of the sweep gradient.
     ///
-    /// Note that all stops need to be in the same color space.
+    /// Note that all stops need to be in the same color space. A gradient
+    /// without stops paints nothing.
     pub stops: Vec<Stop>,
     /// Whether the gradient should be anti-aliased.
     pub anti_alias: bool,
@@ -188,6 +191,15 @@ impl Paint {
                 Color::Special(SpecialColor::Separation(c)) => c.space.fallback.as_rgb(),
             },
             _ => None,
+        }
+    }
+
+    pub(crate) fn is_empty_gradient(&self) -> bool {
+        match &self.0 {
+            InnerPaint::LinearGradient(lg) => lg.stops.is_empty(),
+            InnerPaint::RadialGradient(rg) => rg.stops.is_empty(),
+            InnerPaint::SweepGradient(sg) => sg.stops.is_empty(),
+            InnerPaint::Color(_) | InnerPaint::Pattern(_) => false,
         }
     }
 }

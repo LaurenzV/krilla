@@ -27,8 +27,8 @@ use crate::graphics::shading_function::{
 };
 use crate::graphics::shading_pattern::ShadingPattern;
 use crate::graphics::tiling_pattern::TilingPattern;
-use crate::graphics::xobject::XObject;
-use crate::interchange::tagging::ContentTag;
+use crate::graphics::xobject::{GroupColorSpace, XObject};
+use crate::interchange::tagging::{ContentTag, XObjectTagIdentifier};
 use crate::num::NormalizedF32;
 use crate::resource;
 use crate::resource::{Resource, ResourceDictionaryBuilder};
@@ -50,12 +50,13 @@ pub(crate) struct ContentBuilder {
     uses_mask: bool,
     // Calculating the bbox of text is expensive, so we should avoid doing it if not needed.
     // The only time we really need it is if we are currently inside of an XObject, where we
-    // need to provide a bbox of all its contents. If we are on the main page stream, we only
-    // need it if automatic size detection is enabled.
+    // need to provide a bbox of all its contents.
     bbox_important: bool,
     /// A temporary buffer that's reused across the builder.
     scratch: Vec<u8>,
     pub(crate) active_marked_content: bool,
+    pub(crate) active_variable_text: bool,
+    pub(crate) xobject_identifier: Option<XObjectTagIdentifier>,
 }
 
 /// Stores either a device-specific color space,
@@ -101,6 +102,8 @@ impl ContentBuilder {
             bbox: None,
             scratch: Vec::new(),
             active_marked_content: false,
+            active_variable_text: false,
+            xobject_identifier: None,
         }
     }
 
@@ -124,6 +127,7 @@ impl ContentBuilder {
             self.validation_errors.into_iter().collect(),
             self.rd_builder.finish(),
             self.uses_mask,
+            self.xobject_identifier.filter(|xi| xi.mcid > 0),
         )
     }
 
@@ -213,11 +217,14 @@ impl ContentBuilder {
     pub(crate) fn draw_path(
         &mut self,
         path: &Path,
-        mut fill: Option<&Fill>,
+        fill: Option<&Fill>,
         stroke: Option<&Stroke>,
         sc: &mut SerializeContext,
         chunk_container: &mut ChunkContainer,
     ) {
+        let mut fill = fill.filter(|f| !f.paint.is_empty_gradient());
+        let stroke = stroke.filter(|s| !s.paint.is_empty_gradient());
+
         if fill.is_none() && stroke.is_none() {
             return;
         }
@@ -414,6 +421,9 @@ impl ContentBuilder {
         text: &str,
         font_size: f32,
     ) {
+        let fill = fill.filter(|f| !f.paint.is_empty_gradient());
+        let stroke = stroke.filter(|s| !s.paint.is_empty_gradient());
+
         if fill.is_none() && stroke.is_none() {
             return;
         }
@@ -929,7 +939,7 @@ impl ContentBuilder {
     ) {
         let state = ExtGState::new().mask(mask, sc, chunk_container);
         self.uses_mask = true;
-        let x_object = XObject::new(stream, false, true, None);
+        let x_object = XObject::new(stream, false, Some(GroupColorSpace::Rgb), None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
@@ -943,7 +953,7 @@ impl ContentBuilder {
         let state = ExtGState::new()
             .stroking_alpha(opacity)
             .non_stroking_alpha(opacity);
-        let x_object = XObject::new(stream, true, false, None);
+        let x_object = XObject::new(stream, true, None, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
@@ -954,7 +964,7 @@ impl ContentBuilder {
         stream: Stream,
     ) {
         let state = ExtGState::new();
-        let x_object = XObject::new(stream, true, false, None);
+        let x_object = XObject::new(stream, true, None, None);
         self.draw_xobject(sc, chunk_container, x_object, &state);
     }
 
@@ -1076,7 +1086,7 @@ impl ContentBuilder {
                 if let Some((color, opacity)) = gradient_props.single_stop_color() {
                     // Write gradients with one stop as a solid color fill.
                     content_builder.set_fill_opacity(opacity);
-                    let cs = color.color_space(sc);
+                    let cs = content_builder.get_color_space(sc, color);
                     let color_space_resource = ContentColorSpace::from_color_space(
                         sc,
                         chunk_container,
@@ -1123,7 +1133,7 @@ impl ContentBuilder {
 
         match &paint.0 {
             InnerPaint::Color(c) => {
-                let cs = c.color_space(sc);
+                let cs = self.get_color_space(sc, c);
                 let color_space_resource = ContentColorSpace::from_color_space(
                     sc,
                     chunk_container,
@@ -1301,6 +1311,21 @@ impl ContentBuilder {
                     self.content.close_path();
                 }
             };
+        }
+    }
+
+    fn get_color_space(&self, sc: &mut SerializeContext, color: &Color) -> ColorSpace {
+        // Adobe Acrobat does not render the appearance stream of textboxes and
+        // choice fields in interactive mode if they use a non-device color space.
+        // In read-only/print mode, non-device color spaces are rendered correctly.
+        // Therefore, we provide a best-effort workaround by preferring device color spaces
+        // even when no_device_cs is true in `SerializeSettings`.
+        // This is still PDF/A compliant due to the sRGB OutputIntent.
+        // NOTE: this needs to be revisited once CMYK or custom RBG output intents are supported.
+        if self.active_variable_text {
+            color.color_space_prefer_device(sc)
+        } else {
+            color.color_space(sc)
         }
     }
 }

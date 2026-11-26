@@ -1,7 +1,9 @@
 mod shading {
+    use krilla::color::rgb;
+    use krilla::geom::Transform;
     use krilla::num::NormalizedF32;
     use krilla::page::Page;
-    use krilla::paint::{Fill, LinearGradient, RadialGradient, SpreadMethod, SweepGradient};
+    use krilla::paint::{Fill, LinearGradient, RadialGradient, SpreadMethod, Stop, SweepGradient};
     use krilla::surface::Surface;
     use krilla_macros::{snapshot, visreg};
 
@@ -10,8 +12,10 @@ mod shading {
         stops_with_3_solid_1,
     };
 
-    #[visreg(all)]
+    #[visreg(all, width = 160, height = 160)]
     fn pattern_linear_gradient_pad(surface: &mut Surface) {
+        surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = LinearGradient {
             x1: 50.0,
@@ -30,10 +34,14 @@ mod shading {
             rule: Default::default(),
         }));
         surface.draw_path(&path);
+
+        surface.pop();
     }
 
-    #[visreg(all)]
+    #[visreg(all, width = 160, height = 160)]
     fn pattern_linear_gradient_repeat(surface: &mut Surface) {
+        surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = LinearGradient {
             x1: 50.0,
@@ -52,10 +60,63 @@ mod shading {
             rule: Default::default(),
         }));
         surface.draw_path(&path);
+
+        surface.pop();
     }
 
-    #[visreg(all)]
+    fn linear_gradient_with_opacity() -> LinearGradient {
+        LinearGradient {
+            x1: 20.0,
+            y1: 0.0,
+            x2: 180.0,
+            y2: 0.0,
+            transform: Default::default(),
+            spread_method: SpreadMethod::Pad,
+            stops: vec![
+                Stop {
+                    offset: NormalizedF32::ZERO,
+                    color: rgb::Color::new(255, 0, 0).into(),
+                    opacity: NormalizedF32::new(0.5).unwrap(),
+                },
+                Stop {
+                    offset: NormalizedF32::ONE,
+                    color: rgb::Color::new(255, 0, 0).into(),
+                    opacity: NormalizedF32::new(0.2).unwrap(),
+                },
+            ],
+            anti_alias: false,
+        }
+    }
+
+    #[visreg(all, settings_2, width = 160, height = 160)]
+    fn pattern_linear_gradient_with_opacity_icc(surface: &mut Surface) {
+        surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
+        surface.set_fill(Some(Fill {
+            paint: linear_gradient_with_opacity().into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        }));
+        surface.draw_path(&rect_to_path(20.0, 20.0, 180.0, 180.0));
+
+        surface.pop();
+    }
+
+    #[snapshot(settings_2)]
+    fn pattern_linear_gradient_with_opacity_icc(page: &mut Page) {
+        let mut surface = page.surface();
+        surface.set_fill(Some(Fill {
+            paint: linear_gradient_with_opacity().into(),
+            opacity: NormalizedF32::ONE,
+            rule: Default::default(),
+        }));
+        surface.draw_path(&rect_to_path(20.0, 20.0, 180.0, 180.0));
+    }
+
+    #[visreg(all, width = 160, height = 160)]
     fn pattern_sweep_gradient_pad(surface: &mut Surface) {
+        surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = SweepGradient {
             cx: 100.0,
@@ -74,10 +135,14 @@ mod shading {
             rule: Default::default(),
         }));
         surface.draw_path(&path);
+
+        surface.pop();
     }
 
-    #[visreg(all)]
+    #[visreg(all, width = 160, height = 160)]
     fn pattern_sweep_gradient_repeat(surface: &mut Surface) {
+        surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = SweepGradient {
             cx: 100.0,
@@ -96,10 +161,14 @@ mod shading {
             rule: Default::default(),
         }));
         surface.draw_path(&path);
+
+        surface.pop();
     }
 
-    #[visreg(all)]
+    #[visreg(all, width = 160, height = 160)]
     fn pattern_radial_gradient_pad(surface: &mut Surface) {
+        surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let gradient = RadialGradient {
             cx: 100.0,
@@ -120,6 +189,8 @@ mod shading {
             rule: Default::default(),
         }));
         surface.draw_path(&path);
+
+        surface.pop();
     }
 
     // Should be turned into a solid color.
@@ -177,6 +248,7 @@ mod shading {
 }
 
 mod tiling {
+    use krilla::geom::Transform;
     use krilla::num::NormalizedF32;
     use krilla::paint::{Fill, Pattern};
     use krilla::surface::Surface;
@@ -184,8 +256,10 @@ mod tiling {
 
     use crate::{basic_pattern_stream, rect_to_path};
 
-    #[visreg(all)]
+    #[visreg(all, width = 160, height = 160)]
     fn pattern_tiling_basic(surface: &mut Surface) {
+        surface.push_transform(&Transform::from_translate(-20.0, -20.0));
+
         let path = rect_to_path(20.0, 20.0, 180.0, 180.0);
         let stream_builder = surface.stream_builder();
         let pattern_stream = basic_pattern_stream(stream_builder);
@@ -202,6 +276,8 @@ mod tiling {
             opacity: NormalizedF32::new(0.5).unwrap(),
             rule: Default::default(),
         }));
-        surface.draw_path(&path)
+        surface.draw_path(&path);
+
+        surface.pop();
     }
 }

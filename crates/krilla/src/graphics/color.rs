@@ -116,6 +116,15 @@ impl Color {
         }
     }
 
+    /// Same as [`Self::color_space`], but always returns a device color space
+    /// for regular RGB and Luma colors.
+    pub(crate) fn color_space_prefer_device(&self, sc: &mut SerializeContext) -> ColorSpace {
+        match self {
+            Color::Regular(c) => c.color_space_prefer_device(sc).into(),
+            Color::Special(c) => c.color_space().into(),
+        }
+    }
+
     /// Convert a color to a regular color for use with constructs like tags or
     /// annotations that don't support special color spaces
     pub(crate) fn to_regular(&self) -> RegularColor {
@@ -128,9 +137,25 @@ impl Color {
 
 impl RegularColor {
     pub(crate) fn color_space(&self, sc: &mut SerializeContext) -> RegularColorSpace {
+        self.color_space_inner(sc, false)
+    }
+
+    /// Same as [`Self::color_space`], but always returns a device color space
+    /// for RGB and Luma colors.
+    pub(crate) fn color_space_prefer_device(&self, sc: &mut SerializeContext) -> RegularColorSpace {
+        self.color_space_inner(sc, true)
+    }
+
+    fn color_space_inner(
+        &self,
+        sc: &mut SerializeContext,
+        prefer_device: bool,
+    ) -> RegularColorSpace {
         match self {
-            Self::Rgb(r) => r.color_space(sc.serialize_settings().no_device_cs),
-            Self::Luma(_) => luma::color_space(sc.serialize_settings().no_device_cs),
+            Self::Rgb(r) => r.color_space(!prefer_device && sc.serialize_settings().no_device_cs),
+            Self::Luma(_) => {
+                luma::color_space(!prefer_device && sc.serialize_settings().no_device_cs)
+            }
             Self::Cmyk(_) => match cmyk::color_space(&sc.serialize_settings()) {
                 None => {
                     sc.register_validation_error(ValidationError::MissingCMYKProfile);

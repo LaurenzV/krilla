@@ -10,11 +10,12 @@ use std::sync::Arc;
 use crate::configure::{ValidationError, Validators};
 #[cfg(feature = "raster-images")]
 use crate::graphics::image::Image;
+use crate::interchange::metadata::xmp::XmpError;
 #[cfg(feature = "pdf")]
 use crate::pdf::{PdfDocument, PdfError};
 use crate::surface::Location;
 use crate::tagging::TagId;
-use crate::text::Font;
+use crate::text::{Font, StandardFont};
 
 /// A wrapper type for krilla errors.
 pub type KrillaResult<T> = Result<T, KrillaError>;
@@ -42,6 +43,11 @@ pub enum KrillaError {
     ///
     /// [`TagTree`]: crate::interchange::tagging::TagTree
     UnknownTagId(TagId, Option<Location>),
+    /// An invalid set of custom XMP properties was provided in the
+    /// [`Metadata`].
+    ///
+    /// [`Metadata`]: crate::metadata::Metadata
+    Xmp(XmpError),
     /// An image couldn't be processed properly.
     ///
     /// The third argument contains the error message.
@@ -54,12 +60,17 @@ pub enum KrillaError {
     /// supported by the used PDF version (only available in PDF 1.5+).
     #[cfg(feature = "raster-images")]
     SixteenBitImage(Image, Option<Location>),
+    /// A standard font was used in PDF 2.0, which krilla doesn't support yet.
+    StandardFont(StandardFont),
 }
 
 impl Display for KrillaError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            KrillaError::Font(_, message) => write!(f, "failed to embed font: {message}"),
+            KrillaError::Font(font, message) => match font.postscript_name() {
+                Some(name) => write!(f, "failed to embed font {name}: {message}"),
+                None => write!(f, "failed to embed font: {message}"),
+            },
             KrillaError::Validation(errors) => {
                 let count = errors.len();
                 write!(
@@ -79,6 +90,9 @@ impl Display for KrillaError {
             KrillaError::UnknownTagId(id, location) => {
                 write!(f, "unknown tag id {id:?}")?;
                 write_location(f, *location)
+            }
+            KrillaError::Xmp(error) => {
+                write!(f, "invalid custom XMP metadata: {error}")
             }
             #[cfg(feature = "raster-images")]
             KrillaError::Image(_, location, message) => {
@@ -100,6 +114,11 @@ impl Display for KrillaError {
                 )?;
                 write_location(f, *location)
             }
+            KrillaError::StandardFont(font) => write!(
+                f,
+                "krilla doesn't support the standard font {} in PDF 2.0",
+                font.base_font()
+            ),
         }
     }
 }
@@ -108,6 +127,7 @@ impl Error for KrillaError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             KrillaError::Limit(error) => Some(error),
+            KrillaError::Xmp(error) => Some(error),
             #[cfg(feature = "pdf")]
             KrillaError::Pdf(_, error, _) => Some(error),
             _ => None,

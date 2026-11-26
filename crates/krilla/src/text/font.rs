@@ -87,6 +87,13 @@ impl StandardFont {
             Self::ZapfDingbats => "ZapfDingbats",
         }
     }
+
+    pub(crate) fn encoding(&self) -> Option<&'static str> {
+        match self {
+            StandardFont::Symbol | StandardFont::ZapfDingbats => None,
+            _ => Some("WinAnsiEncoding"),
+        }
+    }
 }
 
 /// An OpenType font. Can be a TrueType, OpenType font or a TrueType collection.
@@ -279,7 +286,10 @@ impl Tag {
 
 impl Debug for Font {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Font {{..}}")
+        f.debug_struct("Font")
+            .field("postscript_name", &self.postscript_name())
+            .field("index", &self.index())
+            .finish_non_exhaustive()
     }
 }
 
