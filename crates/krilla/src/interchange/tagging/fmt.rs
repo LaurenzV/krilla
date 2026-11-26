@@ -95,6 +95,15 @@ impl Output for Node {
                     ai.page_index, ai.annot_index
                 )
             }
+            Node::Leaf(Identifier(IdentifierInner::Real(IdentifierType::XObjectIdentifier(
+                xi,
+            )))) => {
+                writeln!(
+                    f,
+                    "{indent}- XObject: page={} tag_id={} mcid={}",
+                    xi.page_index, xi.xobject_tag_id.0, xi.mcid
+                )
+            }
             Node::Leaf(Identifier(IdentifierInner::Dummy)) => writeln!(f, "{indent}- Artifact"),
         }
     }

@@ -6,18 +6,24 @@ use pdf_writer::{Finish, Name, Ref};
 use crate::chunk_container::ChunkContainer;
 use crate::configure::ValidationError;
 use crate::geom::Rect;
-use crate::graphics::color::{rgb, DEVICE_RGB};
+use crate::graphics::color::{luma, rgb};
 use crate::resource;
-use crate::resource::{Resource, Resourceable};
-use crate::serialize::{Cacheable, MaybeDeviceColorSpace, SerializeContext};
+use crate::resource::Resourceable;
+use crate::serialize::{Cacheable, SerializeContext};
 use crate::stream::{FilterStreamBuilder, Stream};
-use crate::util::{NameExt, Prehashed};
+use crate::util::Prehashed;
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+pub(crate) enum GroupColorSpace {
+    Rgb,
+    Luma,
+}
 
 #[derive(Debug, Hash, Eq, PartialEq)]
 struct Repr {
     stream: Stream,
     isolated: bool,
-    transparency_group_color_space: bool,
+    transparency_group_color_space: Option<GroupColorSpace>,
     custom_bbox: Option<Rect>,
 }
 
@@ -28,7 +34,7 @@ impl XObject {
     pub(crate) fn new(
         stream: Stream,
         isolated: bool,
-        mut transparency_group_color_space: bool,
+        mut transparency_group_color_space: Option<GroupColorSpace>,
         custom_bbox: Option<Rect>,
     ) -> Self {
         // In case a mask was invoked in the content stream, we _always_ create
@@ -41,7 +47,9 @@ impl XObject {
         // rendering issues. Using a transparency group in this case seems to
         // fix the issue.
         // TODO: Apply group transparency to page as well.
-        transparency_group_color_space |= stream.uses_mask;
+        if stream.uses_mask {
+            transparency_group_color_space.get_or_insert(GroupColorSpace::Rgb);
+        }
 
         Self(Arc::new(Prehashed::new(Repr {
             stream,
@@ -73,11 +81,18 @@ impl Cacheable for XObject {
             sc.register_validation_error(validation_error.clone());
         }
 
-        let use_transparency_group = self.0.isolated || self.0.transparency_group_color_space;
+        let use_transparency_group =
+            self.0.isolated || self.0.transparency_group_color_space.is_some();
 
         if use_transparency_group {
             sc.register_validation_error(ValidationError::Transparency(sc.location));
         }
+
+        let struct_parents = self
+            .0
+            .stream
+            .xobject_identifier
+            .map(|xi| sc.register_xobject_struct_parent(xi, root_ref));
 
         let serialize_settings = sc.serialize_settings();
 
@@ -89,10 +104,17 @@ impl Cacheable for XObject {
         // So while we don't technically always need to write it, let's just play it save
         // and always add a group color space in case we have a transparency group.
         let transparency_group_cs = if use_transparency_group {
-            Some(sc.register_colorspace(
-                chunk_container,
-                rgb::color_space(serialize_settings.no_device_cs).into(),
-            ))
+            let no_device_cs = serialize_settings.no_device_cs;
+            let group_cs = self
+                .0
+                .transparency_group_color_space
+                .unwrap_or(GroupColorSpace::Rgb);
+            let cs = match group_cs {
+                GroupColorSpace::Rgb => rgb::color_space(no_device_cs),
+                GroupColorSpace::Luma => luma::color_space(no_device_cs),
+            };
+
+            Some(sc.register_colorspace(chunk_container, cs.into()))
         } else {
             None
         };
@@ -117,6 +139,10 @@ impl Cacheable for XObject {
                 .to_pdf_rect(),
         );
 
+        if let Some(struct_parents) = struct_parents {
+            x_object.struct_parents(struct_parents);
+        }
+
         if use_transparency_group {
             let mut group = x_object.group();
             let transparency = group.transparency();
@@ -126,14 +152,7 @@ impl Cacheable for XObject {
             }
 
             if let Some(transparency_group_cs) = transparency_group_cs {
-                let pdf_cs = transparency.insert(Name(b"CS"));
-
-                match transparency_group_cs {
-                    MaybeDeviceColorSpace::DeviceRgb => pdf_cs.primitive(DEVICE_RGB.to_pdf_name()),
-                    // Can only be SRGB
-                    MaybeDeviceColorSpace::ColorSpace(cs) => pdf_cs.primitive(cs.get_ref()),
-                    _ => unreachable!(),
-                }
+                transparency_group_cs.write(transparency.insert(Name(b"CS")));
             }
 
             transparency.finish();

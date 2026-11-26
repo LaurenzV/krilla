@@ -144,7 +144,8 @@ impl Type3Font {
             .iter()
             .enumerate()
             .map(|(index, glyph)| {
-                let mut stream_surface = StreamBuilder::new(sc, chunk_container);
+                let mut stream_surface =
+                    StreamBuilder::new(sc, chunk_container, Transform::identity());
                 let mut surface = stream_surface.surface();
 
                 // In case this returns `None`, the surface is guaranteed to be empty.
@@ -187,7 +188,7 @@ impl Type3Font {
                 // and showing that, but it seems like many viewers don't like that, and emojis
                 // look messed up. Using XObjects seems like the best choice here.
                 content.start_color_glyph(self.widths[index]);
-                let x_object = XObject::new(stream, false, false, None);
+                let x_object = XObject::new(stream, false, None, None);
                 if !x_object.is_empty() {
                     font_bbox.expand(&x_object.bbox());
                     let x_name = rd_builder

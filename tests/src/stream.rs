@@ -1,6 +1,6 @@
 use krilla::blend::BlendMode;
 use krilla::geom::{Point, Size, Transform};
-use krilla::page::Page;
+use krilla::page::{Page, PageSettings};
 use krilla::text::{Font, TextDirection};
 use krilla_macros::snapshot;
 
@@ -78,4 +78,43 @@ fn stream_compress_by_default(document: &mut Document) {
         false,
         TextDirection::Auto,
     );
+}
+
+#[test]
+fn stream_ctm() {
+    let mut d = Document::new();
+    let mut page = d.start_page_with(PageSettings::from_wh(200.0, 200.0).unwrap());
+    let mut surface = page.surface();
+
+    let scale = Transform::from_scale(2.0, 3.0);
+    surface.push_transform(&scale);
+    surface.push_isolated();
+    surface.push_transform(&Transform::from_translate(5.0, 0.0));
+
+    let scaled_translate = Transform::from_row(2.0, 0.0, 0.0, 3.0, 10.0, 0.0);
+    assert_eq!(surface.ctm(), scaled_translate);
+
+    {
+        let mut stream_builder = surface.stream_builder();
+        let mut sub_surface = stream_builder.surface();
+        assert_eq!(sub_surface.ctm(), scaled_translate);
+
+        sub_surface.push_transform(&Transform::from_scale(0.5, 0.5));
+        assert_eq!(
+            sub_surface.ctm(),
+            Transform::from_row(1.0, 0.0, 0.0, 1.5, 10.0, 0.0)
+        );
+        sub_surface.pop();
+        assert_eq!(sub_surface.ctm(), scaled_translate);
+    }
+
+    surface.pop();
+    surface.pop();
+    assert_eq!(surface.ctm(), scale);
+    surface.pop();
+    assert_eq!(surface.ctm(), Transform::identity());
+
+    surface.finish();
+    page.finish();
+    d.finish().unwrap();
 }
