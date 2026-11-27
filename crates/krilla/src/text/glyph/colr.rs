@@ -16,6 +16,7 @@ use crate::surface::Surface;
 use crate::text::outline::OutlineBuilder;
 use crate::text::Font;
 use crate::text::GlyphId;
+use crate::text::Palette;
 
 pub(crate) fn has_colr_data(font: &Font, glyph: GlyphId) -> bool {
     font.font_ref()
@@ -40,7 +41,7 @@ pub(crate) fn draw_glyph(
     let colr_glyphs = font.font_ref().color_glyphs();
     let colr_glyph = colr_glyphs.get(glyph.to_skrifa())?;
 
-    let mut colr_canvas = ColrBuilder::new(font.clone(), context_color);
+    let mut colr_canvas = ColrBuilder::new(font.clone(), context_color, surface.get_font_palette());
     colr_glyph
         .paint(font.location_ref(), &mut colr_canvas)
         .ok()?;
@@ -178,6 +179,7 @@ fn interpret_masked(
 struct ColrBuilder {
     font: Font,
     context_color: rgb::Color,
+    font_palette: Palette,
     clips: Vec<Vec<Path>>,
     stack: Vec<(Vec<Instruction>, bool)>,
     bounds: Option<Rect>,
@@ -226,10 +228,11 @@ impl CompositeModeExt for CompositeMode {
 }
 
 impl ColrBuilder {
-    pub fn new(font: Font, context_color: rgb::Color) -> Self {
+    pub fn new(font: Font, context_color: rgb::Color, font_palette: Option<&Palette>) -> Self {
         Self {
             font,
             context_color,
+            font_palette: font_palette.cloned().unwrap_or_else(|| Palette::new(0)),
             stack: vec![(vec![], true)],
             bounds: None,
             transforms: vec![Transform::identity()],
@@ -276,14 +279,9 @@ impl ColrBuilder {
         let alpha = alpha.clamp(0.0, 1.0);
 
         if palette_index != u16::MAX {
-            let palettes = self.font.font_ref().color_palettes();
-            let palette = palettes.get(0)?;
-            let color = palette.colors().get(usize::from(palette_index))?;
+            let (color, opacity) = self.font_palette.color(&self.font, palette_index)?;
 
-            Some((
-                rgb::Color::new(color.red, color.green, color.blue),
-                NormalizedF32::new(alpha * color.alpha as f32 / 255.0)?,
-            ))
+            Some((color, NormalizedF32::new(alpha * opacity.get())?))
         } else {
             Some((self.context_color, NormalizedF32::new(alpha)?))
         }

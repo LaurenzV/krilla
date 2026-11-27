@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
@@ -15,7 +16,9 @@ use skrifa::{FontRef, MetadataProvider, OutlineGlyphCollection};
 use tiny_skia_path::FiniteF32;
 use yoke::{Yoke, Yokeable};
 
+use crate::color::rgb;
 use crate::geom::Rect;
+use crate::num::NormalizedF32;
 use crate::text::GlyphId;
 use crate::util::Prehashed;
 use crate::Data;
@@ -298,6 +301,68 @@ impl Tag {
     /// Return the value of the tag.
     pub fn get(&self) -> &[u8; 4] {
         &self.0
+    }
+}
+
+/// A font palette. For color glyph drawings.
+///
+/// Color glyphs from `COLR` table get colors from `CPAL` table palettes.
+/// By default, the first palette is used, and [`Surface::set_font_palette`] can
+/// be used to select different palette.
+///
+/// Cloning and hashing this type is cheap.
+///
+/// [`Surface::set_font_palette`]: crate::surface::Surface::set_font_palette
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub struct Palette(Arc<Prehashed<PaletteRepr>>);
+
+#[derive(Debug, Hash)]
+struct PaletteRepr {
+    index: u16,
+    overrides: BTreeMap<u16, (rgb::Color, NormalizedF32)>,
+}
+
+impl Palette {
+    /// Create a palette with the given index.
+    pub fn new(index: u16) -> Self {
+        Self::new_with_overrides(index, &[])
+    }
+
+    /// Create a palette with the given index, and color overrides.
+    ///
+    /// Each override is the index of a palette color with its new color and
+    /// opacity. If there are duplicate color indices, the last wins. Out of
+    /// bounds color indices are ignored.
+    pub fn new_with_overrides(index: u16, overrides: &[(u16, rgb::Color, NormalizedF32)]) -> Self {
+        let mut repr = PaletteRepr {
+            index,
+            overrides: BTreeMap::new(),
+        };
+        for (color_index, color, opacity) in overrides {
+            repr.overrides.insert(*color_index, (*color, *opacity));
+        }
+
+        Self(Arc::new(Prehashed::new(repr)))
+    }
+
+    /// Return the color at the given index.
+    pub(crate) fn color(
+        &self,
+        font: &Font,
+        color_index: u16,
+    ) -> Option<(rgb::Color, NormalizedF32)> {
+        let palettes = font.font_ref().color_palettes();
+        let palette = palettes.get(self.0.index).or_else(|| palettes.get(0))?;
+        let color = palette.colors().get(usize::from(color_index))?;
+
+        if let Some(color_override) = self.0.overrides.get(&color_index) {
+            return Some(*color_override);
+        }
+
+        Some((
+            rgb::Color::new(color.red, color.green, color.blue),
+            NormalizedF32::new(color.alpha as f32 / 255.0)?,
+        ))
     }
 }
 

@@ -37,7 +37,7 @@ use crate::stream::Stream;
 use crate::text::group::{use_text_spanner, GlyphGroup, GlyphGrouper, GlyphSpan, GlyphSpanner};
 use crate::text::type3::ColoredGlyph;
 use crate::text::{Font, FontContainer, FontIdentifier, PdfFont, PDF_UNITS_PER_EM};
-use crate::text::{Glyph, GlyphId};
+use crate::text::{Glyph, GlyphId, Palette};
 use crate::util::{calculate_stroke_bbox, NameExt};
 
 pub(crate) struct ContentBuilder {
@@ -416,6 +416,7 @@ impl ContentBuilder {
         fill: Option<&Fill>,
         stroke: Option<&Stroke>,
         context_color: rgb::Color,
+        font_palette: Option<&Palette>,
         glyphs: &[impl Glyph],
         font: Font,
         text: &str,
@@ -506,6 +507,7 @@ impl ContentBuilder {
                     glyphs,
                     font.clone(),
                     context_color,
+                    font_palette,
                     text,
                     font_size,
                 );
@@ -525,6 +527,7 @@ impl ContentBuilder {
                     glyphs,
                     font.clone(),
                     context_color,
+                    font_palette,
                     text,
                     font_size,
                 );
@@ -544,6 +547,7 @@ impl ContentBuilder {
                     glyphs,
                     font.clone(),
                     context_color,
+                    font_palette,
                     text,
                     font_size,
                 );
@@ -567,6 +571,7 @@ impl ContentBuilder {
         pdf_font: &dyn PdfFont,
         size: f32,
         context_color: rgb::Color,
+        font_palette: Option<&Palette>,
         glyphs: &[impl Glyph],
         text: &str,
     ) {
@@ -596,7 +601,7 @@ impl ContentBuilder {
         // only if `TJ` is used. With `Tj`, it's fine.
         if let [glyph] = glyphs {
             if approx_eq!(f32, glyph.x_offset(1.0), 0.0, epsilon = 0.001) {
-                self.encode_single_glyph(cur_x, pdf_font, size, context_color, glyph);
+                self.encode_single_glyph(cur_x, pdf_font, size, context_color, font_palette, glyph);
                 return;
             }
         }
@@ -606,6 +611,7 @@ impl ContentBuilder {
             pdf_font,
             size,
             context_color,
+            font_palette,
             glyphs,
         );
     }
@@ -616,10 +622,15 @@ impl ContentBuilder {
         pdf_font: &dyn PdfFont,
         size: f32,
         context_color: rgb::Color,
+        font_palette: Option<&Palette>,
         glyph: &impl Glyph,
     ) {
         let pdf_glyph = pdf_font
-            .get_gid(ColoredGlyph::new(glyph.glyph_id(), context_color))
+            .get_gid(ColoredGlyph::new(
+                glyph.glyph_id(),
+                context_color,
+                font_palette.cloned(),
+            ))
             .unwrap();
         self.scratch.clear();
         let encoded = &mut self.scratch;
@@ -634,6 +645,7 @@ impl ContentBuilder {
         pdf_font: &dyn PdfFont,
         size: f32,
         context_color: rgb::Color,
+        font_palette: Option<&Palette>,
         glyphs: &[impl Glyph],
     ) {
         self.scratch.clear();
@@ -645,7 +657,11 @@ impl ContentBuilder {
 
         for glyph in glyphs {
             let pdf_glyph = pdf_font
-                .get_gid(ColoredGlyph::new(glyph.glyph_id(), context_color))
+                .get_gid(ColoredGlyph::new(
+                    glyph.glyph_id(),
+                    context_color,
+                    font_palette.cloned(),
+                ))
                 .unwrap();
 
             let scale = |val| val * pdf_font.units_per_em();
@@ -702,6 +718,7 @@ impl ContentBuilder {
         glyphs: &[impl Glyph],
         font: Font,
         context_color: rgb::Color,
+        font_palette: Option<&Palette>,
         text: &str,
         font_size: f32,
     ) {
@@ -731,6 +748,7 @@ impl ContentBuilder {
                         glyphs,
                         text,
                         context_color,
+                        font_palette,
                         &mut font_container.borrow_mut(),
                     );
 
@@ -745,6 +763,7 @@ impl ContentBuilder {
                             .validators()
                             .requires_codepoint_mappings(),
                         context_color,
+                        font_palette,
                         font_container.clone(),
                     );
 
@@ -757,6 +776,7 @@ impl ContentBuilder {
                             fill_render_mode,
                             font_container.clone(),
                             context_color,
+                            font_palette,
                             text,
                             font_size,
                             reversed,
@@ -773,6 +793,7 @@ impl ContentBuilder {
                         fill_render_mode,
                         font_container.clone(),
                         context_color,
+                        font_palette,
                         text,
                         font_size,
                         reversed,
@@ -796,6 +817,7 @@ impl ContentBuilder {
         fill_render_mode: TextRenderingMode,
         font_container: Rc<RefCell<FontContainer>>,
         context_color: rgb::Color,
+        font_palette: Option<&Palette>,
         text: &str,
         font_size: f32,
         reversed: bool,
@@ -813,7 +835,12 @@ impl ContentBuilder {
 
         // Segment into glyph runs that can be encoded in one go using a PDF
         // text showing operator (i.e. no y shift, same Type3 font, etc.)
-        let segmented = GlyphGrouper::new(font_container.clone(), context_color, fragment.glyphs());
+        let segmented = GlyphGrouper::new(
+            font_container.clone(),
+            context_color,
+            font_palette,
+            fragment.glyphs(),
+        );
 
         for glyph_group in segmented {
             self.fill_stroke_glyph_group(
@@ -824,6 +851,7 @@ impl ContentBuilder {
                 fill_render_mode,
                 font_container.clone(),
                 context_color,
+                font_palette,
                 text,
                 font_size,
             )
@@ -848,6 +876,7 @@ impl ContentBuilder {
         fill_render_mode: TextRenderingMode,
         font_container: Rc<RefCell<FontContainer>>,
         context_color: rgb::Color,
+        font_palette: Option<&Palette>,
         text: &str,
         font_size: f32,
     ) {
@@ -875,6 +904,7 @@ impl ContentBuilder {
             pdf_font,
             font_size,
             context_color,
+            font_palette,
             glyph_group.glyphs,
             text,
         );

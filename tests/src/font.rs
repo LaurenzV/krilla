@@ -73,14 +73,16 @@ mod bitmap {
 }
 
 mod colr {
+    use krilla::color::rgb;
     use krilla::geom::Point;
-    use krilla::page::PageSettings;
+    use krilla::num::NormalizedF32;
+    use krilla::page::{Page, PageSettings};
     use krilla::paint::Stroke;
     use krilla::surface::Surface;
     use krilla::text::TextDirection;
-    use krilla::text::{Font, GlyphId};
+    use krilla::text::{Font, GlyphId, KrillaGlyph, Palette};
     use krilla::Document;
-    use krilla_macros::visreg;
+    use krilla_macros::{snapshot, visreg};
     use skrifa::raw::TableProvider;
     use skrifa::{FontRef, MetadataProvider};
 
@@ -115,6 +117,39 @@ mod colr {
             .collect();
 
         all_glyphs_to_pdf(font_data, Some(glyphs), false, document);
+    }
+
+    #[snapshot]
+    fn font_palette(page: &mut Page) {
+        let mut surface = page.surface();
+        let font = Font::new(COLR_EXTRA.clone(), 0).unwrap();
+        let glyph = KrillaGlyph::new(GlyphId::new(1), 0.0, 0.0, 0.0, 0.0, 0..0, None);
+        let glyphs = [glyph];
+
+        let purple = rgb::Color::new(128, 0, 128);
+        let half = NormalizedF32::new(0.5).unwrap();
+        let overrides = [
+            (1, rgb::Color::black(), NormalizedF32::ONE),
+            (1, purple, half),
+        ];
+
+        let cases = [
+            (Palette::new(0), false),
+            (Palette::new(1), false),
+            (Palette::new(1), true),
+            (Palette::new_with_overrides(1, &overrides), false),
+        ];
+        for (i, (palette, outlined)) in cases.into_iter().enumerate() {
+            surface.set_font_palette(Some(palette));
+            surface.draw_glyphs(
+                Point::from_xy(i as f32 * 50.0, 50.0),
+                &glyphs,
+                font.clone(),
+                "",
+                40.0,
+                outlined,
+            );
+        }
     }
 
     #[visreg(width = 187, height = 158)]
