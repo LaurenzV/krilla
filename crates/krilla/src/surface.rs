@@ -36,7 +36,7 @@ use crate::serialize::SerializeContext;
 use crate::stream::{Stream, StreamBuilder};
 use crate::tagging::ArtifactType;
 use crate::text::Font;
-use crate::text::{draw_glyph, Glyph};
+use crate::text::{draw_glyph, Glyph, Palette};
 #[cfg(feature = "simple-text")]
 use crate::text::{shape::naive_shape, TextDirection};
 
@@ -78,6 +78,7 @@ pub struct Surface<'a> {
     pub(crate) chunk_container: &'a mut ChunkContainer,
     fill: Option<Fill>,
     stroke: Option<Stroke>,
+    font_palette: Option<Palette>,
     bd: Builders,
     push_instructions: Vec<PushInstruction>,
     page_identifier: Option<PageTagIdentifier>,
@@ -100,6 +101,7 @@ impl<'a> Surface<'a> {
             page_identifier,
             fill: None,
             stroke: None,
+            font_palette: None,
             push_instructions: vec![],
             finish_fn,
         }
@@ -135,6 +137,18 @@ impl<'a> Surface<'a> {
     /// Get the currently active stroke.
     pub fn get_stroke(&mut self) -> Option<&Stroke> {
         self.stroke.as_ref()
+    }
+
+    /// Set the font palette that that should be used for color glyph drawing operations.
+    ///
+    /// You can set it to `None` to use the default (first) palette.
+    pub fn set_font_palette(&mut self, font_palette: Option<Palette>) {
+        self.font_palette = font_palette;
+    }
+
+    /// Get the currently active font palette.
+    pub fn get_font_palette(&self) -> Option<&Palette> {
+        self.font_palette.as_ref()
     }
 
     /// Draw a path using the currently active fill and/or stroke.
@@ -339,6 +353,7 @@ impl<'a> Surface<'a> {
                             Some(f),
                             None,
                             context_color,
+                            self.font_palette.as_ref(),
                             glyphs,
                             font.clone(),
                             text,
@@ -354,6 +369,7 @@ impl<'a> Surface<'a> {
                             Some(f),
                             Some(s),
                             context_color,
+                            self.font_palette.as_ref(),
                             glyphs,
                             font,
                             text,
@@ -369,6 +385,7 @@ impl<'a> Surface<'a> {
                         None,
                         Some(s),
                         context_color,
+                        self.font_palette.as_ref(),
                         glyphs,
                         font,
                         text,
@@ -383,6 +400,7 @@ impl<'a> Surface<'a> {
                         Some(f),
                         None,
                         context_color,
+                        self.font_palette.as_ref(),
                         glyphs,
                         font,
                         text,
@@ -398,6 +416,7 @@ impl<'a> Surface<'a> {
                         Some(&Fill::default()),
                         None,
                         context_color,
+                        self.font_palette.as_ref(),
                         glyphs,
                         font,
                         text,

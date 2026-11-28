@@ -23,24 +23,30 @@ use crate::text::cid::write_cmap_entry;
 use crate::text::cid::{CMAP_NAME, IDENTITY_H, SYSTEM_INFO};
 use crate::text::outline::glyph_path;
 use crate::text::GlyphId;
-use crate::text::{self, Font};
+use crate::text::{self, Font, Palette};
 use crate::util::NameExt;
 
 pub(crate) type Gid = u8;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) struct ColoredGlyph {
     pub(crate) glyph_id: GlyphId,
     // Some formats like COLR and SVG allow drawing the same glyph
     // with a different context color, so we need to store that as well.
     pub(crate) context_color: rgb::Color,
+    pub(crate) font_palette: Option<Palette>,
 }
 
 impl ColoredGlyph {
-    pub(crate) fn new(glyph_id: GlyphId, context_color: rgb::Color) -> ColoredGlyph {
+    pub(crate) fn new(
+        glyph_id: GlyphId,
+        context_color: rgb::Color,
+        font_palette: Option<Palette>,
+    ) -> ColoredGlyph {
         Self {
             glyph_id,
             context_color,
+            font_palette,
         }
     }
 }
@@ -100,10 +106,10 @@ impl Type3Font {
         } else {
             assert!(self.glyphs.len() < 256);
 
-            self.glyph_set.insert(glyph);
-            self.glyphs.push(glyph);
+            self.glyph_set.insert(glyph.clone());
             self.widths
                 .push(self.font.advance_width(glyph.glyph_id).unwrap_or(0.0));
+            self.glyphs.push(glyph);
             u8::try_from(self.glyphs.len() - 1).unwrap()
         }
     }
@@ -147,6 +153,7 @@ impl Type3Font {
                 let mut stream_surface =
                     StreamBuilder::new(sc, chunk_container, Transform::identity());
                 let mut surface = stream_surface.surface();
+                surface.set_font_palette(glyph.font_palette.clone());
 
                 // In case this returns `None`, the surface is guaranteed to be empty.
                 let drawn_color_glyph = text::draw_color_glyph(
@@ -500,16 +507,28 @@ mod tests {
         let mut t3 = Type3FontMapper::new(font.clone());
 
         for i in 2..258 {
-            t3.add_glyph(ColoredGlyph::new(GlyphId::new(i), rgb::Color::black()));
+            t3.add_glyph(ColoredGlyph::new(
+                GlyphId::new(i),
+                rgb::Color::black(),
+                None,
+            ));
         }
 
         assert_eq!(t3.fonts.len(), 1);
         assert_eq!(
-            t3.fonts[0].add_glyph(ColoredGlyph::new(GlyphId::new(20), rgb::Color::black())),
+            t3.fonts[0].add_glyph(ColoredGlyph::new(
+                GlyphId::new(20),
+                rgb::Color::black(),
+                None
+            )),
             18
         );
 
-        t3.add_glyph(ColoredGlyph::new(GlyphId::new(512), rgb::Color::black()));
+        t3.add_glyph(ColoredGlyph::new(
+            GlyphId::new(512),
+            rgb::Color::black(),
+            None,
+        ));
         assert_eq!(t3.fonts.len(), 2);
     }
 }

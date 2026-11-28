@@ -65,6 +65,8 @@ impl SurfaceExt for Surface<'_> {
     fn draw_svg(&mut self, tree: &Tree, size: Size, svg_settings: SvgSettings) -> Option<()> {
         let old_fill = self.get_fill().cloned();
         let old_stroke = self.get_stroke().cloned();
+        let old_font_palette = self.get_font_palette().cloned();
+        self.set_font_palette(None);
 
         let transform = Transform::from_scale(
             size.width() / tree.size().width(),
@@ -83,6 +85,7 @@ impl SurfaceExt for Surface<'_> {
 
         self.set_fill(old_fill);
         self.set_stroke(old_stroke);
+        self.set_font_palette(old_font_palette);
 
         Some(())
     }

@@ -1,0 +1,364 @@
+%PDF-1.7
+%AAAA
+
+1 0 obj
+<<
+  /Type /Pages
+  /Count 1
+  /Kids [10 0 R]
+>>
+endobj
+
+2 0 obj
+<<
+  /Type /ExtGState
+  /ca 0.5
+>>
+endobj
+
+3 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /Font <<
+    /f0 9 0 R
+  >>
+>>
+endobj
+
+4 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+5 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+>>
+endobj
+
+6 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /ExtGState <<
+    /g0 2 0 R
+  >>
+>>
+endobj
+
+7 0 obj
+<<
+  /ProcSet [/PDF /Text /ImageC /ImageB]
+  /XObject <<
+    /x0 16 0 R
+    /x1 17 0 R
+    /x2 18 0 R
+  >>
+>>
+endobj
+
+8 0 obj
+<<
+  /Type /FontDescriptor
+  /FontName /COLRExtra-Regular
+  /Flags 131076
+  /FontBBox [0 0 500 700]
+  /ItalicAngle 0
+  /Ascent 700
+  /Descent 0
+  /FontFamily (COLRExtra-Regular)
+  /FontStretch /Normal
+  /FontWeight 400
+>>
+endobj
+
+9 0 obj
+<<
+  /Type /Font
+  /Subtype /Type3
+  /Resources 7 0 R
+  /Name /COLRExtra-Regular
+  /FontBBox [0 0 500 700]
+  /ToUnicode 14 0 R
+  /FontMatrix [0.001 0 0 0.001 0 0]
+  /FirstChar 0
+  /LastChar 2
+  /Widths [600 600 600]
+  /FontDescriptor 8 0 R
+  /CharProcs <<
+    /g0 11 0 R
+    /g1 12 0 R
+    /g2 13 0 R
+  >>
+  /Encoding <<
+    /Type /Encoding
+    /Differences [0 /g0 /g1 /g2]
+  >>
+>>
+endobj
+
+10 0 obj
+<<
+  /Type /Page
+  /Resources 3 0 R
+  /MediaBox [0 0 200 200]
+  /Parent 1 0 R
+  /Contents 15 0 R
+>>
+endobj
+
+11 0 obj
+<<
+  /Length 15
+>>
+stream
+600 0 d0
+/x0 Do
+endstream
+endobj
+
+12 0 obj
+<<
+  /Length 15
+>>
+stream
+600 0 d0
+/x1 Do
+endstream
+endobj
+
+13 0 obj
+<<
+  /Length 15
+>>
+stream
+600 0 d0
+/x2 Do
+endstream
+endobj
+
+14 0 obj
+<<
+  /Length 577
+  /Type /CMap
+  /WMode 0
+>>
+stream
+%!PS-Adobe-3.0 Resource-CMap
+%%DocumentNeededResources: procset CIDInit
+%%IncludeResource: procset CIDInit
+%%BeginResource: CMap Custom
+%%Title: (Custom Adobe Identity 0)
+%%Version: 1
+%%EndComments
+/CIDInit /ProcSet findresource begin
+12 dict begin
+begincmap
+/CIDSystemInfo 3 dict dup begin
+    /Registry (Adobe) def
+    /Ordering (Identity) def
+    /Supplement 0 def
+end def
+/CMapName /Custom def
+/CMapVersion 1 def
+/CMapType 0 def
+/WMode 0 def
+1 begincodespacerange
+<00> <FF>
+endcodespacerange
+endcmap
+CMapName currentdict /CMap defineresource pop
+end
+end
+%%EndResource
+%%EOF
+endstream
+endobj
+
+15 0 obj
+<<
+  /Length 376
+>>
+stream
+q
+1 0 0 -1 0 200 cm
+0 g
+BT
+0 Tr
+/f0 40 Tf
+1 0 0 -1 0 50 Tm
+(\000) Tj
+ET
+Q
+q
+1 0 0 -1 0 200 cm
+0 g
+BT
+0 Tr
+/f0 40 Tf
+1 0 0 -1 50 50 Tm
+(\001) Tj
+ET
+Q
+q
+0.04 0 0 0.04 100 150 cm
+1 0 0 rg
+0 0 m
+250 0 l
+250 700 l
+0 700 l
+h
+f
+Q
+q
+0.04 0 0 0.04 100 150 cm
+1 0 0 rg
+250 0 m
+500 0 l
+500 700 l
+250 700 l
+h
+f
+Q
+q
+1 0 0 -1 0 200 cm
+0 g
+BT
+0 Tr
+/f0 40 Tf
+1 0 0 -1 150 50 Tm
+(\002) Tj
+ET
+Q
+endstream
+endobj
+
+16 0 obj
+<<
+  /Length 101
+  /Type /XObject
+  /Subtype /Form
+  /Resources 4 0 R
+  /BBox [0 0 500 700]
+>>
+stream
+q
+0 0 1 rg
+0 0 m
+250 0 l
+250 700 l
+0 700 l
+h
+f
+Q
+q
+0 1 0 rg
+250 0 m
+500 0 l
+500 700 l
+250 700 l
+h
+f
+Q
+endstream
+endobj
+
+17 0 obj
+<<
+  /Length 101
+  /Type /XObject
+  /Subtype /Form
+  /Resources 5 0 R
+  /BBox [0 0 500 700]
+>>
+stream
+q
+1 0 0 rg
+0 0 m
+250 0 l
+250 700 l
+0 700 l
+h
+f
+Q
+q
+1 0 0 rg
+250 0 m
+500 0 l
+500 700 l
+250 700 l
+h
+f
+Q
+endstream
+endobj
+
+18 0 obj
+<<
+  /Length 124
+  /Type /XObject
+  /Subtype /Form
+  /Resources 6 0 R
+  /BBox [0 0 500 700]
+>>
+stream
+q
+1 0 0 rg
+0 0 m
+250 0 l
+250 700 l
+0 700 l
+h
+f
+Q
+q
+/g0 gs
+0.5019608 0 0.5019608 rg
+250 0 m
+500 0 l
+500 700 l
+250 700 l
+h
+f
+Q
+endstream
+endobj
+
+19 0 obj
+<<
+  /Type /Catalog
+  /Pages 1 0 R
+>>
+endobj
+
+xref
+0 20
+0000000000 65535 f
+0000000016 00000 n
+0000000081 00000 n
+0000000132 00000 n
+0000000224 00000 n
+0000000286 00000 n
+0000000348 00000 n
+0000000445 00000 n
+0000000571 00000 n
+0000000809 00000 n
+0000001207 00000 n
+0000001324 00000 n
+0000001393 00000 n
+0000001462 00000 n
+0000001531 00000 n
+0000002188 00000 n
+0000002619 00000 n
+0000002850 00000 n
+0000003081 00000 n
+0000003335 00000 n
+trailer
+<<
+  /Size 20
+  /Root 19 0 R
+  /ID [(9NGsXxvPLsBrs+Ltbm+SLg==) (9NGsXxvPLsBrs+Ltbm+SLg==)]
+>>
+startxref
+3390
+%%EOF
